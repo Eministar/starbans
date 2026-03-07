@@ -1,0 +1,176 @@
+name: StarBans
+version: '${project.version}'
+main: dev.eministar.starbans.StarBans
+api-version: '1.21'
+description: Premium moderation, punishment and case management for Spigot/Paper servers.
+authors: [ Eministar ]
+website: https://star-dev.xyz
+softdepend: [ PlaceholderAPI ]
+commands:
+  starbans:
+    description: Main command for StarBans
+    aliases: [ sb ]
+    permission: starbans.command.gui
+  sban:
+    description: Permanently ban a player
+    permission: starbans.command.ban
+  stempban:
+    description: Temporarily ban a player
+    permission: starbans.command.tempban
+  sunban:
+    description: Unban a player
+    permission: starbans.command.unban
+  sipban:
+    description: Ban a player's IP or a raw IP address
+    permission: starbans.command.ipban
+  stempipban:
+    description: Temporarily ban an IP
+    permission: starbans.command.ipban
+  sunipban:
+    description: Remove an IP ban
+    permission: starbans.command.unipban
+  smute:
+    description: Permanently mute a player
+    permission: starbans.command.mute
+  stempmute:
+    description: Temporarily mute a player
+    permission: starbans.command.tempmute
+  sunmute:
+    description: Unmute a player
+    permission: starbans.command.unmute
+  skick:
+    description: Kick a player and create a case entry
+    permission: starbans.command.kick
+  snote:
+    description: Create a note for a player
+    permission: starbans.command.note
+  snotes:
+    description: View a player's notes
+    permission: starbans.command.notes
+  scases:
+    description: View a player's cases
+    permission: starbans.command.cases
+  salt:
+    description: Manage alt-account markers
+    permission: starbans.command.alt
+  sipblacklist:
+    description: Manage the IP blacklist
+    permission: starbans.command.ipblacklist
+  bancheck:
+    description: View moderation summary for a player
+    permission: starbans.command.check
+  banhistory:
+    description: Open the case history for a player
+    permission: starbans.command.cases
+permissions:
+  starbans.admin:
+    description: Access to all StarBans commands
+    default: op
+  starbans.notify:
+    description: Receive update-checker notifications
+    default: op
+  starbans.command.reload:
+    description: Reload StarBans config and lang files
+    default: op
+  starbans.command.gui:
+    description: Open the moderation GUI
+    default: op
+  starbans.command.check:
+    description: Inspect a player's moderation status
+    default: op
+  starbans.command.cases:
+    description: View case histories
+    default: op
+  starbans.command.resolve:
+    description: Resolve active moderation cases
+    default: op
+  starbans.command.note:
+    description: Create staff notes
+    default: op
+  starbans.command.notes:
+    description: View staff notes
+    default: op
+  starbans.command.ban:
+    description: Ban players
+    default: op
+  starbans.command.tempban:
+    description: Temporarily ban players
+    default: op
+  starbans.command.unban:
+    description: Remove player bans
+    default: op
+  starbans.command.ipban:
+    description: Ban IPs
+    default: op
+  starbans.command.unipban:
+    description: Remove IP bans
+    default: op
+  starbans.command.mute:
+    description: Mute players
+    default: op
+  starbans.command.tempmute:
+    description: Temporarily mute players
+    default: op
+  starbans.command.unmute:
+    description: Remove mutes
+    default: op
+  starbans.command.kick:
+    description: Kick players
+    default: op
+  starbans.command.alt:
+    description: Manage alt-account flags
+    default: op
+  starbans.command.ipblacklist:
+    description: Manage the IP blacklist
+    default: op
+  starbans.gui.open:
+    description: Open the StarBans main GUI
+    default: op
+  starbans.gui.browser:
+    description: Browse known player profiles in the GUI
+    default: op
+  starbans.gui.profile:
+    description: Open individual moderation profiles in the GUI
+    default: op
+  starbans.gui.activity:
+    description: View the global activity GUI
+    default: op
+  starbans.gui.history:
+    description: View case history GUIs
+    default: op
+  starbans.gui.case.view:
+    description: View single case details in the GUI
+    default: op
+  starbans.gui.case.resolve:
+    description: Resolve cases from the GUI
+    default: op
+  starbans.gui.notes.view:
+    description: View note GUIs
+    default: op
+  starbans.gui.notes.create:
+    description: Create notes from the GUI
+    default: op
+  starbans.gui.related:
+    description: View related-account GUIs
+    default: op
+  starbans.gui.alt.mark:
+    description: Create alt flags from the GUI
+    default: op
+  starbans.gui.punish.ban:
+    description: Use permanent ban GUI actions
+    default: op
+  starbans.gui.punish.tempban:
+    description: Use temporary ban GUI actions
+    default: op
+  starbans.gui.punish.unban:
+    description: Use unban GUI actions
+    default: op
+  starbans.gui.punish.mute:
+    description: Use permanent mute GUI actions
+    default: op
+  starbans.gui.punish.tempmute:
+    description: Use temporary mute GUI actions
+    default: op
+  starbans.gui.punish.unmute:
+    description: Use unmute GUI actions
+    default: op

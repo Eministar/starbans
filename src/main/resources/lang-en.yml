@@ -1,0 +1,617 @@
+general:
+  prefix: '&8[&#FFB84D&lStarBans&8] &7>> '
+
+labels:
+  none: '&7none'
+  online: '&aOnline'
+  offline: '&7Offline'
+  status-clean: '&aClean'
+  status-banned: '&cBanned'
+  status-muted: '&6Muted'
+  case-status-active: '&cACTIVE'
+  case-status-resolved: '&aRESOLVED'
+  case-status-expired: '&eEXPIRED'
+  case-type-ban: '&cBan'
+  case-type-ip-ban: '&4IP-Ban'
+  case-type-mute: '&6Mute'
+  case-type-kick: '&fKick'
+  case-type-note: '&bNote'
+  case-type-alt-flag: '&dAlt-Flag'
+  case-type-ip-blacklist: '&4IP-Blacklist'
+
+time:
+  permanent: '&cPermanent'
+  expired: '&7Expired'
+  now: '&aNow'
+  units:
+    y: 'y'
+    mo: 'mo'
+    w: 'w'
+    d: 'd'
+    h: 'h'
+    m: 'm'
+    s: 's'
+
+messages:
+  no-permission: '&cYou do not have permission for this action.'
+  player-only: '&cOnly players can use this command.'
+  internal-error: '&cAn internal error occurred. Check the console log.'
+  gui-misconfigured: '&cThe GUI section in config.yml is incomplete.'
+  reload-success: '&aConfig, lang, storage and command overrides were reloaded.'
+  reload-failed: '&cReload failed. Check the console for details.'
+  player-not-found: '&cNo known player found for &f{player}&c.'
+  player-has-no-known-ip: '&cNo known IP could be found for &f{player}&c.'
+  invalid-duration: '&cInvalid duration &f{input}&c. Example: &f30m 12h 7d'
+  invalid-case-id: '&cInvalid case id: &f{input}&c.'
+  case-resolved: '&aCase &f#{id} &awas resolved.'
+  gui-note-prompt-start: '&eType the note for &f{player} &ein chat. Write &fcancel &eto abort.'
+  gui-note-prompt-cancelled: '&7The GUI note prompt for &f{player} &7was cancelled.'
+
+  usage-check: '&cUsage: /bancheck <player>'
+  usage-cases: '&cUsage: /scases <player>'
+  usage-case: '&cUsage: /starbans case <id>'
+  usage-notes: '&cUsage: /snotes <player>'
+  usage-note: '&cUsage: /snote <player> <label> <text>'
+  usage-ban: '&cUsage: /sban <player> [reason]'
+  usage-tempban: '&cUsage: /stempban <player> <duration> [reason]'
+  usage-unban: '&cUsage: /sunban <player|ip> [reason]'
+  usage-ipban: '&cUsage: /sipban <player|ip> [reason]'
+  usage-tempipban: '&cUsage: /stempipban <player|ip> <duration> [reason]'
+  usage-unipban: '&cUsage: /sunipban <player|ip> [reason]'
+  usage-mute: '&cUsage: /smute <player> [reason]'
+  usage-tempmute: '&cUsage: /stempmute <player> <duration> [reason]'
+  usage-unmute: '&cUsage: /sunmute <player> [reason]'
+  usage-kick: '&cUsage: /skick <player> [reason]'
+  usage-alt: '&cUsage: /salt <mark|list|clear> ...'
+  usage-alt-mark: '&cUsage: /salt mark <label> <player1> <player2> [note]'
+  usage-alt-list: '&cUsage: /salt list <player>'
+  usage-alt-clear: '&cUsage: /salt clear <caseId> [note]'
+  usage-ipblacklist: '&cUsage: /sipblacklist <add|remove> <ip> [reason]'
+
+  already-banned: '&c{player} is already banned. Current reason: &f{reason}'
+  ban-success: '&a{player} was permanently banned for &f{reason}&a.'
+  tempban-success: '&a{player} was temporarily banned for &f{reason}&a. Remaining: &f{remaining}'
+  not-banned: '&e{player} is not currently banned.'
+  unban-success: '&a{player} was unbanned.'
+
+  ip-already-banned: '&cThe IP &f{ip} &cis already banned. Current reason: &f{reason}'
+  ipban-success: '&aIP ban applied to &f{ip}&a. Target: &f{player}&a. Reason: &f{reason}'
+  tempipban-success: '&aTemporary IP ban applied to &f{ip}&a. Target: &f{player}&a. Remaining: &f{remaining}'
+  ip-not-banned: '&eThe IP &f{ip} &eis not currently banned.'
+  unipban-success: '&aThe IP &f{ip} &awas unbanned.'
+
+  already-muted: '&c{player} is already muted. Current reason: &f{reason}'
+  mute-success: '&a{player} was muted for &f{reason}&a.'
+  tempmute-success: '&a{player} was temporarily muted for &f{reason}&a. Remaining: &f{remaining}'
+  not-muted: '&e{player} is not currently muted.'
+  unmute-success: '&a{player} was unmuted.'
+  mute-blocked: '&cYou are muted. &7Reason: &f{reason} &8| &7Actor: &f{actor} &8| &7Expires: &f{expires_at}'
+
+  kick-success: '&a{player} was kicked.'
+  note-success: '&aA note for &f{player} &awas created with label &f{label}&a.'
+
+  alt-already-marked: '&e{player} and {related_player} are already linked with an active alt flag.'
+  alt-mark-success: '&aAlt flag created: &f{player} &7<-> &f{related_player} &8(&f{label}&8)'
+  alt-list-header: '&8---------- &dAlt Flags for &f{player} &8({alt_count}) ----------'
+  alt-list-empty: '&7No active alt flags found for &f{player}&7.'
+  alt-entry: '&8#&f{id} &7| &f{label} &7| &f{player} &7<-> &f{related_player} &7| &f{actor} &7| &f{reason}'
+  alt-clear-success: '&aAlt flag / active case &f#{id} &awas resolved.'
+
+  ip-already-blacklisted: '&cThe IP &f{ip} &cis already blacklisted.'
+  ipblacklist-add-success: '&aThe IP &f{ip} &awas added to the blacklist.'
+  ip-not-blacklisted: '&eThe IP &f{ip} &eis not blacklisted.'
+  ipblacklist-remove-success: '&aThe IP &f{ip} &awas removed from the blacklist.'
+  check-header: '&8---------- &6Moderation Check for &f{player} &8----------'
+  check-lines:
+    - '&7Last IP: &f{last_ip}'
+    - '&7Active ban: &f{active_ban}'
+    - '&7Active mute: &f{active_mute}'
+    - '&7Cases: &f{case_count}'
+    - '&7Notes: &f{note_count}'
+    - '&7Alt flags: &f{alt_count}'
+    - '&7Last case type: &f{last_case_type}'
+    - '&7Last case reason: &f{last_case_reason}'
+  check-related-header: '&8Same-IP Profiles:'
+  check-related-entry: '&7- &f{player} &8(&f{ip}&8)'
+
+  cases-header: '&8---------- &6Cases for &f{player} &8({case_count}) ----------'
+  cases-empty: '&7No cases found for &f{player}&7.'
+  case-entry: '&8#&f{id} &7| &f{type} &7| &f{reason} &7| &f{actor} &7| &f{status} &7| &f{expires_at}'
+  case-not-found: '&cNo case found with id &f{id}&c.'
+  case-not-active: '&eCase &f#{id} &eis already resolved / inactive.'
+  case-details:
+    - '&8---------- &6Case #{id} &8----------'
+    - '&7Type: &f{type}'
+    - '&7Player: &f{player}'
+    - '&7Related player: &f{related_player}'
+    - '&7IP: &f{ip}'
+    - '&7Label: &f{label}'
+    - '&7Reason: &f{reason}'
+    - '&7Actor: &f{actor}'
+    - '&7Source: &f{source}'
+    - '&7Created: &f{created_at}'
+    - '&7Expires: &f{expires_at}'
+    - '&7Status: &f{status}'
+    - '&7Status actor: &f{status_actor}'
+    - '&7Status note: &f{status_note}'
+
+  notes-header: '&8---------- &6Notes for &f{player} &8({note_count}) ----------'
+  notes-empty: '&7No notes found for &f{player}&7.'
+  note-entry: '&8#&f{id} &7| &f{label} &7| &f{text} &7| &f{actor} &7| &f{created_at}'
+
+  help:
+    - '&6StarBans Commands'
+    - '&e/sb &7- open the StarBans main GUI'
+    - '&e/starbans help &7- show this help'
+    - '&e/starbans reload &7- reload config, lang, storage and overrides'
+    - '&e/starbans gui [player] &7- open the moderation GUI'
+    - '&e/sban <player> [reason] &7- permanent player ban'
+    - '&e/stempban <player> <duration> [reason] &7- temporary player ban'
+    - '&e/sunban <player|ip> [reason] &7- unban a player or directly unban an IP'
+    - '&e/sipban <player|ip> [reason] &7- IP ban via player or raw IP'
+    - '&e/stempipban <player|ip> <duration> [reason] &7- temporary IP ban'
+    - '&e/sunipban <player|ip> [reason] &7- remove an active IP ban'
+    - '&e/smute <player> [reason] &7- permanent mute'
+    - '&e/stempmute <player> <duration> [reason] &7- temporary mute'
+    - '&e/skick <player> [reason] &7- kick and create a case'
+    - '&e/snote <player> <label> <text> &7- create a staff note'
+    - '&e/scases <player> &7- view case history'
+    - '&e/snotes <player> &7- view notes'
+    - '&e/salt mark <label> <player1> <player2> [note] &7- mark alts'
+    - '&e/sipblacklist <add|remove> <ip> [reason] &7- manage the IP blacklist'
+
+  broadcasts:
+    player-ban:
+      - ''
+      - '&8[&#FFB84D&lStarBans&8] &f{player} &7was banned by &f{actor}'
+      - '&8Reason: &f{reason}'
+      - '&8Expires: &f{expires_at}'
+      - ''
+    ip-ban:
+      - ''
+      - '&8[&#FFB84D&lStarBans&8] &fIP Ban &7-> &f{ip}'
+      - '&8Target: &f{player}'
+      - '&8Reason: &f{reason}'
+      - '&8Actor: &f{actor}'
+      - ''
+    player-mute:
+      - '&8[&#FFB84D&lStarBans&8] &f{player} &7was muted by &f{actor} &8(&f{expires_at}&8)'
+    kick:
+      - '&8[&#FFB84D&lStarBans&8] &f{player} &7was kicked by &f{actor}'
+
+  update:
+    console:
+      - '&eA new StarBans version is available.'
+      - '&7Current: &f{current}'
+      - '&7Latest: &f{latest}'
+      - '&7Download: &f{url}'
+    player:
+      - '&8---------- &6StarBans Update &8----------'
+      - '&7Current: &f{current}'
+      - '&7Latest: &f{latest}'
+      - '&7Download: &f{url}'
+
+screens:
+  player-ban:
+    - '&8&m----------------------------------------'
+    - '&cYou are banned from this server'
+    - ''
+    - '&7Reason: &f{reason}'
+    - '&7Actor: &f{actor}'
+    - '&7Created: &f{created_at}'
+    - '&7Expires: &f{expires_at}'
+    - '&7Remaining: &f{remaining}'
+    - '&8&m----------------------------------------'
+  ip-ban:
+    - '&8&m----------------------------------------'
+    - '&4Your IP is banned from this server'
+    - ''
+    - '&7Player: &f{player}'
+    - '&7IP: &f{ip}'
+    - '&7Reason: &f{reason}'
+    - '&7Actor: &f{actor}'
+    - '&7Expires: &f{expires_at}'
+    - '&8&m----------------------------------------'
+  kick:
+    - '&8&m----------------------------------------'
+    - '&cYou were kicked from this server'
+    - ''
+    - '&7Reason: &f{reason}'
+    - '&7Actor: &f{actor}'
+    - '&8&m----------------------------------------'
+  ip-blacklist:
+    - '&8&m----------------------------------------'
+    - '&4Your IP is blacklisted'
+    - ''
+    - '&7Reason: &f{reason}'
+    - '&7Actor: &f{actor}'
+    - '&8&m----------------------------------------'
+  vpn-block:
+    - '&8&m----------------------------------------'
+    - '&4VPN / Proxy connections are blocked'
+    - ''
+    - '&7IP: &f{ip}'
+    - '&7Risk: &f{risk}'
+    - '&7Details: &f{details}'
+    - '&8&m----------------------------------------'
+
+gui:
+  main-menu:
+    title: '&8StarBans &7| &fMain Menu'
+  player-browser:
+    title: '&8StarBans &7| &fPlayer Browser &8(&f{page}&7/&f{max_page}&8)'
+  action-menu:
+    title: '&8StarBans &7| &f{player}'
+  history:
+    title: '&8StarBans &7| &fCases: {player} &8(&f{page}&7/&f{max_page}&8)'
+  notes:
+    title: '&8StarBans &7| &fNotes: {player} &8(&f{page}&7/&f{max_page}&8)'
+  related:
+    title: '&8StarBans &7| &fRelated: {player} &8(&f{page}&7/&f{max_page}&8)'
+  activity:
+    title: '&8StarBans &7| &fRecent Activity &8(&f{page}&7/&f{max_page}&8)'
+  case-details:
+    title: '&8StarBans &7| &fCase #{id}'
+
+gui-items:
+  main-menu:
+    browser:
+      name: '&#FFB84D&lPlayer Browser'
+      lore:
+        - '&8Known players: &f{known_players}'
+        - '&8Stored cases: &f{case_count}'
+        - '&7Open the full player browser.'
+    activity:
+      name: '&b&lRecent Activity'
+      lore:
+        - '&8Total cases: &f{case_count}'
+        - '&7Open the global case / staff activity log.'
+    stats:
+      name: '&e&lOverview'
+      lore:
+        - '&8Known players: &f{known_players}'
+        - '&8Active bans: &f{ban_count}'
+        - '&8Active IP bans: &f{ip_ban_count}'
+        - '&8Active mutes: &f{mute_count}'
+        - '&8All cases: &f{case_count}'
+    close:
+      name: '&cClose'
+      lore:
+        - '&7Close this GUI.'
+
+  player-browser:
+    player-head:
+      name: '&#FFB84D&l{player}'
+      lore:
+        - '&8State: &f{online_status}'
+        - '&8Status: &f{status}'
+        - '&8Cases: &f{case_count}'
+        - '&8Notes: &f{note_count}'
+        - '&8Alt flags: &f{alt_count}'
+        - '&8Last IP: &f{last_ip}'
+        - '&8Last seen: &f{last_seen}'
+        - '&7Click to open the moderation menu.'
+    navigation:
+      home:
+        name: '&eMain Menu'
+        lore:
+          - '&7Return to the StarBans main GUI.'
+      previous:
+        name: '&ePrevious page'
+        lore:
+          - '&7Open the previous player page.'
+      next:
+        name: '&eNext page'
+        lore:
+          - '&7Open the next player page.'
+      close:
+        name: '&cClose'
+        lore:
+          - '&7Close this GUI.'
+
+  action-menu:
+    header:
+      name: '&#FFB84D&l{player}'
+      lore:
+        - '&8State: &f{online_status}'
+        - '&8Last IP: &f{last_ip}'
+        - '&8First seen: &f{first_seen}'
+        - '&8Last seen: &f{last_seen}'
+        - '&8Active ban: &f{ban_status}'
+        - '&8Active mute: &f{mute_status}'
+        - '&8Cases: &f{case_count}'
+        - '&8Notes: &f{note_count}'
+        - '&8Alt flags: &f{alt_count}'
+        - '&8Last case: &f{last_case_type}'
+    permanent-ban:
+      name: '&c&lPermanent Ban'
+      lore:
+        - '&7Immediately ban this player permanently.'
+    unban:
+      name: '&a&lUnban'
+      lore:
+        - '&7Remove the active ban from this player.'
+    permanent-mute:
+      name: '&6&lPermanent Mute'
+      lore:
+        - '&7Mute this player permanently.'
+    unmute:
+      name: '&e&lUnmute'
+      lore:
+        - '&7Remove the active mute from this player.'
+    history:
+      name: '&b&lCase History'
+      lore:
+        - '&7Open the full moderation case history.'
+    notes:
+      name: '&b&lStaff Notes'
+      lore:
+        - '&7Open all notes for this player.'
+    add-note:
+      name: '&e&lAdd Note'
+      lore:
+        - '&7Start chat input for a staff note.'
+        - '&8Type your note in chat or write'
+        - '&8cancel to abort.'
+    related:
+      name: '&d&lRelated Accounts'
+      lore:
+        - '&7Open same-IP / related accounts.'
+    back:
+      name: '&eBack'
+      lore:
+        - '&7Return to the player browser.'
+    close:
+      name: '&cClose'
+      lore:
+        - '&7Close the GUI.'
+    temp-ban-presets:
+      one-hour:
+        name: '&e&l1 Hour Ban'
+        lore:
+          - '&7Preset for spam / chat abuse.'
+      one-day:
+        name: '&6&l1 Day Ban'
+        lore:
+          - '&7Preset for toxicity / insults.'
+      seven-days:
+        name: '&c&l7 Day Ban'
+        lore:
+          - '&7Preset for repeated griefing / exploits.'
+    temp-mute-presets:
+      thirty-minutes:
+        name: '&e&l30 Minute Mute'
+        lore:
+          - '&7Preset for minor spam.'
+      two-hours:
+        name: '&6&l2 Hour Mute'
+        lore:
+          - '&7Preset for flaming / toxicity.'
+      one-day:
+        name: '&c&l1 Day Mute'
+        lore:
+          - '&7Preset for repeated chat abuse.'
+
+  history:
+    header:
+      name: '&#FFB84D&l{player}'
+      lore:
+        - '&8Total cases: &f{case_count}'
+    previous:
+      name: '&ePrevious page'
+      lore:
+        - '&7Open the previous case page.'
+    next:
+      name: '&eNext page'
+      lore:
+        - '&7Open the next case page.'
+    back:
+      name: '&eBack'
+      lore:
+        - '&7Return to the action menu.'
+    close:
+      name: '&cClose'
+      lore:
+        - '&7Close the GUI.'
+    entry-default:
+      name: '&fCase &8#&f{id}'
+      lore:
+        - '&8Type: &f{type}'
+        - '&8Target: &f{player}'
+        - '&8Reason: &f{reason}'
+        - '&8Actor: &f{actor}'
+        - '&8Source: &f{source}'
+        - '&8Created: &f{created_at}'
+        - '&8Status: &f{status}'
+        - '&8Status by: &f{status_actor}'
+        - '&7Click to open full details.'
+    entry-ban:
+      name: '&c&lBan &8#&f{id}'
+      lore:
+        - '&8Player: &f{player}'
+        - '&8Reason: &f{reason}'
+        - '&8Actor: &f{actor}'
+        - '&8Expires: &f{expires_at}'
+        - '&8Status: &f{status}'
+        - '&7Click for full details.'
+    entry-ip-ban:
+      name: '&4&lIP-Ban &8#&f{id}'
+      lore:
+        - '&8Player: &f{player}'
+        - '&8IP: &f{ip}'
+        - '&8Reason: &f{reason}'
+        - '&8Expires: &f{expires_at}'
+        - '&8Actor: &f{actor}'
+        - '&7Click for full details.'
+    entry-mute:
+      name: '&6&lMute &8#&f{id}'
+      lore:
+        - '&8Player: &f{player}'
+        - '&8Reason: &f{reason}'
+        - '&8Actor: &f{actor}'
+        - '&8Expires: &f{expires_at}'
+        - '&8Status: &f{status}'
+        - '&7Click for full details.'
+    entry-kick:
+      name: '&f&lKick &8#&f{id}'
+      lore:
+        - '&8Player: &f{player}'
+        - '&8Reason: &f{reason}'
+        - '&8Actor: &f{actor}'
+        - '&8Created: &f{created_at}'
+        - '&7Click for full details.'
+    entry-note:
+      name: '&b&lNote &8#&f{id}'
+      lore:
+        - '&8Player: &f{player}'
+        - '&8Label: &f{label}'
+        - '&8Text: &f{reason}'
+        - '&8Actor: &f{actor}'
+        - '&8Created: &f{created_at}'
+        - '&7Click for full details.'
+    entry-alt-flag:
+      name: '&d&lAlt Flag &8#&f{id}'
+      lore:
+        - '&8Label: &f{label}'
+        - '&8Player: &f{player}'
+        - '&8Related: &f{related_player}'
+        - '&8Text: &f{reason}'
+        - '&8Actor: &f{actor}'
+        - '&7Click for full details.'
+    entry-ip-blacklist:
+      name: '&4&lIP Blacklist &8#&f{id}'
+      lore:
+        - '&8IP: &f{ip}'
+        - '&8Reason: &f{reason}'
+        - '&8Actor: &f{actor}'
+        - '&8Status: &f{status}'
+        - '&7Click for full details.'
+
+  notes:
+    header:
+      name: '&#FFB84D&lNotes for {player}'
+      lore:
+        - '&8Total notes: &f{note_count}'
+    previous:
+      name: '&ePrevious page'
+      lore:
+        - '&7Open the previous notes page.'
+    next:
+      name: '&eNext page'
+      lore:
+        - '&7Open the next notes page.'
+    back:
+      name: '&eBack'
+      lore:
+        - '&7Return to the player menu.'
+    close:
+      name: '&cClose'
+      lore:
+        - '&7Close the GUI.'
+    entry:
+      name: '&b&lNote &8#&f{id}'
+      lore:
+        - '&8Label: &f{label}'
+        - '&8Text: &f{reason}'
+        - '&8Actor: &f{actor}'
+        - '&8Created: &f{created_at}'
+        - '&7Click to open full details.'
+
+  related:
+    header:
+      name: '&#FFB84D&lRelated Profiles'
+      lore:
+        - '&8Player: &f{player}'
+        - '&8Entries: &f{related_count}'
+        - '&7Left click: open profile'
+        - '&7Right click: create alt flag'
+    previous:
+      name: '&ePrevious page'
+      lore:
+        - '&7Open the previous related-profile page.'
+    next:
+      name: '&eNext page'
+      lore:
+        - '&7Open the next related-profile page.'
+    back:
+      name: '&eBack'
+      lore:
+        - '&7Return to the player menu.'
+    close:
+      name: '&cClose'
+      lore:
+        - '&7Close the GUI.'
+    entry:
+      name: '&d&l{player}'
+      lore:
+        - '&8State: &f{online_status}'
+        - '&8Status: &f{status}'
+        - '&8Cases: &f{case_count}'
+        - '&8Notes: &f{note_count}'
+        - '&8Alt flags: &f{alt_count}'
+        - '&8Last IP: &f{last_ip}'
+        - '&8Last seen: &f{last_seen}'
+        - '&7Left click: open moderation menu'
+        - '&7Right click: create alt flag'
+
+  activity:
+    header:
+      name: '&#FFB84D&lRecent Activity'
+      lore:
+        - '&8Stored cases: &f{case_count}'
+        - '&7Open and inspect every logged action.'
+    previous:
+      name: '&ePrevious page'
+      lore:
+        - '&7Open the previous activity page.'
+    next:
+      name: '&eNext page'
+      lore:
+        - '&7Open the next activity page.'
+    back:
+      name: '&eMain Menu'
+      lore:
+        - '&7Return to the StarBans main GUI.'
+    close:
+      name: '&cClose'
+      lore:
+        - '&7Close the GUI.'
+
+  case-details:
+    header:
+      name: '&#FFB84D&lCase #{id}'
+      lore:
+        - '&8Type: &f{type}'
+        - '&8Player: &f{player}'
+        - '&8Related: &f{related_player}'
+        - '&8IP: &f{ip}'
+        - '&8Label: &f{label}'
+        - '&8Reason: &f{reason}'
+        - '&8Actor: &f{actor}'
+        - '&8Source: &f{source}'
+        - '&8Created: &f{created_at}'
+        - '&8Expires: &f{expires_at}'
+    status:
+      name: '&e&lStatus'
+      lore:
+        - '&8Status: &f{status}'
+        - '&8Status by: &f{status_actor}'
+        - '&8Changed at: &f{status_changed_at}'
+        - '&8Status note: &f{status_note}'
+    target:
+      name: '&b&lOpen Target'
+      lore:
+        - '&8Player: &f{player}'
+        - '&7Open the target moderation profile.'
+    resolve:
+      name: '&a&lResolve Case'
+      lore:
+        - '&7Resolve this case directly from the GUI.'
+    back:
+      name: '&eBack'
+      lore:
+        - '&7Return to the previous GUI.'
+    close:
+      name: '&cClose'
+      lore:
+        - '&7Close the GUI.'

@@ -1,0 +1,619 @@
+general:
+  prefix: '&8[&#FFB84D&lStarBans&8] &7>> '
+
+labels:
+  none: '&7keine'
+  online: '&aOnline'
+  offline: '&7Offline'
+  status-clean: '&aSauber'
+  status-banned: '&cGebannt'
+  status-muted: '&6Stummgeschaltet'
+  case-status-active: '&cAKTIV'
+  case-status-resolved: '&aAUFGELÖST'
+  case-status-expired: '&eABGELAUFEN'
+  case-type-ban: '&cBan'
+  case-type-ip-ban: '&4IP-Ban'
+  case-type-mute: '&6Mute'
+  case-type-kick: '&fKick'
+  case-type-note: '&bNotiz'
+  case-type-alt-flag: '&dAlt-Markierung'
+  case-type-ip-blacklist: '&4IP-Blacklist'
+
+time:
+  permanent: '&cPermanent'
+  expired: '&7Abgelaufen'
+  now: '&aJetzt'
+  units:
+    y: 'J'
+    mo: 'Mon'
+    w: 'W'
+    d: 'T'
+    h: 'Std'
+    m: 'Min'
+    s: 'Sek'
+
+messages:
+  no-permission: '&cDu hast keine Berechtigung für diese Aktion.'
+  player-only: '&cDiesen Befehl können nur Spieler benutzen.'
+  internal-error: '&cEin interner Fehler ist aufgetreten. Prüfe die Konsole.'
+  gui-misconfigured: '&cDer GUI-Bereich in der config.yml ist unvollständig.'
+  reload-success: '&aConfig, Sprache, Speicher und Command-Overrides wurden neu geladen.'
+  reload-failed: '&cReload fehlgeschlagen. Prüfe die Konsole für Details.'
+  player-not-found: '&cKein bekannter Spieler für &f{player}&c gefunden.'
+  player-has-no-known-ip: '&cEs konnte keine bekannte IP für &f{player}&c gefunden werden.'
+  invalid-duration: '&cUngültige Dauer &f{input}&c. Beispiel: &f30m 12h 7d'
+  invalid-case-id: '&cUngültige Case-ID: &f{input}&c.'
+  case-resolved: '&aCase &f#{id} &awurde aufgelöst.'
+  gui-note-prompt-start: '&eSchreibe die Notiz für &f{player} &eim Chat. Schreibe &fcancel &ezum Abbrechen.'
+  gui-note-prompt-cancelled: '&7Die GUI-Notizeingabe für &f{player} &7wurde abgebrochen.'
+
+  usage-check: '&cBenutzung: /bancheck <spieler>'
+  usage-cases: '&cBenutzung: /scases <spieler>'
+  usage-case: '&cBenutzung: /starbans case <id>'
+  usage-notes: '&cBenutzung: /snotes <spieler>'
+  usage-note: '&cBenutzung: /snote <spieler> <label> <text>'
+  usage-ban: '&cBenutzung: /sban <spieler> [grund]'
+  usage-tempban: '&cBenutzung: /stempban <spieler> <dauer> [grund]'
+  usage-unban: '&cBenutzung: /sunban <spieler|ip> [grund]'
+  usage-ipban: '&cBenutzung: /sipban <spieler|ip> [grund]'
+  usage-tempipban: '&cBenutzung: /stempipban <spieler|ip> <dauer> [grund]'
+  usage-unipban: '&cBenutzung: /sunipban <spieler|ip> [grund]'
+  usage-mute: '&cBenutzung: /smute <spieler> [grund]'
+  usage-tempmute: '&cBenutzung: /stempmute <spieler> <dauer> [grund]'
+  usage-unmute: '&cBenutzung: /sunmute <spieler> [grund]'
+  usage-kick: '&cBenutzung: /skick <spieler> [grund]'
+  usage-alt: '&cBenutzung: /salt <mark|list|clear> ...'
+  usage-alt-mark: '&cBenutzung: /salt mark <label> <spieler1> <spieler2> [notiz]'
+  usage-alt-list: '&cBenutzung: /salt list <spieler>'
+  usage-alt-clear: '&cBenutzung: /salt clear <caseId> [notiz]'
+  usage-ipblacklist: '&cBenutzung: /sipblacklist <add|remove> <ip> [grund]'
+
+  already-banned: '&c{player} ist bereits gebannt. Aktueller Grund: &f{reason}'
+  ban-success: '&a{player} wurde permanent für &f{reason} &agebannt.'
+  tempban-success: '&a{player} wurde temporär für &f{reason} &agebannt. Verbleibend: &f{remaining}'
+  not-banned: '&e{player} ist aktuell nicht gebannt.'
+  unban-success: '&a{player} wurde entbannt.'
+
+  ip-already-banned: '&cDie IP &f{ip} &cist bereits gebannt. Aktueller Grund: &f{reason}'
+  ipban-success: '&aIP-Ban auf &f{ip} &agesetzt. Ziel: &f{player}&a. Grund: &f{reason}'
+  tempipban-success: '&aTemporärer IP-Ban auf &f{ip} &agesetzt. Ziel: &f{player}&a. Verbleibend: &f{remaining}'
+  ip-not-banned: '&eDie IP &f{ip} &eist aktuell nicht gebannt.'
+  unipban-success: '&aDie IP &f{ip} &awurde entbannt.'
+
+  already-muted: '&c{player} ist bereits stummgeschaltet. Aktueller Grund: &f{reason}'
+  mute-success: '&a{player} wurde für &f{reason} &astummgeschaltet.'
+  tempmute-success: '&a{player} wurde temporär für &f{reason} &astummgeschaltet. Verbleibend: &f{remaining}'
+  not-muted: '&e{player} ist aktuell nicht stummgeschaltet.'
+  unmute-success: '&a{player} wurde entmutet.'
+  mute-blocked: '&cDu bist stummgeschaltet. &7Grund: &f{reason} &8| &7Ausgeführt von: &f{actor} &8| &7Läuft ab: &f{expires_at}'
+
+  kick-success: '&a{player} wurde gekickt.'
+  note-success: '&aEine Notiz für &f{player} &awurde mit dem Label &f{label} &aerstellt.'
+
+  alt-already-marked: '&e{player} und {related_player} sind bereits mit einer aktiven Alt-Markierung verknüpft.'
+  alt-mark-success: '&aAlt-Markierung erstellt: &f{player} &7<-> &f{related_player} &8(&f{label}&8)'
+  alt-list-header: '&8---------- &dAlt-Markierungen für &f{player} &8({alt_count}) ----------'
+  alt-list-empty: '&7Keine aktiven Alt-Markierungen für &f{player} &7gefunden.'
+  alt-entry: '&8#&f{id} &7| &f{label} &7| &f{player} &7<-> &f{related_player} &7| &f{actor} &7| &f{reason}'
+  alt-clear-success: '&aAlt-Markierung / aktiver Case &f#{id} &awurde aufgelöst.'
+
+  ip-already-blacklisted: '&cDie IP &f{ip} &cist bereits auf der Blacklist.'
+  ipblacklist-add-success: '&aDie IP &f{ip} &awurde zur Blacklist hinzugefügt.'
+  ip-not-blacklisted: '&eDie IP &f{ip} &eist nicht auf der Blacklist.'
+  ipblacklist-remove-success: '&aDie IP &f{ip} &awurde von der Blacklist entfernt.'
+  check-header: '&8---------- &6Moderations-Check für &f{player} &8----------'
+  check-lines:
+    - '&7Letzte IP: &f{last_ip}'
+    - '&7Aktiver Ban: &f{active_ban}'
+    - '&7Aktiver Mute: &f{active_mute}'
+    - '&7Cases: &f{case_count}'
+    - '&7Notizen: &f{note_count}'
+    - '&7Alt-Markierungen: &f{alt_count}'
+    - '&7Letzter Case-Typ: &f{last_case_type}'
+    - '&7Letzter Case-Grund: &f{last_case_reason}'
+  check-related-header: '&8Profile mit derselben IP:'
+  check-related-entry: '&7- &f{player} &8(&f{ip}&8)'
+
+  cases-header: '&8---------- &6Cases für &f{player} &8({case_count}) ----------'
+  cases-empty: '&7Keine Cases für &f{player} &7gefunden.'
+  case-entry: '&8#&f{id} &7| &f{type} &7| &f{reason} &7| &f{actor} &7| &f{status} &7| &f{expires_at}'
+  case-not-found: '&cKein Case mit der ID &f{id} &cgefunden.'
+  case-not-active: '&eCase &f#{id} &eist bereits aufgelöst / inaktiv.'
+  case-details:
+    - '&8---------- &6Case #{id} &8----------'
+    - '&7Typ: &f{type}'
+    - '&7Spieler: &f{player}'
+    - '&7Verknüpfter Spieler: &f{related_player}'
+    - '&7IP: &f{ip}'
+    - '&7Label: &f{label}'
+    - '&7Grund: &f{reason}'
+    - '&7Ausgeführt von: &f{actor}'
+    - '&7Quelle: &f{source}'
+    - '&7Erstellt am: &f{created_at}'
+    - '&7Läuft ab: &f{expires_at}'
+    - '&7Status: &f{status}'
+    - '&7Status-Akteur: &f{status_actor}'
+    - '&7Status-Notiz: &f{status_note}'
+
+  notes-header: '&8---------- &6Notizen für &f{player} &8({note_count}) ----------'
+  notes-empty: '&7Keine Notizen für &f{player} &7gefunden.'
+  note-entry: '&8#&f{id} &7| &f{label} &7| &f{text} &7| &f{actor} &7| &f{created_at}'
+
+  help:
+    - '&6StarBans Befehle'
+    - '&e/sb &7- öffnet die StarBans-Haupt-GUI'
+    - '&e/starbans help &7- zeigt diese Hilfe'
+    - '&e/starbans reload &7- lädt Config, Sprache, Speicher und Overrides neu'
+    - '&e/starbans gui [spieler] &7- öffnet die Moderations-GUI'
+    - '&e/sban <spieler> [grund] &7- permanenter Spieler-Ban'
+    - '&e/stempban <spieler> <dauer> [grund] &7- temporärer Spieler-Ban'
+    - '&e/sunban <spieler|ip> [grund] &7- entbannt einen Spieler oder direkt eine IP'
+    - '&e/sipban <spieler|ip> [grund] &7- IP-Ban über Spieler oder rohe IP'
+    - '&e/stempipban <spieler|ip> <dauer> [grund] &7- temporärer IP-Ban'
+    - '&e/sunipban <spieler|ip> [grund] &7- entfernt einen aktiven IP-Ban'
+    - '&e/smute <spieler> [grund] &7- permanenter Mute'
+    - '&e/stempmute <spieler> <dauer> [grund] &7- temporärer Mute'
+    - '&e/skick <spieler> [grund] &7- kickt einen Spieler und erstellt einen Case'
+    - '&e/snote <spieler> <label> <text> &7- erstellt eine Staff-Notiz'
+    - '&e/scases <spieler> &7- zeigt den Case-Verlauf'
+    - '&e/snotes <spieler> &7- zeigt Notizen'
+    - '&e/salt mark <label> <spieler1> <spieler2> [notiz] &7- markiert Alts'
+    - '&e/sipblacklist <add|remove> <ip> [grund] &7- verwaltet die IP-Blacklist'
+
+  broadcasts:
+    player-ban:
+      - ''
+      - '&8[&#FFB84D&lStarBans&8] &f{player} &7wurde von &f{actor} &7gebannt'
+      - '&8Grund: &f{reason}'
+      - '&8Läuft ab: &f{expires_at}'
+      - ''
+    ip-ban:
+      - ''
+      - '&8[&#FFB84D&lStarBans&8] &fIP-Ban &7-> &f{ip}'
+      - '&8Ziel: &f{player}'
+      - '&8Grund: &f{reason}'
+      - '&8Ausgeführt von: &f{actor}'
+      - ''
+    player-mute:
+      - '&8[&#FFB84D&lStarBans&8] &f{player} &7wurde von &f{actor} &7stummgeschaltet &8(&f{expires_at}&8)'
+    kick:
+      - '&8[&#FFB84D&lStarBans&8] &f{player} &7wurde von &f{actor} &7gekickt'
+
+  update:
+    console:
+      - '&eEine neue StarBans-Version ist verfügbar.'
+      - '&7Aktuell: &f{current}'
+      - '&7Neueste: &f{latest}'
+      - '&7Download: &f{url}'
+    player:
+      - '&8---------- &6StarBans Update &8----------'
+      - '&7Aktuell: &f{current}'
+      - '&7Neueste: &f{latest}'
+      - '&7Download: &f{url}'
+
+screens:
+  player-ban:
+    - '&8&m----------------------------------------'
+    - '&cDu bist von diesem Server gebannt'
+    - ''
+    - '&7Grund: &f{reason}'
+    - '&7Ausgeführt von: &f{actor}'
+    - '&7Erstellt am: &f{created_at}'
+    - '&7Läuft ab: &f{expires_at}'
+    - '&7Verbleibend: &f{remaining}'
+    - '&8&m----------------------------------------'
+  ip-ban:
+    - '&8&m----------------------------------------'
+    - '&4Deine IP ist auf diesem Server gebannt'
+    - ''
+    - '&7Spieler: &f{player}'
+    - '&7IP: &f{ip}'
+    - '&7Grund: &f{reason}'
+    - '&7Ausgeführt von: &f{actor}'
+    - '&7Läuft ab: &f{expires_at}'
+    - '&8&m----------------------------------------'
+  kick:
+    - '&8&m----------------------------------------'
+    - '&cDu wurdest von diesem Server gekickt'
+    - ''
+    - '&7Grund: &f{reason}'
+    - '&7Ausgeführt von: &f{actor}'
+    - '&8&m----------------------------------------'
+  ip-blacklist:
+    - '&8&m----------------------------------------'
+    - '&4Deine IP steht auf der Blacklist'
+    - ''
+    - '&7Grund: &f{reason}'
+    - '&7Ausgeführt von: &f{actor}'
+    - '&8&m----------------------------------------'
+  vpn-block:
+    - '&8&m----------------------------------------'
+    - '&4VPN- / Proxy-Verbindungen sind blockiert'
+    - ''
+    - '&7IP: &f{ip}'
+    - '&7Risiko: &f{risk}'
+    - '&7Details: &f{details}'
+    - '&8&m----------------------------------------'
+
+gui:
+  main-menu:
+    title: '&8StarBans &7| &fHauptmenü'
+  player-browser:
+    title: '&8StarBans &7| &fSpieler-Browser &8(&f{page}&7/&f{max_page}&8)'
+  action-menu:
+    title: '&8StarBans &7| &f{player}'
+  history:
+    title: '&8StarBans &7| &fCases: {player} &8(&f{page}&7/&f{max_page}&8)'
+  notes:
+    title: '&8StarBans &7| &fNotizen: {player} &8(&f{page}&7/&f{max_page}&8)'
+  related:
+    title: '&8StarBans &7| &fVerknüpft: {player} &8(&f{page}&7/&f{max_page}&8)'
+  activity:
+    title: '&8StarBans &7| &fLetzte Aktivität &8(&f{page}&7/&f{max_page}&8)'
+  case-details:
+    title: '&8StarBans &7| &fCase #{id}'
+
+gui-items:
+  main-menu:
+    browser:
+      name: '&#FFB84D&lSpieler-Browser'
+      lore:
+        - '&8Bekannte Spieler: &f{known_players}'
+        - '&8Gespeicherte Cases: &f{case_count}'
+        - '&7Öffnet den vollständigen Spieler-Browser.'
+    activity:
+      name: '&b&lLetzte Aktivität'
+      lore:
+        - '&8Gesamte Cases: &f{case_count}'
+        - '&7Öffnet das globale Case- / Team-Log.'
+    stats:
+      name: '&e&lÜbersicht'
+      lore:
+        - '&8Bekannte Spieler: &f{known_players}'
+        - '&8Aktive Bans: &f{ban_count}'
+        - '&8Aktive IP-Bans: &f{ip_ban_count}'
+        - '&8Aktive Mutes: &f{mute_count}'
+        - '&8Alle Cases: &f{case_count}'
+    close:
+      name: '&cSchließen'
+      lore:
+        - '&7Schließt diese GUI.'
+
+  player-browser:
+    player-head:
+      name: '&#FFB84D&l{player}'
+      lore:
+        - '&8Status: &f{online_status}'
+        - '&8Zustand: &f{status}'
+        - '&8Cases: &f{case_count}'
+        - '&8Notizen: &f{note_count}'
+        - '&8Alt-Markierungen: &f{alt_count}'
+        - '&8Letzte IP: &f{last_ip}'
+        - '&8Zuletzt gesehen: &f{last_seen}'
+        - '&7Klicke, um das Moderationsmenü zu öffnen.'
+    navigation:
+      home:
+        name: '&eHauptmenü'
+        lore:
+          - '&7Zurück zur StarBans-Haupt-GUI.'
+      previous:
+        name: '&eVorherige Seite'
+        lore:
+          - '&7Öffnet die vorherige Spielerseite.'
+      next:
+        name: '&eNächste Seite'
+        lore:
+          - '&7Öffnet die nächste Spielerseite.'
+      close:
+        name: '&cSchließen'
+        lore:
+          - '&7Schließt diese GUI.'
+
+  action-menu:
+    header:
+      name: '&#FFB84D&l{player}'
+      lore:
+        - '&8Status: &f{online_status}'
+        - '&8Letzte IP: &f{last_ip}'
+        - '&8Zuerst gesehen: &f{first_seen}'
+        - '&8Zuletzt gesehen: &f{last_seen}'
+        - '&8Aktiver Ban: &f{ban_status}'
+        - '&8Aktiver Mute: &f{mute_status}'
+        - '&8Cases: &f{case_count}'
+        - '&8Notizen: &f{note_count}'
+        - '&8Alt-Markierungen: &f{alt_count}'
+        - '&8Letzter Case: &f{last_case_type}'
+    permanent-ban:
+      name: '&c&lPermanenter Ban'
+      lore:
+        - '&7Bannt diesen Spieler sofort permanent.'
+    unban:
+      name: '&a&lEntbannen'
+      lore:
+        - '&7Entfernt den aktiven Ban dieses Spielers.'
+    permanent-mute:
+      name: '&6&lPermanenter Mute'
+      lore:
+        - '&7Schaltet diesen Spieler permanent stumm.'
+    unmute:
+      name: '&e&lEntmuten'
+      lore:
+        - '&7Entfernt den aktiven Mute dieses Spielers.'
+    history:
+      name: '&b&lCase-Verlauf'
+      lore:
+        - '&7Öffnet den vollständigen Moderationsverlauf.'
+    notes:
+      name: '&b&lTeam-Notizen'
+      lore:
+        - '&7Öffnet alle Notizen dieses Spielers.'
+    add-note:
+      name: '&e&lNotiz hinzufügen'
+      lore:
+        - '&7Startet die Chat-Eingabe für eine Team-Notiz.'
+        - '&8Schreibe deine Notiz in den Chat oder'
+        - '&8schreibe cancel zum Abbrechen.'
+    related:
+      name: '&d&lVerknüpfte Accounts'
+      lore:
+        - '&7Öffnet gleiche IPs / verknüpfte Accounts.'
+    back:
+      name: '&eZurück'
+      lore:
+        - '&7Zurück zum Spieler-Browser.'
+    close:
+      name: '&cSchließen'
+      lore:
+        - '&7Schließt die GUI.'
+    temp-ban-presets:
+      one-hour:
+        name: '&e&l1-Stunden-Ban'
+        lore:
+          - '&7Preset für Spam / Chatmissbrauch.'
+      one-day:
+        name: '&6&l1-Tages-Ban'
+        lore:
+          - '&7Preset für Toxizität / Beleidigungen.'
+      seven-days:
+        name: '&c&l7-Tage-Ban'
+        lore:
+          - '&7Preset für wiederholtes Griefing / Exploits.'
+    temp-mute-presets:
+      thirty-minutes:
+        name: '&e&l30-Minuten-Mute'
+        lore:
+          - '&7Preset für leichten Spam.'
+      two-hours:
+        name: '&6&l2-Stunden-Mute'
+        lore:
+          - '&7Preset für Flaming / Toxizität.'
+      one-day:
+        name: '&c&l1-Tages-Mute'
+        lore:
+          - '&7Preset für wiederholten Chatmissbrauch.'
+
+  history:
+    header:
+      name: '&#FFB84D&l{player}'
+      lore:
+        - '&8Gesamte Cases: &f{case_count}'
+    previous:
+      name: '&eVorherige Seite'
+      lore:
+        - '&7Öffnet die vorherige Case-Seite.'
+    next:
+      name: '&eNächste Seite'
+      lore:
+        - '&7Öffnet die nächste Case-Seite.'
+    back:
+      name: '&eZurück'
+      lore:
+        - '&7Zurück zum Aktionsmenü.'
+    close:
+      name: '&cSchließen'
+      lore:
+        - '&7Schließt die GUI.'
+    entry-default:
+      name: '&fCase &8#&f{id}'
+      lore:
+        - '&8Typ: &f{type}'
+        - '&8Ziel: &f{player}'
+        - '&8Grund: &f{reason}'
+        - '&8Akteur: &f{actor}'
+        - '&8Quelle: &f{source}'
+        - '&8Erstellt: &f{created_at}'
+        - '&8Status: &f{status}'
+        - '&8Status von: &f{status_actor}'
+        - '&7Klicke für volle Details.'
+    entry-ban:
+      name: '&c&lBan &8#&f{id}'
+      lore:
+        - '&8Spieler: &f{player}'
+        - '&8Grund: &f{reason}'
+        - '&8Akteur: &f{actor}'
+        - '&8Läuft ab: &f{expires_at}'
+        - '&8Status: &f{status}'
+        - '&7Klicke für volle Details.'
+    entry-ip-ban:
+      name: '&4&lIP-Ban &8#&f{id}'
+      lore:
+        - '&8Spieler: &f{player}'
+        - '&8IP: &f{ip}'
+        - '&8Grund: &f{reason}'
+        - '&8Läuft ab: &f{expires_at}'
+        - '&8Akteur: &f{actor}'
+        - '&7Klicke für volle Details.'
+    entry-mute:
+      name: '&6&lMute &8#&f{id}'
+      lore:
+        - '&8Spieler: &f{player}'
+        - '&8Grund: &f{reason}'
+        - '&8Akteur: &f{actor}'
+        - '&8Läuft ab: &f{expires_at}'
+        - '&8Status: &f{status}'
+        - '&7Klicke für volle Details.'
+    entry-kick:
+      name: '&f&lKick &8#&f{id}'
+      lore:
+        - '&8Spieler: &f{player}'
+        - '&8Grund: &f{reason}'
+        - '&8Akteur: &f{actor}'
+        - '&8Erstellt: &f{created_at}'
+        - '&7Klicke für volle Details.'
+    entry-note:
+      name: '&b&lNotiz &8#&f{id}'
+      lore:
+        - '&8Spieler: &f{player}'
+        - '&8Label: &f{label}'
+        - '&8Text: &f{reason}'
+        - '&8Akteur: &f{actor}'
+        - '&8Erstellt: &f{created_at}'
+        - '&7Klicke für volle Details.'
+    entry-alt-flag:
+      name: '&d&lAlt-Markierung &8#&f{id}'
+      lore:
+        - '&8Label: &f{label}'
+        - '&8Spieler: &f{player}'
+        - '&8Verknüpft: &f{related_player}'
+        - '&8Text: &f{reason}'
+        - '&8Akteur: &f{actor}'
+        - '&7Klicke für volle Details.'
+    entry-ip-blacklist:
+      name: '&4&lIP-Blacklist &8#&f{id}'
+      lore:
+        - '&8IP: &f{ip}'
+        - '&8Grund: &f{reason}'
+        - '&8Akteur: &f{actor}'
+        - '&8Status: &f{status}'
+        - '&7Klicke für volle Details.'
+
+  notes:
+    header:
+      name: '&#FFB84D&lNotizen für {player}'
+      lore:
+        - '&8Gesamte Notizen: &f{note_count}'
+    previous:
+      name: '&eVorherige Seite'
+      lore:
+        - '&7Öffnet die vorherige Notiz-Seite.'
+    next:
+      name: '&eNächste Seite'
+      lore:
+        - '&7Öffnet die nächste Notiz-Seite.'
+    back:
+      name: '&eZurück'
+      lore:
+        - '&7Zurück zum Spielermenü.'
+    close:
+      name: '&cSchließen'
+      lore:
+        - '&7Schließt die GUI.'
+    entry:
+      name: '&b&lNotiz &8#&f{id}'
+      lore:
+        - '&8Label: &f{label}'
+        - '&8Text: &f{reason}'
+        - '&8Akteur: &f{actor}'
+        - '&8Erstellt: &f{created_at}'
+        - '&7Klicke, um volle Details zu öffnen.'
+
+  related:
+    header:
+      name: '&#FFB84D&lVerknüpfte Profile'
+      lore:
+        - '&8Spieler: &f{player}'
+        - '&8Einträge: &f{related_count}'
+        - '&7Linksklick: Profil öffnen'
+        - '&7Rechtsklick: Alt-Markierung erstellen'
+    previous:
+      name: '&eVorherige Seite'
+      lore:
+        - '&7Öffnet die vorherige Profil-Seite.'
+    next:
+      name: '&eNächste Seite'
+      lore:
+        - '&7Öffnet die nächste Profil-Seite.'
+    back:
+      name: '&eZurück'
+      lore:
+        - '&7Zurück zum Spielermenü.'
+    close:
+      name: '&cSchließen'
+      lore:
+        - '&7Schließt die GUI.'
+    entry:
+      name: '&d&l{player}'
+      lore:
+        - '&8Status: &f{online_status}'
+        - '&8Zustand: &f{status}'
+        - '&8Cases: &f{case_count}'
+        - '&8Notizen: &f{note_count}'
+        - '&8Alt-Markierungen: &f{alt_count}'
+        - '&8Letzte IP: &f{last_ip}'
+        - '&8Zuletzt gesehen: &f{last_seen}'
+        - '&7Linksklick: Moderationsmenü öffnen'
+        - '&7Rechtsklick: Alt-Markierung erstellen'
+
+  activity:
+    header:
+      name: '&#FFB84D&lLetzte Aktivität'
+      lore:
+        - '&8Gespeicherte Cases: &f{case_count}'
+        - '&7Öffnet und prüft jede protokollierte Aktion.'
+    previous:
+      name: '&eVorherige Seite'
+      lore:
+        - '&7Öffnet die vorherige Aktivitäts-Seite.'
+    next:
+      name: '&eNächste Seite'
+      lore:
+        - '&7Öffnet die nächste Aktivitäts-Seite.'
+    back:
+      name: '&eHauptmenü'
+      lore:
+        - '&7Zurück zur StarBans-Haupt-GUI.'
+    close:
+      name: '&cSchließen'
+      lore:
+        - '&7Schließt die GUI.'
+
+  case-details:
+    header:
+      name: '&#FFB84D&lCase #{id}'
+      lore:
+        - '&8Typ: &f{type}'
+        - '&8Spieler: &f{player}'
+        - '&8Verknüpft: &f{related_player}'
+        - '&8IP: &f{ip}'
+        - '&8Label: &f{label}'
+        - '&8Grund: &f{reason}'
+        - '&8Akteur: &f{actor}'
+        - '&8Quelle: &f{source}'
+        - '&8Erstellt: &f{created_at}'
+        - '&8Läuft ab: &f{expires_at}'
+    status:
+      name: '&e&lStatus'
+      lore:
+        - '&8Status: &f{status}'
+        - '&8Status von: &f{status_actor}'
+        - '&8Geändert am: &f{status_changed_at}'
+        - '&8Status-Notiz: &f{status_note}'
+    target:
+      name: '&b&lZiel öffnen'
+      lore:
+        - '&8Spieler: &f{player}'
+        - '&7Öffnet das Moderationsprofil des Ziels.'
+    resolve:
+      name: '&a&lCase auflösen'
+      lore:
+        - '&7Löst diesen Case direkt aus der GUI auf.'
+    back:
+      name: '&eZurück'
+      lore:
+        - '&7Zurück zur vorherigen GUI.'
+    close:
+      name: '&cSchließen'
+      lore:
+        - '&7Schließt die GUI.'
+
+

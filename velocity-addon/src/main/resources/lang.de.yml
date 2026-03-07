@@ -1,0 +1,47 @@
+general:
+  prefix: '&8[&#FFB84D&lStarBansProxy&8] &7>> '
+
+labels:
+  none: '&7keine'
+  active: '&cAKTIV'
+  resolved: '&aAUFGELÖST'
+  expired: '&eABGELAUFEN'
+  permanent: '&cPermanent'
+
+messages:
+  no-permission: '&cDu hast keine Berechtigung für diese Aktion.'
+  internal-error: '&cEin interner Proxy-Fehler ist aufgetreten. Prüfe die Konsole.'
+  reload-success: '&aVelocity-Addon, Config und Speicher wurden neu geladen.'
+  reload-failed: '&cVelocity-Addon-Reload fehlgeschlagen. Prüfe die Konsole.'
+  player-not-found: '&cKein bekannter Spieler für &f{player}&c gefunden.'
+  invalid-input: '&cUngültige Eingabe: &f{input}&c.'
+
+  usage-main:
+    - '&6StarBans Velocity Addon'
+    - '&e/starbansvelocity reload &7- lädt das Addon neu'
+    - '&e/starbansvelocity check <spieler|uuid|ip> &7- prüft den Proxy-Ban-Status'
+
+  usage-check: '&cBenutzung: /starbansvelocity check <spieler|uuid|ip>'
+
+  check-header: '&8---------- &6Proxy-Check: &f{target} &8----------'
+  check-lines:
+    - '&7Bekannter Name: &f{name}'
+    - '&7Bekannte IP: &f{last_ip}'
+    - '&7Aktiver Spieler-Ban: &f{player_ban}'
+    - '&7Aktiver IP-Ban: &f{ip_ban}'
+    - '&7Aktive IP-Blacklist: &f{ip_blacklist}'
+
+time:
+  now: '&aJetzt'
+  expired: '&7Abgelaufen'
+  permanent: '&cPermanent'
+  units:
+    y: 'J'
+    mo: 'Mon'
+    w: 'W'
+    d: 'T'
+    h: 'Std'
+    m: 'Min'
+    s: 'Sek'
+
+
