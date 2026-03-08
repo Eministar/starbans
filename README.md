@@ -15,6 +15,16 @@
 
 **A premium, design-focused moderation and punishment management plugin for Spigot/Paper servers.**
 
+<a href="https://nebuliton.io" target="_blank">
+  <img src="https://nebuliton.io/logo.png" alt="Nebuliton Hosting" width="220">
+</a>
+
+### Powered by Nebuliton Hosting
+
+**Need high-performance hosting for your Minecraft network?** Nebuliton Hosting provides modern infrastructure, fast deployments, and reliable performance for ambitious server projects.
+
+[Visit Nebuliton Hosting](https://nebuliton.io)
+
 [Features](#-features) • [Installation](#-installation) • [Commands](#-commands) • [Permissions](#-permissions) • [Configuration](#-configuration) • [Support](#-support)
 
 </div>
