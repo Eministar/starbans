@@ -207,6 +207,38 @@ security:
     note-template: 'VPN / proxy suspected'
 
 # ----------------------------------------------------------
+# EN: Staff alert system for join intelligence and security events.
+# DE: Staff-Alert-System für Join-Intelligence und Sicherheitsereignisse.
+# ----------------------------------------------------------
+staff-alerts:
+  enabled: true
+  permission: starbans.alerts.receive
+  send-to-console: true
+  joins:
+    # EN: Alert staff when players with moderation history or flagged relations join.
+    # DE: Benachrichtigt Staff, wenn Spieler mit Moderationsverlauf oder markanten Verknüpfungen joinen.
+    enabled: true
+    # EN: Minimum visible cases on the joining player before an alert is sent.
+    # DE: Minimale sichtbare Cases des joinenden Spielers, bevor ein Alert gesendet wird.
+    minimum-visible-cases: 1
+    # EN: Also alert when the player has an active mute.
+    # DE: Ebenfalls alarmieren, wenn der Spieler einen aktiven Mute hat.
+    notify-for-active-mutes: true
+    # EN: Scan same-IP profiles and alert if related accounts already have moderation history.
+    # DE: Prüft Profile mit derselben IP und alarmiert, wenn verknüpfte Accounts bereits Moderationsverlauf haben.
+    notify-for-flagged-related-accounts: true
+    # EN: Maximum related profiles scanned for moderation history during login.
+    # DE: Maximale Anzahl verknüpfter Profile, die beim Login auf Moderationsverlauf geprüft werden.
+    related-scan-limit: 10
+    # EN: Maximum related account names shown inside alerts and webhooks.
+    # DE: Maximale Anzahl an verknüpften Account-Namen in Alerts und Webhooks.
+    related-preview-limit: 3
+  vpn-detected:
+    # EN: Notify staff when VPN / proxy detection flags a login.
+    # DE: Benachrichtigt Staff, wenn die VPN-/Proxy-Erkennung einen Login markiert.
+    enabled: true
+
+# ----------------------------------------------------------
 # EN: Broadcasts to online players.
 # DE: Broadcasts an online Spieler.
 # ----------------------------------------------------------
@@ -268,163 +300,10 @@ update-checker:
   download-url: https://hub.star-dev.xyz/starbans
 
 # ----------------------------------------------------------
-# EN: Discord webhooks. Each action can use its own URL/content.
-# DE: Discord-Webhooks. Jede Aktion kann ihre eigene URL / ihren eigenen Inhalt nutzen.
-# ----------------------------------------------------------
-discord-webhooks:
-  enabled: false
-  default-url: ''
-  username: StarBans
-  avatar-url: ''
-  timeout-ms: 5000
-  actions:
-    ban:
-      enabled: true
-      url: ''
-      content:
-        - '**Ban**'
-        - 'Player: {player}'
-        - 'Reason: {reason}'
-        - 'Actor: {actor}'
-        - 'Expires: {expires_at}'
-    tempban:
-      enabled: true
-      url: ''
-      content:
-        - '**TempBan**'
-        - 'Player: {player}'
-        - 'Reason: {reason}'
-        - 'Remaining: {remaining}'
-        - 'Actor: {actor}'
-    unban:
-      enabled: true
-      url: ''
-      content:
-        - '**Unban**'
-        - 'Player: {player}'
-        - 'Actor: {status_actor}'
-        - 'Note: {status_note}'
-    ipban:
-      enabled: true
-      url: ''
-      content:
-        - '**IP-Ban**'
-        - 'Player: {player}'
-        - 'IP: {ip}'
-        - 'Reason: {reason}'
-        - 'Actor: {actor}'
-    tempipban:
-      enabled: true
-      url: ''
-      content:
-        - '**Temp IP-Ban**'
-        - 'Player: {player}'
-        - 'IP: {ip}'
-        - 'Remaining: {remaining}'
-    unipban:
-      enabled: true
-      url: ''
-      content:
-        - '**IP-Unban**'
-        - 'IP: {ip}'
-        - 'Actor: {status_actor}'
-        - 'Note: {status_note}'
-    mute:
-      enabled: true
-      url: ''
-      content:
-        - '**Mute**'
-        - 'Player: {player}'
-        - 'Reason: {reason}'
-        - 'Actor: {actor}'
-        - 'Expires: {expires_at}'
-    tempmute:
-      enabled: true
-      url: ''
-      content:
-        - '**TempMute**'
-        - 'Player: {player}'
-        - 'Reason: {reason}'
-        - 'Remaining: {remaining}'
-        - 'Actor: {actor}'
-    unmute:
-      enabled: true
-      url: ''
-      content:
-        - '**Unmute**'
-        - 'Player: {player}'
-        - 'Actor: {status_actor}'
-        - 'Note: {status_note}'
-    kick:
-      enabled: true
-      url: ''
-      content:
-        - '**Kick**'
-        - 'Player: {player}'
-        - 'Reason: {reason}'
-        - 'Actor: {actor}'
-    note:
-      enabled: true
-      url: ''
-      content:
-        - '**Note**'
-        - 'Player: {player}'
-        - 'Label: {label}'
-        - 'Text: {reason}'
-        - 'Actor: {actor}'
-    altflag:
-      enabled: true
-      url: ''
-      content:
-        - '**Alt Flag**'
-        - 'Player: {player}'
-        - 'Related: {related_player}'
-        - 'Label: {label}'
-        - 'Text: {reason}'
-    resolve:
-      enabled: true
-      url: ''
-      content:
-        - '**Case Resolved**'
-        - 'Case: {id}'
-        - 'Type: {type}'
-        - 'Target: {player}'
-        - 'Actor: {status_actor}'
-        - 'Note: {status_note}'
-    expired:
-      enabled: true
-      url: ''
-      content:
-        - '**Case Expired**'
-        - 'Case: {id}'
-        - 'Type: {type}'
-        - 'Target: {player}'
-        - 'Reason: {reason}'
-    ipblacklist:
-      enabled: true
-      url: ''
-      content:
-        - '**IP Blacklist**'
-        - 'IP: {ip}'
-        - 'Reason: {reason}'
-        - 'Actor: {actor}'
-    ipunblacklist:
-      enabled: true
-      url: ''
-      content:
-        - '**IP Unblacklist**'
-        - 'IP: {ip}'
-        - 'Actor: {status_actor}'
-        - 'Note: {status_note}'
-    vpn-detected:
-      enabled: true
-      url: ''
-      content:
-        - '**VPN Detected**'
-        - 'Player: {player}'
-        - 'IP: {ip}'
-        - 'Risk: {risk}'
-        - 'Details: {details}'
+# EN: Discord webhook settings now live in plugins/StarBans/discord-webhooks.yml.
+#     This keeps the main config shorter and allows much richer per-action layouts.
+# DE: Discord-Webhook-Einstellungen liegen jetzt in plugins/StarBans/discord-webhooks.yml.
+#     Dadurch bleibt die Haupt-Config übersichtlicher und jede Aktion kann deutlich reicher gestaltet werden.
 
 # ----------------------------------------------------------
 # EN: Sound system. Every GUI interaction can be styled here.

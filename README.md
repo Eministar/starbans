@@ -52,8 +52,8 @@ StarBans provides a complete moderation suite with an elegant interface and powe
 - 🔍 **Profile View** - Detailed player profiles with all relevant data
 
 ### 🔧 Advanced Features
-- 🛡️ **VPN/Proxy Detection** - Optional integration with ProxyCheck
-- 📢 **Discord Webhooks** - Send moderation actions to Discord channels
+- 🛡️ **VPN/Proxy Detection** - Optional integration with ProxyCheck plus staff security alerts
+- 📢 **Discord Webhooks** - External `discord-webhooks.yml` with rich embeds, fields and per-action endpoints
 - 📱 **PlaceholderAPI** - Full PlaceholderAPI support with 17+ placeholders
 - 🌍 **Network Support** - Proxy/BungeeCord/Velocity support for synchronized bans
 - 🎭 **Command Overrides** - Optional override of vanilla `/ban`, `/mute`, etc.
@@ -99,7 +99,7 @@ For BungeeCord/Velocity networks:
 | Command | Description | Permission |
 |---------|-------------|------------|
 | `/starbans help` | Show help menu | `starbans.command.gui` |
-| `/starbans reload` | Reload configuration | `starbans.command.reload` |
+| `/starbans reload` | Reload configuration, language files and `discord-webhooks.yml` | `starbans.command.reload` |
 | `/starbans gui [player]` | Open admin GUI | `starbans.gui.open` |
 | `/starbans check <player>` | Check player status | `starbans.command.check` |
 | `/starbans cases <player>` | View case history | `starbans.command.cases` |
@@ -179,13 +179,14 @@ Durations can be specified using the following formats:
 |------------|-------------|
 | `starbans.admin` | Full access to all StarBans features (bypass) |
 | `starbans.notify` | Receive update notifications |
+| `starbans.alerts.receive` | Receive join-intelligence and VPN/security alerts |
 
 ### Command Permissions
 
 | Permission | Description |
 |------------|-------------|
 | `starbans.command.gui` | Access main GUI commands |
-| `starbans.command.reload` | Reload configuration |
+| `starbans.command.reload` | Reload configuration, language files and `discord-webhooks.yml` |
 | `starbans.command.check` | Check player status |
 | `starbans.command.cases` | View case history |
 | `starbans.command.resolve` | Resolve active cases |
@@ -287,13 +288,19 @@ network:
     enabled: false  # Enable for BungeeCord/Velocity
     mode: PROXY     # PROXY or BACKEND
     
+# Staff alerts
+staff-alerts:
+  enabled: true
+  permission: starbans.alerts.receive
+  joins:
+    enabled: true
+    minimum-visible-cases: 1
+    notify-for-active-mutes: true
+    notify-for-flagged-related-accounts: true
+
 # Discord webhooks
-discord:
-  enabled: false
-  webhooks:
-    bans: "https://discord.com/api/webhooks/..."
-    mutes: "https://discord.com/api/webhooks/..."
-    kicks: "https://discord.com/api/webhooks/..."
+# Stored separately in plugins/StarBans/discord-webhooks.yml
+# so every action can use its own embed layout and target URLs.
 
 # VPN/Proxy detection
 vpn-detection:
@@ -395,20 +402,20 @@ The GUI provides a complete moderation interface:
 
 Send moderation actions to Discord channels:
 
-- Customizable webhooks per action type
-- Rich embeds with all case details
+- Separate `discord-webhooks.yml` outside the main config
+- Multiple webhook URLs per action
+- Rich embeds with fields, footer blocks and timestamps
 - Moderator information
-- Timestamps and durations
-- Reason display
+- Join-alert and VPN-alert webhook events
 
 ### VPN/Proxy Detection
 
 Block VPN and proxy connections:
 
 - Integration with ProxyCheck.io
-- Configurable action (kick/ban)
-- Whitelist support
-- Cache for performance
+- Configurable action (note/block)
+- Optional staff alerts for flagged joins and proxy detections
+- Automatic note creation for detected logins
 
 ---
 

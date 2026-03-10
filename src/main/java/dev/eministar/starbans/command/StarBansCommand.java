@@ -135,6 +135,12 @@ public final class StarBansCommand implements CommandExecutor, TabCompleter {
 
         if (plugin.reloadPluginState()) {
             sender.sendMessage(plugin.getLang().prefixed("messages.reload-success"));
+            plugin.getDiscordWebhookService().send(
+                    "plugin-reloaded",
+                    "actor", sender.getName(),
+                    "actor_uuid", sender instanceof Player player ? player.getUniqueId() : "",
+                    "source", "COMMAND:RELOAD"
+            );
         } else {
             sender.sendMessage(plugin.getLang().prefixed("messages.reload-failed"));
         }

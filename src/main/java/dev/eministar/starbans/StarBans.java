@@ -2,6 +2,7 @@ package dev.eministar.starbans;
 
 import dev.eministar.starbans.command.DynamicCommandRegistrar;
 import dev.eministar.starbans.command.StarBansCommand;
+import dev.eministar.starbans.config.DiscordWebhookConfig;
 import dev.eministar.starbans.database.ModerationStorage;
 import dev.eministar.starbans.database.StorageFactory;
 import dev.eministar.starbans.discord.DiscordWebhookService;
@@ -11,10 +12,11 @@ import dev.eministar.starbans.listener.LoginListener;
 import dev.eministar.starbans.network.NetworkSyncService;
 import dev.eministar.starbans.network.SharedNetworkSnapshotPublisher;
 import dev.eministar.starbans.placeholder.StarBansPlaceholderExpansion;
+import dev.eministar.starbans.service.GuiInputService;
 import dev.eministar.starbans.service.ModerationService;
 import dev.eministar.starbans.service.PlayerLookupService;
+import dev.eministar.starbans.service.StaffAlertService;
 import dev.eministar.starbans.service.VpnCheckService;
-import dev.eministar.starbans.service.GuiInputService;
 import dev.eministar.starbans.utils.Banner;
 import dev.eministar.starbans.utils.Lang;
 import dev.eministar.starbans.utils.LoggerUtil;
@@ -32,10 +34,12 @@ import java.util.logging.Logger;
 public final class StarBans extends JavaPlugin {
 
     private Lang lang;
+    private DiscordWebhookConfig discordWebhookConfig;
     private ModerationStorage storage;
     private ModerationService moderationService;
     private PlayerLookupService playerLookupService;
     private DiscordWebhookService discordWebhookService;
+    private StaffAlertService staffAlertService;
     private VpnCheckService vpnCheckService;
     private GuiInputService guiInputService;
     private NetworkSyncService networkSyncService;
@@ -67,6 +71,10 @@ public final class StarBans extends JavaPlugin {
         updateChecker = new UpdateChecker(this);
         getServer().getPluginManager().registerEvents(updateChecker, this);
         updateChecker.reload();
+
+        if (discordWebhookService != null) {
+            discordWebhookService.send("plugin-enabled", "trigger", "startup");
+        }
 
         Banner.printEnabled();
     }
@@ -111,6 +119,12 @@ public final class StarBans extends JavaPlugin {
             lang.reload();
         }
 
+        if (discordWebhookConfig == null) {
+            discordWebhookConfig = new DiscordWebhookConfig(this);
+        } else {
+            discordWebhookConfig.reload();
+        }
+
         if (storage != null) {
             try {
                 storage.close();
@@ -128,11 +142,12 @@ public final class StarBans extends JavaPlugin {
             return false;
         }
 
-        discordWebhookService = new DiscordWebhookService(this);
+        discordWebhookService = new DiscordWebhookService(this, discordWebhookConfig);
         vpnCheckService = new VpnCheckService(this);
         moderationService = new ModerationService(this, storage, lang, discordWebhookService);
         playerLookupService = new PlayerLookupService(this);
         guiInputService = new GuiInputService(this);
+        staffAlertService = new StaffAlertService(this);
         if (networkSyncService != null) {
             networkSyncService.reload();
         }
@@ -166,6 +181,10 @@ public final class StarBans extends JavaPlugin {
         return lang;
     }
 
+    public DiscordWebhookConfig getDiscordWebhookConfig() {
+        return discordWebhookConfig;
+    }
+
     public ModerationStorage getStorage() {
         return storage;
     }
@@ -180,6 +199,10 @@ public final class StarBans extends JavaPlugin {
 
     public DiscordWebhookService getDiscordWebhookService() {
         return discordWebhookService;
+    }
+
+    public StaffAlertService getStaffAlertService() {
+        return staffAlertService;
     }
 
     public VpnCheckService getVpnCheckService() {
@@ -197,7 +220,6 @@ public final class StarBans extends JavaPlugin {
     private void installBundledResources() {
         saveIfMissing("lang-en.yml");
         saveIfMissing("lang-de.yml");
-        saveIfMissing("lang.de.yml");
         saveIfMissing("docs/commands.md");
         saveIfMissing("docs/placeholders.md");
         saveIfMissing("docs/database.md");

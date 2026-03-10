@@ -1,0 +1,553 @@
+# ==========================================================
+# StarBans Discord Webhooks
+# EN: This file is loaded separately from config.yml so every
+#     Discord action can have its own layout, embeds and URLs.
+# DE: Diese Datei wird getrennt von der config.yml geladen,
+#     damit jede Discord-Aktion ihr eigenes Layout, Embeds
+#     und eigene URLs haben kann.
+# ==========================================================
+
+# EN: Global webhook switch.
+# DE: Globaler Webhook-Schalter.
+enabled: false
+
+# EN: Request timeout in milliseconds.
+# DE: Anfrage-Timeout in Millisekunden.
+timeout-ms: 5000
+
+# EN: Log failed webhook deliveries to the console.
+# DE: Fehlgeschlagene Webhook-Zustellungen in die Konsole loggen.
+log-failures: true
+
+# EN: Log successful webhook deliveries too.
+# DE: Erfolgreiche Webhook-Zustellungen ebenfalls loggen.
+log-deliveries: false
+
+# EN: Global username / avatar fallback.
+# DE: Globaler Fallback für Username / Avatar.
+username: StarBans
+avatar-url: ''
+
+# EN: Optional default URL(s) used when an action has no own URL(s).
+# DE: Optionale Standard-URL(s), wenn eine Aktion keine eigene URL hat.
+default-url: ''
+default-urls: []
+
+# EN: Discord mention rules. Per-action overrides are also supported.
+# DE: Discord-Mention-Regeln. Pro Aktion sind ebenfalls Overrides möglich.
+allowed-mentions:
+  parse: [ users, roles ]
+  users: []
+  roles: []
+  replied-user: false
+
+# EN: Useful placeholders:
+#     {player} {player_uuid} {actor} {actor_uuid} {reason} {ip}
+#     {case_id} {type} {type_key} {status} {status_key}
+#     {created_at} {created_at_iso} {expires_at} {expires_at_iso}
+#     {status_changed_at} {status_changed_at_iso}
+#     {server_name} {server_version} {plugin_name} {plugin_version}
+#     {online_players} {max_players} {event_time} {event_time_iso}
+#     {related_count} {flagged_related_count} {related_players}
+# DE: Nützliche Platzhalter:
+#     {player} {player_uuid} {actor} {actor_uuid} {reason} {ip}
+#     {case_id} {type} {type_key} {status} {status_key}
+#     {created_at} {created_at_iso} {expires_at} {expires_at_iso}
+#     {status_changed_at} {status_changed_at_iso}
+#     {server_name} {server_version} {plugin_name} {plugin_version}
+#     {online_players} {max_players} {event_time} {event_time_iso}
+#     {related_count} {flagged_related_count} {related_players}
+
+actions:
+  ban:
+    enabled: true
+    urls: []
+    embeds:
+      - title: "Player Ban"
+        color: "#E74C3C"
+        description:
+          - "**{player}** was banned."
+          - "Reason: {reason}"
+        footer:
+          text: "Case #{case_id} | {server_name}"
+        timestamp: CREATED_AT
+        fields:
+          - name: Player
+            value: "{player}"
+            inline: true
+          - name: Player UUID
+            value: "{target_uuid}"
+            inline: true
+          - name: Actor
+            value: "{actor}"
+            inline: true
+          - name: Source
+            value: "{source}"
+            inline: true
+          - name: Expires
+            value: "{expires_at}"
+            inline: true
+          - name: Server
+            value: "{server_name}"
+            inline: true
+
+  tempban:
+    enabled: true
+    urls: []
+    embeds:
+      - title: "Temporary Ban"
+        color: "#E67E22"
+        description:
+          - "**{player}** received a temporary ban."
+          - "Reason: {reason}"
+        footer:
+          text: "Case #{case_id} | {server_name}"
+        timestamp: CREATED_AT
+        fields:
+          - name: Player
+            value: "{player}"
+            inline: true
+          - name: Remaining
+            value: "{remaining}"
+            inline: true
+          - name: Expires
+            value: "{expires_at}"
+            inline: true
+          - name: Actor
+            value: "{actor}"
+            inline: true
+          - name: Player UUID
+            value: "{target_uuid}"
+            inline: false
+
+  unban:
+    enabled: true
+    urls: []
+    embeds:
+      - title: "Player Unban"
+        color: "#2ECC71"
+        description: "**{player}** was unbanned."
+        footer:
+          text: "Case #{case_id} | {server_name}"
+        timestamp: STATUS_CHANGED_AT
+        fields:
+          - name: Player
+            value: "{player}"
+            inline: true
+          - name: Status Actor
+            value: "{status_actor}"
+            inline: true
+          - name: Note
+            value: "{status_note}"
+            inline: false
+
+  ipban:
+    enabled: true
+    urls: []
+    embeds:
+      - title: "IP Ban"
+        color: "#8E44AD"
+        description: "An IP ban was created for **{player}**."
+        footer:
+          text: "Case #{case_id} | {server_name}"
+        timestamp: CREATED_AT
+        fields:
+          - name: Player
+            value: "{player}"
+            inline: true
+          - name: IP
+            value: "{ip}"
+            inline: true
+          - name: Actor
+            value: "{actor}"
+            inline: true
+          - name: Reason
+            value: "{reason}"
+            inline: false
+          - name: Expires
+            value: "{expires_at}"
+            inline: true
+
+  tempipban:
+    enabled: true
+    urls: []
+    embeds:
+      - title: "Temporary IP Ban"
+        color: "#9B59B6"
+        description: "A temporary IP ban was created for **{player}**."
+        footer:
+          text: "Case #{case_id} | {server_name}"
+        timestamp: CREATED_AT
+        fields:
+          - name: IP
+            value: "{ip}"
+            inline: true
+          - name: Remaining
+            value: "{remaining}"
+            inline: true
+          - name: Actor
+            value: "{actor}"
+            inline: true
+          - name: Reason
+            value: "{reason}"
+            inline: false
+
+  unipban:
+    enabled: true
+    urls: []
+    embeds:
+      - title: "IP Unban"
+        color: "#27AE60"
+        description: "An IP ban was removed."
+        footer:
+          text: "Case #{case_id} | {server_name}"
+        timestamp: STATUS_CHANGED_AT
+        fields:
+          - name: IP
+            value: "{ip}"
+            inline: true
+          - name: Status Actor
+            value: "{status_actor}"
+            inline: true
+          - name: Note
+            value: "{status_note}"
+            inline: false
+
+  mute:
+    enabled: true
+    urls: []
+    embeds:
+      - title: "Mute"
+        color: "#F39C12"
+        description: "**{player}** was muted."
+        footer:
+          text: "Case #{case_id} | {server_name}"
+        timestamp: CREATED_AT
+        fields:
+          - name: Player
+            value: "{player}"
+            inline: true
+          - name: Actor
+            value: "{actor}"
+            inline: true
+          - name: Expires
+            value: "{expires_at}"
+            inline: true
+          - name: Reason
+            value: "{reason}"
+            inline: false
+
+  tempmute:
+    enabled: true
+    urls: []
+    embeds:
+      - title: "Temporary Mute"
+        color: "#D35400"
+        description: "**{player}** received a temporary mute."
+        footer:
+          text: "Case #{case_id} | {server_name}"
+        timestamp: CREATED_AT
+        fields:
+          - name: Player
+            value: "{player}"
+            inline: true
+          - name: Remaining
+            value: "{remaining}"
+            inline: true
+          - name: Actor
+            value: "{actor}"
+            inline: true
+          - name: Reason
+            value: "{reason}"
+            inline: false
+
+  unmute:
+    enabled: true
+    urls: []
+    embeds:
+      - title: "Unmute"
+        color: "#2ECC71"
+        description: "**{player}** was unmuted."
+        footer:
+          text: "Case #{case_id} | {server_name}"
+        timestamp: STATUS_CHANGED_AT
+        fields:
+          - name: Player
+            value: "{player}"
+            inline: true
+          - name: Status Actor
+            value: "{status_actor}"
+            inline: true
+          - name: Note
+            value: "{status_note}"
+            inline: false
+
+  kick:
+    enabled: true
+    urls: []
+    embeds:
+      - title: "Kick"
+        color: "#95A5A6"
+        description: "**{player}** was kicked."
+        footer:
+          text: "Case #{case_id} | {server_name}"
+        timestamp: CREATED_AT
+        fields:
+          - name: Player
+            value: "{player}"
+            inline: true
+          - name: Actor
+            value: "{actor}"
+            inline: true
+          - name: Reason
+            value: "{reason}"
+            inline: false
+
+  note:
+    enabled: true
+    urls: []
+    embeds:
+      - title: "Staff Note"
+        color: "#3498DB"
+        description: "A staff note was added for **{player}**."
+        footer:
+          text: "Case #{case_id} | {server_name}"
+        timestamp: CREATED_AT
+        fields:
+          - name: Player
+            value: "{player}"
+            inline: true
+          - name: Label
+            value: "{label}"
+            inline: true
+          - name: Actor
+            value: "{actor}"
+            inline: true
+          - name: Text
+            value: "{reason}"
+            inline: false
+
+  altflag:
+    enabled: true
+    urls: []
+    embeds:
+      - title: "Alt Flag"
+        color: "#9B59B6"
+        description: "A possible alt relation was flagged."
+        footer:
+          text: "Case #{case_id} | {server_name}"
+        timestamp: CREATED_AT
+        fields:
+          - name: Player
+            value: "{player}"
+            inline: true
+          - name: Related
+            value: "{related_player}"
+            inline: true
+          - name: Label
+            value: "{label}"
+            inline: true
+          - name: Actor
+            value: "{actor}"
+            inline: true
+          - name: Note
+            value: "{reason}"
+            inline: false
+
+  resolve:
+    enabled: true
+    urls: []
+    embeds:
+      - title: "Case Resolved"
+        color: "#2ECC71"
+        description: "Case **#{case_id}** was resolved."
+        footer:
+          text: "{type} | {server_name}"
+        timestamp: STATUS_CHANGED_AT
+        fields:
+          - name: Type
+            value: "{type}"
+            inline: true
+          - name: Target
+            value: "{player}"
+            inline: true
+          - name: Status Actor
+            value: "{status_actor}"
+            inline: true
+          - name: Status Note
+            value: "{status_note}"
+            inline: false
+
+  expired:
+    enabled: true
+    urls: []
+    embeds:
+      - title: "Case Expired"
+        color: "#F1C40F"
+        description: "Case **#{case_id}** expired automatically."
+        footer:
+          text: "{type} | {server_name}"
+        timestamp: STATUS_CHANGED_AT
+        fields:
+          - name: Type
+            value: "{type}"
+            inline: true
+          - name: Target
+            value: "{player}"
+            inline: true
+          - name: Reason
+            value: "{reason}"
+            inline: false
+
+  ipblacklist:
+    enabled: true
+    urls: []
+    embeds:
+      - title: "IP Blacklist"
+        color: "#C0392B"
+        description: "An IP address was added to the blacklist."
+        footer:
+          text: "Case #{case_id} | {server_name}"
+        timestamp: CREATED_AT
+        fields:
+          - name: IP
+            value: "{ip}"
+            inline: true
+          - name: Actor
+            value: "{actor}"
+            inline: true
+          - name: Reason
+            value: "{reason}"
+            inline: false
+
+  ipunblacklist:
+    enabled: true
+    urls: []
+    embeds:
+      - title: "IP Unblacklist"
+        color: "#27AE60"
+        description: "An IP address was removed from the blacklist."
+        footer:
+          text: "Case #{case_id} | {server_name}"
+        timestamp: STATUS_CHANGED_AT
+        fields:
+          - name: IP
+            value: "{ip}"
+            inline: true
+          - name: Status Actor
+            value: "{status_actor}"
+            inline: true
+          - name: Note
+            value: "{status_note}"
+            inline: false
+
+  vpn-detected:
+    enabled: true
+    urls: []
+    embeds:
+      - title: "VPN / Proxy Detected"
+        color: "#E67E22"
+        description: "A login was flagged by the configured VPN / proxy provider."
+        footer:
+          text: "{server_name} | {action}"
+        timestamp: EVENT_TIME
+        fields:
+          - name: Player
+            value: "{player}"
+            inline: true
+          - name: Player UUID
+            value: "{player_uuid}"
+            inline: true
+          - name: IP
+            value: "{ip}"
+            inline: true
+          - name: Risk
+            value: "{risk}"
+            inline: true
+          - name: Action
+            value: "{action}"
+            inline: true
+          - name: Details
+            value: "{details}"
+            inline: false
+
+  join-alert:
+    enabled: true
+    urls: []
+    embeds:
+      - title: "Join Intelligence Alert"
+        color: "#2980B9"
+        description: "**{player}** joined and matched one or more alert rules."
+        footer:
+          text: "{server_name} | {event_time}"
+        timestamp: EVENT_TIME
+        fields:
+          - name: Player
+            value: "{player}"
+            inline: true
+          - name: IP
+            value: "{ip}"
+            inline: true
+          - name: Cases
+            value: "{case_count}"
+            inline: true
+          - name: Notes
+            value: "{note_count}"
+            inline: true
+          - name: Alt Flags
+            value: "{alt_count}"
+            inline: true
+          - name: Active Mute
+            value: "{active_mute_reason}"
+            inline: false
+          - name: Last Case
+            value: "{last_case_type} | {last_case_reason}"
+            inline: false
+          - name: Flagged Related
+            value: "{flagged_related_count}/{related_count} -> {related_players}"
+            inline: false
+
+  plugin-enabled:
+    enabled: true
+    urls: []
+    embeds:
+      - title: "Plugin Enabled"
+        color: "#2ECC71"
+        description: "{plugin_name} {plugin_version} finished startup."
+        footer:
+          text: "{server_name}"
+        timestamp: EVENT_TIME
+        fields:
+          - name: Trigger
+            value: "{trigger}"
+            inline: true
+          - name: Online Players
+            value: "{online_players}/{max_players}"
+            inline: true
+          - name: Server Version
+            value: "{server_version}"
+            inline: false
+
+  plugin-reloaded:
+    enabled: true
+    urls: []
+    embeds:
+      - title: "Plugin Reloaded"
+        color: "#16A085"
+        description: "{plugin_name} configuration was reloaded."
+        footer:
+          text: "{server_name}"
+        timestamp: EVENT_TIME
+        fields:
+          - name: Actor
+            value: "{actor}"
+            inline: true
+          - name: Actor UUID
+            value: "{actor_uuid}"
+            inline: true
+          - name: Source
+            value: "{source}"
+            inline: true
+          - name: Plugin Version
+            value: "{plugin_version}"
+            inline: true

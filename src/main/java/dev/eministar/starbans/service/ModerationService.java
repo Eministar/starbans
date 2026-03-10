@@ -17,6 +17,7 @@ import dev.eministar.starbans.utils.Lang;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -498,21 +499,32 @@ public final class ModerationService {
     public Object[] recordReplacements(CaseRecord record) {
         return new Object[]{
                 "id", record.getId(),
+                "case_id", record.getId(),
                 "label", defaultString(record.getLabel()),
                 "player", defaultString(record.getTargetPlayerName()),
                 "target_player", defaultString(record.getTargetPlayerName()),
+                "target_uuid", uuidString(record.getTargetPlayerUniqueId()),
                 "related_player", defaultString(record.getRelatedPlayerName()),
+                "related_uuid", uuidString(record.getRelatedPlayerUniqueId()),
                 "ip", defaultString(record.getTargetIp()),
                 "reason", defaultString(record.getReason()),
                 "actor", defaultString(record.getActorName()),
+                "actor_uuid", uuidString(record.getActorUniqueId()),
                 "source", defaultString(record.getSource()),
                 "created_at", formatDate(record.getCreatedAt()),
+                "created_at_iso", toIsoTimestamp(record.getCreatedAt()),
                 "expires_at", formatExpiry(record),
+                "expires_at_iso", toIsoTimestamp(record.getExpiresAt()),
                 "remaining", formatRemaining(record),
                 "status", lang.get("labels.case-status-" + record.getStatus().name().toLowerCase()),
+                "status_key", record.getStatus().name(),
                 "status_changed_at", record.getStatusChangedAt() == null ? lang.get("labels.none") : formatDate(record.getStatusChangedAt()),
+                "status_changed_at_iso", toIsoTimestamp(record.getStatusChangedAt()),
                 "type", formatCaseType(record.getType()),
+                "type_key", record.getType().name(),
                 "status_actor", defaultString(record.getStatusActorName()),
+                "status_actor_uuid", uuidString(record.getStatusActorUniqueId()),
+                "temporary", String.valueOf(record.isTemporary()),
                 "status_note", defaultString(record.getStatusNote())
         };
     }
@@ -526,6 +538,17 @@ public final class ModerationService {
             return fallback;
         }
         return input.trim();
+    }
+
+    private String toIsoTimestamp(Long epochMillis) {
+        if (epochMillis == null) {
+            return "";
+        }
+        return Instant.ofEpochMilli(epochMillis).toString();
+    }
+
+    private String uuidString(UUID value) {
+        return value == null ? "" : value.toString();
     }
 
     private void notifyCreatedCase(CaseRecord record) {

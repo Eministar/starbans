@@ -14,6 +14,8 @@ Included systems:
 - optional command overrides (`/ban`, `/ipban`, `/mute`, `/kick`, ...)
 - case history GUI
 - PlaceholderAPI expansion
-- Discord webhook logging per action
+- rich Discord webhook logging per action via external `discord-webhooks.yml`
+- multi-endpoint Discord delivery with embeds, fields, footers and timestamps
+- staff join-intelligence alerts for case history, active mutes and flagged related accounts
 - optional VPN / proxy detection using ProxyCheck
 - JSON / SQLite / MariaDB storage

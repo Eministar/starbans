@@ -120,9 +120,9 @@ public final class Lang {
 
         try {
             Files.createDirectories(file.toPath().getParent());
-            InputStream resource = plugin.getResource(configuredFile);
+            InputStream resource = findBundledLanguageResource(configuredFile);
             if (resource == null) {
-                resource = plugin.getResource("lang-en.yml");
+                resource = findBundledLanguageResource("lang-en.yml");
             }
 
             if (resource == null) {
@@ -140,9 +140,9 @@ public final class Lang {
     }
 
     private FileConfiguration loadDefaults(String configuredFile) {
-        InputStream resource = plugin.getResource(configuredFile);
+        InputStream resource = findBundledLanguageResource(configuredFile);
         if (resource == null && !"lang-en.yml".equalsIgnoreCase(configuredFile)) {
-            resource = plugin.getResource("lang-en.yml");
+            resource = findBundledLanguageResource("lang-en.yml");
         }
         if (resource == null) {
             return null;
@@ -165,6 +165,21 @@ public final class Lang {
         if (currentLastModified != 0L && currentLastModified != lastModified) {
             reload();
         }
+    }
+
+    private InputStream findBundledLanguageResource(String configuredFile) {
+        InputStream resource = plugin.getResource(configuredFile);
+        if (resource != null) {
+            return resource;
+        }
+
+        if ("lang.de.yml".equalsIgnoreCase(configuredFile)) {
+            return plugin.getResource("lang-de.yml");
+        }
+        if ("lang-de.yml".equalsIgnoreCase(configuredFile)) {
+            return plugin.getResource("lang.de.yml");
+        }
+        return null;
     }
 
     private void save() {

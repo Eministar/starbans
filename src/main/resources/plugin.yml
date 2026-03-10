@@ -69,6 +69,9 @@ permissions:
   starbans.notify:
     description: Receive update-checker notifications
     default: op
+  starbans.alerts.receive:
+    description: Receive moderation join and security alerts
+    default: op
   starbans.command.reload:
     description: Reload StarBans config and lang files
     default: op

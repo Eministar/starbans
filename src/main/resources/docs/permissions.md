@@ -4,11 +4,12 @@
 
 - `starbans.admin`: bypass / full access to all StarBans features
 - `starbans.notify`: receive update notifications
+- `starbans.alerts.receive`: receive join-intelligence and VPN/security alerts
 
 ## Commands
 
 - `starbans.command.gui`: use `/starbans` and `/sb`
-- `starbans.command.reload`: reload config and language files
+- `starbans.command.reload`: reload config, `discord-webhooks.yml` and language files
 - `starbans.command.check`: use `/bancheck`
 - `starbans.command.cases`: use `/scases`, `/banhistory`
 - `starbans.command.resolve`: resolve active cases from GUI or future commands

@@ -4,6 +4,8 @@ import dev.eministar.starbans.StarBans;
 import dev.eministar.starbans.model.CaseRecord;
 import dev.eministar.starbans.model.CommandActor;
 import dev.eministar.starbans.model.PlayerIdentity;
+import dev.eministar.starbans.model.PlayerProfile;
+import dev.eministar.starbans.model.PlayerSummary;
 import dev.eministar.starbans.service.IpUtil;
 import dev.eministar.starbans.service.VpnCheckResult;
 import dev.eministar.starbans.utils.LoggerUtil;
@@ -11,6 +13,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 public final class LoginListener implements Listener {
@@ -61,21 +65,124 @@ public final class LoginListener implements Listener {
                                 "SYSTEM:VPN"
                         );
                     }
+                    boolean blocked = plugin.getConfig().getString("security.vpn-detection.action", "NOTE").equalsIgnoreCase("BLOCK");
                     plugin.getDiscordWebhookService().send(
                             "vpn-detected",
                             "player", player.name(),
+                            "player_uuid", player.uniqueId(),
                             "ip", ipAddress,
                             "details", result.details(),
-                            "risk", result.risk()
+                            "risk", result.risk(),
+                            "action", blocked ? "BLOCK" : "NOTE",
+                            "blocked", blocked
                     );
+                    plugin.getServer().getScheduler().runTask(plugin, () -> plugin.getStaffAlertService().sendVpnAlert(player, ipAddress, result, blocked));
 
-                    if (plugin.getConfig().getString("security.vpn-detection.action", "NOTE").equalsIgnoreCase("BLOCK")) {
+                    if (blocked) {
                         event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, plugin.getModerationService().buildVpnBlockScreen(ipAddress, result));
+                        return;
                     }
                 }
             }
+
+            notifyJoinAlerts(player, ipAddress);
         } catch (Exception exception) {
             LoggerUtil.error("The login moderation checks failed.", exception);
         }
+    }
+
+    private void notifyJoinAlerts(PlayerIdentity player, String ipAddress) throws Exception {
+        if (!plugin.getConfig().getBoolean("staff-alerts.enabled", true)
+                || !plugin.getConfig().getBoolean("staff-alerts.joins.enabled", true)) {
+            return;
+        }
+
+        PlayerSummary summary = plugin.getModerationService().getPlayerSummary(player);
+        List<PlayerProfile> relatedProfiles = plugin.getModerationService().getRelatedProfiles(player.uniqueId());
+        List<PlayerProfile> flaggedRelatedProfiles = collectFlaggedRelatedProfiles(relatedProfiles);
+
+        boolean hasHistory = summary.visibleCaseCount() >= Math.max(1, plugin.getConfig().getInt("staff-alerts.joins.minimum-visible-cases", 1));
+        boolean hasActiveMute = plugin.getConfig().getBoolean("staff-alerts.joins.notify-for-active-mutes", true)
+                && summary.activeMute() != null;
+        boolean hasFlaggedRelatedProfiles = plugin.getConfig().getBoolean("staff-alerts.joins.notify-for-flagged-related-accounts", true)
+                && !flaggedRelatedProfiles.isEmpty();
+
+        if (!hasHistory && !hasActiveMute && !hasFlaggedRelatedProfiles) {
+            return;
+        }
+
+        String none = plugin.getLang().get("labels.none");
+        String activeMuteReason = summary.activeMute() == null ? none : summary.activeMute().getReason();
+        String activeMuteExpires = summary.activeMute() == null ? none : plugin.getModerationService().formatExpiry(summary.activeMute());
+        String lastCaseType = summary.latestCase() == null ? none : plugin.getModerationService().formatCaseType(summary.latestCase().getType());
+        String lastCaseReason = summary.latestCase() == null ? none : summary.latestCase().getReason();
+        String relatedPreview = buildRelatedPreview(
+                flaggedRelatedProfiles,
+                Math.max(1, plugin.getConfig().getInt("staff-alerts.joins.related-preview-limit", 3))
+        );
+
+        plugin.getDiscordWebhookService().send(
+                "join-alert",
+                "player", player.name(),
+                "player_uuid", player.uniqueId(),
+                "ip", ipAddress,
+                "case_count", summary.visibleCaseCount(),
+                "note_count", summary.noteCount(),
+                "alt_count", summary.altFlagCount(),
+                "active_mute_reason", activeMuteReason,
+                "active_mute_expires", activeMuteExpires,
+                "last_case_type", lastCaseType,
+                "last_case_reason", lastCaseReason,
+                "related_count", relatedProfiles.size(),
+                "flagged_related_count", flaggedRelatedProfiles.size(),
+                "related_players", relatedPreview
+        );
+        plugin.getServer().getScheduler().runTask(
+                plugin,
+                () -> plugin.getStaffAlertService().sendJoinAlert(player, ipAddress, summary, relatedProfiles, flaggedRelatedProfiles)
+        );
+    }
+
+    private List<PlayerProfile> collectFlaggedRelatedProfiles(List<PlayerProfile> relatedProfiles) throws Exception {
+        int scanLimit = Math.max(0, plugin.getConfig().getInt("staff-alerts.joins.related-scan-limit", 10));
+        if (scanLimit == 0 || relatedProfiles.isEmpty()) {
+            return List.of();
+        }
+
+        List<PlayerProfile> flaggedProfiles = new ArrayList<>();
+        int scanned = 0;
+        for (PlayerProfile profile : relatedProfiles) {
+            if (scanned >= scanLimit) {
+                break;
+            }
+            scanned++;
+
+            if (plugin.getModerationService().countPlayerCases(profile.getUniqueId()) > 0) {
+                flaggedProfiles.add(profile);
+            }
+        }
+        return flaggedProfiles;
+    }
+
+    private String buildRelatedPreview(List<PlayerProfile> profiles, int previewLimit) {
+        if (profiles.isEmpty()) {
+            return plugin.getLang().get("labels.none");
+        }
+
+        StringBuilder builder = new StringBuilder();
+        int limit = Math.max(1, previewLimit);
+        int size = Math.min(limit, profiles.size());
+        for (int index = 0; index < size; index++) {
+            if (index > 0) {
+                builder.append(", ");
+            }
+            builder.append(profiles.get(index).getLastName());
+        }
+
+        int remaining = profiles.size() - size;
+        if (remaining > 0) {
+            builder.append(" +").append(remaining);
+        }
+        return builder.toString();
     }
 }
