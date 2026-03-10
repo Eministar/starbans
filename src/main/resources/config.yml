@@ -415,6 +415,18 @@ server-rules:
         global: []
       webhook-actions: {}
       flags: {}
+    # survival:
+    #   display-name: Survival
+    #   defaults:
+    #     ban-reason: '&cSurvival rules violation.'
+    #   default-tags:
+    #     global: [ survival ]
+    #     warn: [ warnings, survival ]
+    #   webhook-actions:
+    #     ban: survival-ban
+    #     join-alert: survival-join-alert
+    #   flags:
+    #     broadcasts.player-ban: true
 
 # ----------------------------------------------------------
 # EN: Update checker.

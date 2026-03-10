@@ -91,6 +91,9 @@ public final class StarBansPlaceholderExpansion extends PlaceholderExpansion {
         if (summary.activeMute() != null) {
             return plugin.getLang().get("labels.status-muted");
         }
+        if (summary.activeWatchlist() != null) {
+            return plugin.getLang().get("labels.status-watchlisted");
+        }
         return plugin.getLang().get("labels.status-clean");
     }
 
