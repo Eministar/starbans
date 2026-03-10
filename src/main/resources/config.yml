@@ -6,6 +6,10 @@
 #     Command-Overrides, Sicherheitschecks und Webhook-Logging.
 # ==========================================================
 
+# EN: Internal schema version for non-destructive config auto-updates.
+# DE: Interne Schema-Version fuer nicht-destruktive Config-Auto-Updates.
+config-version: '${project.version}'
+
 # ----------------------------------------------------------
 # EN: General plugin settings.
 # DE: Allgemeine Plugin-Einstellungen.
@@ -1035,4 +1039,3 @@ gui:
       name: '&cClose'
       lore:
         - '&7Close the GUI.'
-

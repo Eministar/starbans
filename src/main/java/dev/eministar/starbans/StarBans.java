@@ -34,6 +34,7 @@ package dev.eministar.starbans;
 
 import dev.eministar.starbans.command.DynamicCommandRegistrar;
 import dev.eministar.starbans.command.StarBansCommand;
+import dev.eministar.starbans.config.BundledYamlConfigSynchronizer;
 import dev.eministar.starbans.config.DiscordWebhookConfig;
 import dev.eministar.starbans.database.ModerationStorage;
 import dev.eministar.starbans.database.StorageFactory;
@@ -101,7 +102,6 @@ public final class StarBans extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        saveDefaultConfig();
         installBundledResources();
 
         Version.init(this);
@@ -160,6 +160,7 @@ public final class StarBans extends JavaPlugin {
     }
 
     public boolean reloadPluginState() {
+        synchronizeMainConfig();
         reloadConfig();
         installBundledResources();
 
@@ -326,6 +327,15 @@ public final class StarBans extends JavaPlugin {
         File target = new File(getDataFolder(), path);
         if (!target.exists()) {
             saveResource(path, false);
+        }
+    }
+
+    private void synchronizeMainConfig() {
+        BundledYamlConfigSynchronizer.SyncResult syncResult =
+                BundledYamlConfigSynchronizer.synchronize(this, "config.yml");
+        String syncMessage = BundledYamlConfigSynchronizer.describe("config.yml", syncResult);
+        if (syncMessage != null) {
+            LoggerUtil.info(syncMessage);
         }
     }
 

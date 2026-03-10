@@ -7,6 +7,10 @@
 #     und eigene URLs haben kann.
 # ==========================================================
 
+# EN: Internal schema version for non-destructive config auto-updates.
+# DE: Interne Schema-Version fuer nicht-destruktive Config-Auto-Updates.
+config-version: '${project.version}'
+
 # EN: Global webhook switch.
 # DE: Globaler Webhook-Schalter.
 enabled: false

@@ -268,15 +268,19 @@ messages:
 
   update:
     console:
-      - '&eEine neue StarBans-Version ist verfügbar.'
-      - '&7Aktuell: &f{current}'
-      - '&7Neueste: &f{latest}'
-      - '&7Download: &f{url}'
+      - '&8&m------------------------------------------------'
+      - '&#FFB84D&lStarBans Update verfuegbar'
+      - '&7Installiert: &f{current}'
+      - '&7Neueste Version: &a{latest}'
+      - '&7Download: &#FFB84D{url}'
+      - '&8&m------------------------------------------------'
     player:
-      - '&8---------- &6StarBans Update &8----------'
-      - '&7Aktuell: &f{current}'
-      - '&7Neueste: &f{latest}'
-      - '&7Download: &f{url}'
+      - '&8&m------------------------------------------------'
+      - '&#FFB84D&lStarBans Update verfuegbar'
+      - '&7Installiert: &f{current}'
+      - '&7Neueste Version: &a{latest}'
+      - '&7Download: &#FFB84D{url}'
+      - '&8&m------------------------------------------------'
 
 screens:
   player-ban:

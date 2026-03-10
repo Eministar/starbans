@@ -8,10 +8,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -32,22 +28,21 @@ public final class DiscordWebhookConfig {
     }
 
     public synchronized void reload() {
-        file = new File(plugin.getDataFolder(), FILE_NAME);
-        boolean created = ensureFileExists();
+        BundledYamlConfigSynchronizer.SyncResult syncResult =
+                BundledYamlConfigSynchronizer.synchronize(plugin, FILE_NAME, this::importLegacyConfiguration);
 
-        configuration = YamlConfiguration.loadConfiguration(file);
-        if (created && importLegacyConfiguration(configuration)) {
+        file = syncResult.file();
+        configuration = syncResult.configuration();
+        if (syncResult.customChangesApplied()) {
             LoggerUtil.info("Migrated legacy Discord webhook settings from config.yml into discord-webhooks.yml.");
         }
 
-        FileConfiguration defaults = loadDefaults();
-        if (defaults != null) {
-            configuration.setDefaults(defaults);
-            configuration.options().copyDefaults(true);
-            save();
-        } else {
-            lastModified = file.exists() ? file.lastModified() : 0L;
+        String syncMessage = BundledYamlConfigSynchronizer.describe(FILE_NAME, syncResult);
+        if (syncMessage != null) {
+            LoggerUtil.info(syncMessage);
         }
+
+        lastModified = file.exists() ? file.lastModified() : 0L;
     }
 
     public synchronized FileConfiguration getConfiguration() {
@@ -66,30 +61,11 @@ public final class DiscordWebhookConfig {
         save();
     }
 
-    private boolean ensureFileExists() {
-        if (file.exists()) {
+    private boolean importLegacyConfiguration(FileConfiguration target, boolean created) {
+        if (!created) {
             return false;
         }
 
-        try {
-            Files.createDirectories(file.toPath().getParent());
-            InputStream resource = plugin.getResource(FILE_NAME);
-            if (resource == null) {
-                Files.createFile(file.toPath());
-                return true;
-            }
-
-            try (resource) {
-                Files.copy(resource, file.toPath());
-            }
-            return true;
-        } catch (IOException exception) {
-            LoggerUtil.error("The Discord webhook configuration could not be created.", exception);
-            return false;
-        }
-    }
-
-    private boolean importLegacyConfiguration(FileConfiguration target) {
         ConfigurationSection legacy = plugin.getConfig().getConfigurationSection("discord-webhooks");
         if (legacy == null || legacy.getValues(true).isEmpty()) {
             return false;
@@ -102,20 +78,6 @@ public final class DiscordWebhookConfig {
             target.set(entry.getKey(), copyValue(entry.getValue()));
         }
         return true;
-    }
-
-    private FileConfiguration loadDefaults() {
-        InputStream resource = plugin.getResource(FILE_NAME);
-        if (resource == null) {
-            return null;
-        }
-
-        try (InputStreamReader reader = new InputStreamReader(resource, StandardCharsets.UTF_8)) {
-            return YamlConfiguration.loadConfiguration(reader);
-        } catch (IOException exception) {
-            LoggerUtil.error("The Discord webhook defaults could not be loaded.", exception);
-            return null;
-        }
     }
 
     private void ensureFresh() {
