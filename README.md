@@ -39,9 +39,12 @@ StarBans provides a complete moderation suite with an elegant interface and powe
 - ⚡ **Player Bans** - Permanent and temporary player bans
 - 🌐 **IP Bans** - IP-based banning with temporary options
 - 🔇 **Mute System** - Permanent and temporary mutes
+- ⚠️ **Warning System** - Point-based warns with configurable escalation
 - 👢 **Kick System** - Kick players with case logging
-- 📝 **Note System** - Add administrative notes to player profiles
-- 🔗 **Alt Account Detection** - Mark and track alternative accounts
+- 📝 **Note System** - Internal or public staff notes on player profiles
+- 🏷️ **Case Tags** - Organize cases with tags and moderation metadata
+- 👀 **Watchlist** - Quietly flag players for join-time staff alerts
+- 🔗 **Alt Account Detection** - Mark related accounts and run join heuristics
 - 🚫 **IP Blacklist** - Maintain a blacklist of banned IP addresses
 
 ### 🎨 User Interface
@@ -54,8 +57,13 @@ StarBans provides a complete moderation suite with an elegant interface and powe
 ### 🔧 Advanced Features
 - 🛡️ **VPN/Proxy Detection** - Optional integration with ProxyCheck plus staff security alerts
 - 📢 **Discord Webhooks** - External `discord-webhooks.yml` with rich embeds, fields and per-action endpoints
-- 📱 **PlaceholderAPI** - Full PlaceholderAPI support with 17+ placeholders
+- 🧩 **Punishment Templates** - Config-based presets for consistent moderation actions
+- 📘 **Audit Tools** - Moderator audit summaries, exports and case reopen/undo flow
+- 🧰 **Support Toolkit** - HTML support dump, webhook tests and command-driven setup
+- 💌 **Developer Feedback** - Send formatted feedback to the StarBans developer webhook relay
+- 📱 **PlaceholderAPI** - Full PlaceholderAPI support with 23+ placeholders
 - 🌍 **Network Support** - Proxy/BungeeCord/Velocity support for synchronized bans
+- 🧭 **Server Rule Profiles** - Per-server defaults and webhook routing profiles
 - 🎭 **Command Overrides** - Optional override of vanilla `/ban`, `/mute`, etc.
 - 🌐 **Multi-Language** - English and German language files included
 
@@ -98,12 +106,13 @@ For BungeeCord/Velocity networks:
 
 | Command | Description | Permission |
 |---------|-------------|------------|
-| `/starbans help` | Show help menu | `starbans.command.gui` |
+| `/starbans help` | Show help menu | `starbans.command.base` |
 | `/starbans reload` | Reload configuration, language files and `discord-webhooks.yml` | `starbans.command.reload` |
 | `/starbans gui [player]` | Open admin GUI | `starbans.gui.open` |
 | `/starbans check <player>` | Check player status | `starbans.command.check` |
 | `/starbans cases <player>` | View case history | `starbans.command.cases` |
 | `/starbans case <id>` | View specific case | `starbans.command.cases` |
+| `/starbans case tags <id> <add\|remove\|set\|clear> [tags]` | Manage case tags | `starbans.command.tags` |
 
 ### Ban Commands
 
@@ -129,8 +138,19 @@ For BungeeCord/Velocity networks:
 | Command | Description | Permission |
 |---------|-------------|------------|
 | `/starbans kick <player> [reason]` | Kick a player | `starbans.command.kick` |
-| `/starbans note <player> <label> <text>` | Add a note to a player | `starbans.command.note` |
+| `/starbans note <player> <label> [internal\|public] <text>` | Add a note to a player | `starbans.command.note` |
 | `/starbans notes <player>` | View player notes | `starbans.command.notes` |
+| `/starbans warn <player> [points] [duration] [reason]` | Create a warning with optional expiry | `starbans.command.warn` |
+| `/starbans watchlist <add\|remove\|list> <player> [duration] [reason]` | Manage the player watchlist | `starbans.command.watchlist` |
+| `/starbans template <list\|info\|apply> ...` | Browse and apply punishment templates | `starbans.command.template` |
+| `/starbans audit <staff> [page]` | View moderator audit summaries | `starbans.command.audit` |
+| `/starbans undo <caseId> [note]` | Revert an active case | `starbans.command.undo` |
+| `/starbans reopen <caseId> [note]` | Reopen a resolved or expired case | `starbans.command.reopen` |
+| `/starbans export <player> <txt\|json>` | Export a player's file | `starbans.command.export` |
+| `/starbans webhooktest <action>` | Send a test Discord webhook | `starbans.command.webhooktest` |
+| `/starbans dump` | Generate `plugins/StarBans/dumps/latest.html` | `starbans.command.dump` |
+| `/starbans setup <webhooks\|general> ...` | Update selected config values from commands | `starbans.command.setup` |
+| `/starbans feedback <message>` | Send feedback to the developer relay webhook | `starbans.command.feedback` |
 | `/starbans alt mark <label> <player1> <player2> [note]` | Mark alt accounts | `starbans.command.alt` |
 | `/starbans alt list <player>` | List alt accounts | `starbans.command.alt` |
 | `/starbans alt clear <caseId> [reason]` | Clear alt flag | `starbans.command.alt` |
@@ -185,6 +205,7 @@ Durations can be specified using the following formats:
 
 | Permission | Description |
 |------------|-------------|
+| `starbans.command.base` | Access `/starbans` and `/sb` |
 | `starbans.command.gui` | Access main GUI commands |
 | `starbans.command.reload` | Reload configuration, language files and `discord-webhooks.yml` |
 | `starbans.command.check` | Check player status |
@@ -201,6 +222,18 @@ Durations can be specified using the following formats:
 | `starbans.command.tempmute` | Temporary mutes |
 | `starbans.command.unmute` | Remove mutes |
 | `starbans.command.kick` | Kick players |
+| `starbans.command.warn` | Warning system with points |
+| `starbans.command.watchlist` | Watchlist management |
+| `starbans.command.template` | Template browsing and application |
+| `starbans.command.webhooktest` | Webhook test dispatch |
+| `starbans.command.audit` | Moderator audit summaries |
+| `starbans.command.undo` | Revert active cases |
+| `starbans.command.reopen` | Reopen inactive cases |
+| `starbans.command.export` | Export player case history |
+| `starbans.command.dump` | Generate support dumps |
+| `starbans.command.setup` | Update selected config values via commands |
+| `starbans.command.feedback` | Send developer feedback via remote webhook |
+| `starbans.command.tags` | Edit case tags |
 | `starbans.command.alt` | Alt account management |
 | `starbans.command.ipblacklist` | IP blacklist management |
 
@@ -232,7 +265,7 @@ Durations can be specified using the following formats:
 
 ## 📊 PlaceholderAPI
 
-StarBans provides 17+ placeholders for use with PlaceholderAPI:
+StarBans provides 23+ placeholders for use with PlaceholderAPI:
 
 ### Player Placeholders
 
@@ -245,10 +278,14 @@ StarBans provides 17+ placeholders for use with PlaceholderAPI:
 | `%starbans_is_muted%` | Whether player is muted (true/false) |
 | `%starbans_mute_reason%` | Current mute reason |
 | `%starbans_mute_remaining%` | Time remaining on mute |
+| `%starbans_is_watchlisted%` | Whether the player is currently watchlisted |
+| `%starbans_watchlist_reason%` | Active watchlist reason |
 | `%starbans_last_ip%` | Player's last known IP |
 | `%starbans_case_count%` | Total case count |
 | `%starbans_note_count%` | Total note count |
 | `%starbans_alt_count%` | Number of alt accounts |
+| `%starbans_warn_count%` | Total warning count |
+| `%starbans_warning_points%` | Active warning points |
 | `%starbans_last_case_type%` | Type of last case |
 | `%starbans_last_case_reason%` | Reason for last case |
 
@@ -259,6 +296,8 @@ StarBans provides 17+ placeholders for use with PlaceholderAPI:
 | `%starbans_active_bans%` | Total active bans |
 | `%starbans_active_ip_bans%` | Total active IP bans |
 | `%starbans_active_mutes%` | Total active mutes |
+| `%starbans_active_warns%` | Total active warnings |
+| `%starbans_active_watchlists%` | Total active watchlists |
 | `%starbans_total_cases%` | Total cases in system |
 
 ---
@@ -406,7 +445,8 @@ Send moderation actions to Discord channels:
 - Multiple webhook URLs per action
 - Rich embeds with fields, footer blocks and timestamps
 - Moderator information
-- Join-alert and VPN-alert webhook events
+- Join-alert, watchlist, escalation and VPN-alert webhook events
+- Testable via `/starbans webhooktest <action>`
 
 ### VPN/Proxy Detection
 
@@ -448,9 +488,8 @@ Future features planned:
 
 - [ ] Web panel for remote administration
 - [ ] Advanced analytics and reporting
-- [ ] Template system for punishment reasons
-- [ ] Warning point system
 - [ ] Appeal system
+- [ ] Web-based setup assistant
 - [ ] More placeholder expansions
 - [ ] API for developers
 

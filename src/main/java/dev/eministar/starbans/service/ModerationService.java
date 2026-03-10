@@ -864,6 +864,10 @@ public final class ModerationService {
                 if (online != null && plugin.getConfig().getBoolean("punishments.player-mute.notify-player", true)) {
                     online.sendMessage(buildMuteMessage(escalated));
                 }
+                if (plugin.getServerRuleService().resolveBoolean("broadcasts.player-mute", plugin.getConfig().getBoolean("broadcasts.player-mute.enabled", false))) {
+                    broadcast("messages.broadcasts.player-mute", recordReplacements(escalated));
+                }
+                sendWebhook(escalated.isTemporary() ? "tempmute" : "mute", escalated);
                 sendWebhook("warn-escalated", escalated);
                 return;
             }
@@ -874,6 +878,10 @@ public final class ModerationService {
                 if (online != null && plugin.getConfig().getBoolean("punishments.player-ban.kick-online-player", true)) {
                     online.kickPlayer(buildBanScreen(escalated));
                 }
+                if (plugin.getServerRuleService().resolveBoolean("broadcasts.player-ban", plugin.getConfig().getBoolean("broadcasts.player-ban.enabled", true))) {
+                    broadcast("messages.broadcasts.player-ban", recordReplacements(escalated));
+                }
+                sendWebhook(escalated.isTemporary() ? "tempban" : "ban", escalated);
                 sendWebhook("warn-escalated", escalated);
                 return;
             }

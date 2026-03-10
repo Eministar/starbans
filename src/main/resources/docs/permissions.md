@@ -33,6 +33,9 @@
 - `starbans.command.undo`: revert active cases
 - `starbans.command.reopen`: reopen inactive cases
 - `starbans.command.export`: export player case history
+- `starbans.command.dump`: generate support dumps
+- `starbans.command.setup`: update selected config values via commands
+- `starbans.command.feedback`: send developer feedback via remote webhook
 - `starbans.command.tags`: edit case tags
 - `starbans.command.alt`: alt-flag management
 - `starbans.command.ipblacklist`: IP blacklist management

@@ -96,6 +96,10 @@ messages:
   usage-undo: '&cUsage: /starbans undo <caseId> [note]'
   usage-reopen: '&cUsage: /starbans reopen <caseId> [note]'
   usage-export: '&cUsage: /starbans export <player> <txt|json>'
+  usage-setup: '&cUsage: /starbans setup <webhooks|general> ...'
+  usage-setup-webhooks: '&cUsage: /starbans setup webhooks <list|enabled|default-url|clear-default|action-url|clear-action-url|action-enabled> ...'
+  usage-setup-general: '&cUsage: /starbans setup general <language|timezone|server-profile> <value>'
+  usage-feedback: '&cUsage: /starbans feedback <message>'
 
   already-banned: '&c{player} is already banned. Current reason: &f{reason}'
   ban-success: '&a{player} was permanently banned for &f{reason}&a.'
@@ -200,6 +204,15 @@ messages:
   reopen-success: '&aCase &f#{id} &awas reopened.'
   export-invalid-format: '&cUnsupported export format &f{format}&c. Use txt or json.'
   export-success: '&aExport for &f{player} &awas written to &f{file}&a.'
+  dump-started: '&7Generating support dump, please wait...'
+  dump-success: '&aSupport dump created. Latest: &f{latest} &8| &7Timestamped: &f{file}'
+  dump-failed: '&cThe support dump could not be generated. Check the console.'
+  setup-updated: '&aUpdated &f{setting} &ato &f{value}&a.'
+  invalid-boolean: '&cInvalid boolean value: &f{input}&c. Use true / false.'
+  feedback-too-short: '&cFeedback is too short. Write at least a few words.'
+  feedback-started: '&7Sending feedback to the developer webhook...'
+  feedback-success: '&aFeedback was delivered successfully.'
+  feedback-failed: '&cFeedback could not be delivered. Check the endpoint or console log.'
 
   help:
     - '&6StarBans Commands'
@@ -228,6 +241,9 @@ messages:
     - '&e/starbans reopen <caseId> [note] &7- reopen inactive cases'
     - '&e/starbans export <player> <txt|json> &7- export a player file'
     - '&e/starbans webhooktest <action> &7- send a Discord webhook test'
+    - '&e/starbans dump &7- generate a support HTML dump'
+    - '&e/starbans setup ... &7- update selected config values from commands'
+    - '&e/starbans feedback <message> &7- send developer feedback'
     - '&e/salt mark <label> <player1> <player2> [note] &7- mark alts'
     - '&e/sipblacklist <add|remove> <ip> [reason] &7- manage the IP blacklist'
 

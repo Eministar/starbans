@@ -55,6 +55,17 @@ public final class DiscordWebhookConfig {
         return configuration;
     }
 
+    public synchronized void set(String path, Object value) {
+        ensureFresh();
+        configuration.set(path, value);
+        save();
+    }
+
+    public synchronized void saveNow() {
+        ensureFresh();
+        save();
+    }
+
     private boolean ensureFileExists() {
         if (file.exists()) {
             return false;

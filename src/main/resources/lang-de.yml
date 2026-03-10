@@ -96,6 +96,10 @@ messages:
   usage-undo: '&cBenutzung: /starbans undo <caseId> [notiz]'
   usage-reopen: '&cBenutzung: /starbans reopen <caseId> [notiz]'
   usage-export: '&cBenutzung: /starbans export <spieler> <txt|json>'
+  usage-setup: '&cBenutzung: /starbans setup <webhooks|general> ...'
+  usage-setup-webhooks: '&cBenutzung: /starbans setup webhooks <list|enabled|default-url|clear-default|action-url|clear-action-url|action-enabled> ...'
+  usage-setup-general: '&cBenutzung: /starbans setup general <language|timezone|server-profile> <wert>'
+  usage-feedback: '&cBenutzung: /starbans feedback <nachricht>'
 
   already-banned: '&c{player} ist bereits gebannt. Aktueller Grund: &f{reason}'
   ban-success: '&a{player} wurde permanent für &f{reason} &agebannt.'
@@ -200,6 +204,15 @@ messages:
   reopen-success: '&aCase &f#{id} &awurde wieder geöffnet.'
   export-invalid-format: '&cNicht unterstütztes Export-Format &f{format}&c. Nutze txt oder json.'
   export-success: '&aExport für &f{player} &awurde nach &f{file} &ageschrieben.'
+  dump-started: '&7Support-Dump wird erstellt, bitte warten...'
+  dump-success: '&aSupport-Dump erstellt. Latest: &f{latest} &8| &7Timestamp: &f{file}'
+  dump-failed: '&cDer Support-Dump konnte nicht erstellt werden. Prüfe die Konsole.'
+  setup-updated: '&a{setting} wurde auf &f{value} &agesetzt.'
+  invalid-boolean: '&cUngültiger Boolean-Wert: &f{input}&c. Nutze true / false.'
+  feedback-too-short: '&cDas Feedback ist zu kurz. Schreibe bitte ein paar sinnvolle Wörter.'
+  feedback-started: '&7Feedback wird an den Dev-Webhook gesendet...'
+  feedback-success: '&aFeedback wurde erfolgreich gesendet.'
+  feedback-failed: '&cFeedback konnte nicht gesendet werden. Prüfe Endpoint oder Konsole.'
 
   help:
     - '&6StarBans Befehle'
@@ -228,6 +241,9 @@ messages:
     - '&e/starbans reopen <caseId> [notiz] &7- inaktive Cases wieder öffnen'
     - '&e/starbans export <spieler> <txt|json> &7- Spielerakte exportieren'
     - '&e/starbans webhooktest <action> &7- Discord-Webhook testen'
+    - '&e/starbans dump &7- einen Support-HTML-Dump erstellen'
+    - '&e/starbans setup ... &7- ausgewählte Config-Werte per Command setzen'
+    - '&e/starbans feedback <nachricht> &7- Developer-Feedback senden'
     - '&e/salt mark <label> <spieler1> <spieler2> [notiz] &7- markiert Alts'
     - '&e/sipblacklist <add|remove> <ip> [grund] &7- verwaltet die IP-Blacklist'
 

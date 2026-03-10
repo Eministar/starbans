@@ -405,6 +405,16 @@ commands:
   # DE: Anzahl der Case-Einträge in der Konsolen-Ausgabe.
   console-history-limit: 10
 
+feedback:
+  # EN: Little note: this sends feedback straight to the StarBans developer with love <3 If you do not want that, just remove the URL below and it is disabled.
+  # DE: Kleine Notiz: Das schickt Feedback mit ganz viel Liebe direkt an den StarBans-Developer <3 Wenn du das nicht möchtest, lösch einfach die URL unten und dann ist es deaktiviert.
+  # EN: Remote text endpoint returning a Discord webhook URL.
+  # DE: Remote-Text-Endpoint, der eine Discord-Webhook-URL zurückgibt.
+  endpoint-url: https://hub.star-dev.xyz/starbans/feedbackwebhook.txt
+  # EN: HTTP timeout for feedback endpoint fetch and webhook delivery.
+  # DE: HTTP-Timeout für Feedback-Endpoint und Webhook-Zustellung.
+  timeout-ms: 5000
+
 server-rules:
   active-profile: default
   profiles:

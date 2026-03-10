@@ -18,6 +18,9 @@ Included systems:
 - punishment templates from config
 - moderator audit summaries
 - player file export (`txt` / `json`)
+- HTML support dump with syntax / environment / config diagnostics
+- command-driven setup for webhook and core config values
+- developer feedback command via remote webhook endpoint
 - undo / reopen case workflow
 - per-server rule profiles for defaults / webhook routing
 - optional command overrides (`/ban`, `/ipban`, `/mute`, `/kick`, ...)

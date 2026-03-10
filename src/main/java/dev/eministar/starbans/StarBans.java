@@ -48,12 +48,15 @@ import dev.eministar.starbans.service.GuiInputService;
 import dev.eministar.starbans.service.AltDetectionService;
 import dev.eministar.starbans.service.AuditLogService;
 import dev.eministar.starbans.service.CaseExportService;
+import dev.eministar.starbans.service.FeedbackService;
 import dev.eministar.starbans.service.JoinAlertExemptionService;
 import dev.eministar.starbans.service.ModerationService;
 import dev.eministar.starbans.service.PlayerLookupService;
 import dev.eministar.starbans.service.PunishmentTemplateService;
 import dev.eministar.starbans.service.ServerRuleService;
+import dev.eministar.starbans.service.SetupService;
 import dev.eministar.starbans.service.StaffAlertService;
+import dev.eministar.starbans.service.SupportDumpService;
 import dev.eministar.starbans.service.VpnCheckService;
 import dev.eministar.starbans.utils.Banner;
 import dev.eministar.starbans.utils.Lang;
@@ -83,6 +86,9 @@ public final class StarBans extends JavaPlugin {
     private PunishmentTemplateService punishmentTemplateService;
     private AuditLogService auditLogService;
     private CaseExportService caseExportService;
+    private SupportDumpService supportDumpService;
+    private SetupService setupService;
+    private FeedbackService feedbackService;
     private JoinAlertExemptionService joinAlertExemptionService;
     private AltDetectionService altDetectionService;
     private GuiInputService guiInputService;
@@ -196,6 +202,9 @@ public final class StarBans extends JavaPlugin {
         staffAlertService = new StaffAlertService(this);
         auditLogService = new AuditLogService(storage);
         caseExportService = new CaseExportService(this, moderationService);
+        supportDumpService = new SupportDumpService(this);
+        setupService = new SetupService(this);
+        feedbackService = new FeedbackService(this);
         joinAlertExemptionService = new JoinAlertExemptionService(this, serverRuleService);
         altDetectionService = new AltDetectionService(this, moderationService);
         if (networkSyncService != null) {
@@ -273,6 +282,18 @@ public final class StarBans extends JavaPlugin {
 
     public CaseExportService getCaseExportService() {
         return caseExportService;
+    }
+
+    public SupportDumpService getSupportDumpService() {
+        return supportDumpService;
+    }
+
+    public SetupService getSetupService() {
+        return setupService;
+    }
+
+    public FeedbackService getFeedbackService() {
+        return feedbackService;
     }
 
     public JoinAlertExemptionService getJoinAlertExemptionService() {

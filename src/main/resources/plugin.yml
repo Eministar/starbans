@@ -153,6 +153,15 @@ permissions:
   starbans.command.export:
     description: Export player case history
     default: op
+  starbans.command.dump:
+    description: Generate a support HTML dump
+    default: op
+  starbans.command.setup:
+    description: Change supported config values from commands
+    default: op
+  starbans.command.feedback:
+    description: Send developer feedback through the remote feedback webhook
+    default: op
   starbans.command.tags:
     description: Edit case tags
     default: op

@@ -28,6 +28,9 @@ Main command:
 - `/starbans reopen <caseId> [note]`
 - `/starbans export <player> <txt|json>`
 - `/starbans webhooktest <action>`
+- `/starbans dump`
+- `/starbans setup <webhooks|general> ...`
+- `/starbans feedback <message>`
 - `/starbans alt mark <label> <player1> <player2> [note]`
 - `/starbans alt list <player>`
 - `/starbans alt clear <caseId> [reason]`
@@ -68,3 +71,8 @@ Warns and watchlists:
 - Warnings support points and optional expiry.
 - Automatic escalation steps can be configured in `config.yml -> warnings.escalation`.
 - Watchlist entries are active cases and appear in join alerts / placeholders.
+
+Support tools:
+- `dump` generates `plugins/StarBans/dumps/latest.html` plus a timestamped HTML report.
+- `setup` can currently update webhook URLs / toggles and core values like language, timezone and server profile.
+- `feedback` fetches a developer webhook URL from `feedback.endpoint-url` and sends a Discord embed.

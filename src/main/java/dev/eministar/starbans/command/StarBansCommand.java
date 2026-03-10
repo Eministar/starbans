@@ -34,7 +34,7 @@ public final class StarBansCommand implements CommandExecutor, TabCompleter {
     private static final List<String> ROOT_SUBCOMMANDS = List.of(
             "help", "reload", "gui", "check", "cases", "case", "notes", "note", "ban", "tempban",
             "unban", "ipban", "tempipban", "unipban", "mute", "tempmute", "unmute", "kick", "alt", "ipblacklist",
-            "warn", "watchlist", "template", "webhooktest", "audit", "undo", "reopen", "export"
+            "warn", "watchlist", "template", "webhooktest", "audit", "undo", "reopen", "export", "dump", "setup", "feedback"
     );
     private static final List<String> DURATION_SUGGESTIONS = List.of("30m", "1h", "12h", "1d", "7d", "30d");
     private static final List<String> ALT_SUBCOMMANDS = List.of("mark", "list", "clear");
@@ -42,6 +42,9 @@ public final class StarBansCommand implements CommandExecutor, TabCompleter {
     private static final List<String> WATCHLIST_SUBCOMMANDS = List.of("add", "remove", "list");
     private static final List<String> TEMPLATE_SUBCOMMANDS = List.of("list", "info", "apply");
     private static final List<String> CASE_TAG_SUBCOMMANDS = List.of("add", "remove", "set", "clear");
+    private static final List<String> SETUP_ROOT_SUBCOMMANDS = List.of("webhooks", "general");
+    private static final List<String> SETUP_WEBHOOK_SUBCOMMANDS = List.of("list", "enabled", "default-url", "clear-default", "action-url", "clear-action-url", "action-enabled");
+    private static final List<String> SETUP_GENERAL_SUBCOMMANDS = List.of("language", "timezone", "server-profile");
 
     private final StarBans plugin;
 
@@ -134,6 +137,9 @@ public final class StarBansCommand implements CommandExecutor, TabCompleter {
             case "undo" -> executeUndo(sender, subArguments(args));
             case "reopen" -> executeReopen(sender, subArguments(args));
             case "export" -> executeExport(sender, subArguments(args));
+            case "dump" -> executeDump(sender, subArguments(args));
+            case "setup" -> executeSetup(sender, subArguments(args));
+            case "feedback" -> executeFeedback(sender, subArguments(args));
             default -> {
                 sendHelp(sender);
                 yield true;
@@ -751,6 +757,180 @@ public final class StarBansCommand implements CommandExecutor, TabCompleter {
         return true;
     }
 
+    private boolean executeDump(CommandSender sender, String[] args) {
+        if (!hasPermission(sender, "starbans.command.dump")) {
+            deny(sender);
+            return true;
+        }
+
+        sender.sendMessage(plugin.getLang().prefixed("messages.dump-started"));
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                var result = plugin.getSupportDumpService().generateDump(sender);
+                plugin.getServer().getScheduler().runTask(plugin, () -> sender.sendMessage(plugin.getLang().prefixed(
+                        "messages.dump-success",
+                        "latest", result.latestFile().getName(),
+                        "file", result.timestampedFile().getName()
+                )));
+            } catch (Exception exception) {
+                LoggerUtil.error("The support dump could not be generated.", exception);
+                plugin.getServer().getScheduler().runTask(plugin, () -> sender.sendMessage(plugin.getLang().prefixed("messages.dump-failed")));
+            }
+        });
+        return true;
+    }
+
+    private boolean executeSetup(CommandSender sender, String[] args) {
+        if (!hasPermission(sender, "starbans.command.setup")) {
+            deny(sender);
+            return true;
+        }
+        if (args.length < 1) {
+            sender.sendMessage(plugin.getLang().prefixed("messages.usage-setup"));
+            return true;
+        }
+
+        try {
+            String branch = args[0].toLowerCase(Locale.ROOT);
+            if (branch.equals("webhooks")) {
+                return executeWebhookSetup(sender, subArguments(args));
+            }
+            if (branch.equals("general")) {
+                return executeGeneralSetup(sender, subArguments(args));
+            }
+            sender.sendMessage(plugin.getLang().prefixed("messages.usage-setup"));
+            return true;
+        } catch (Exception exception) {
+            LoggerUtil.error("The setup command failed.", exception);
+            sender.sendMessage(plugin.getLang().prefixed("messages.internal-error"));
+            return true;
+        }
+    }
+
+    private boolean executeWebhookSetup(CommandSender sender, String[] args) {
+        if (args.length < 1) {
+            sender.sendMessage(plugin.getLang().prefixed("messages.usage-setup-webhooks"));
+            return true;
+        }
+
+        String subCommand = args[0].toLowerCase(Locale.ROOT);
+        if (subCommand.equals("list")) {
+            sender.sendMessage(plugin.getLang().prefix() + plugin.getLang().format("&6Webhook Setup"));
+            sender.sendMessage(plugin.getLang().prefix() + plugin.getLang().format("&7Global enabled: &f{value}", "value", plugin.getDiscordWebhookConfig().getConfiguration().getBoolean("enabled", false)));
+            sender.sendMessage(plugin.getLang().prefix() + plugin.getLang().format("&7Default URL: &f{value}", "value", plugin.getDiscordWebhookConfig().getConfiguration().getString("default-url", plugin.getLang().get("labels.none"))));
+            for (String action : plugin.getSetupService().getWebhookActions()) {
+                sender.sendMessage(plugin.getLang().prefix() + plugin.getLang().format("&e{action} &8- &f{detail}", "action", action, "detail", plugin.getSetupService().describeWebhookAction(action)));
+            }
+            return true;
+        }
+
+        if (subCommand.equals("enabled") && args.length >= 2) {
+            Boolean enabled = parseBooleanInput(args[1]);
+            if (enabled == null) {
+                sender.sendMessage(plugin.getLang().prefixed("messages.invalid-boolean", "input", args[1]));
+                return true;
+            }
+            plugin.getSetupService().setWebhookGlobalEnabled(enabled);
+            sender.sendMessage(plugin.getLang().prefixed("messages.setup-updated", "setting", "webhooks.enabled", "value", enabled));
+            return true;
+        }
+
+        if (subCommand.equals("default-url") && args.length >= 2) {
+            plugin.getSetupService().setWebhookDefaultUrl(args[1]);
+            sender.sendMessage(plugin.getLang().prefixed("messages.setup-updated", "setting", "webhooks.default-url", "value", args[1]));
+            return true;
+        }
+
+        if (subCommand.equals("clear-default")) {
+            plugin.getSetupService().clearWebhookDefaultUrl();
+            sender.sendMessage(plugin.getLang().prefixed("messages.setup-updated", "setting", "webhooks.default-url", "value", "cleared"));
+            return true;
+        }
+
+        if (subCommand.equals("action-url") && args.length >= 3) {
+            plugin.getSetupService().setWebhookActionUrl(args[1], args[2]);
+            sender.sendMessage(plugin.getLang().prefixed("messages.setup-updated", "setting", "webhooks.action-url", "value", args[1] + " -> " + args[2]));
+            return true;
+        }
+
+        if (subCommand.equals("clear-action-url") && args.length >= 2) {
+            plugin.getSetupService().clearWebhookActionUrl(args[1]);
+            sender.sendMessage(plugin.getLang().prefixed("messages.setup-updated", "setting", "webhooks.action-url", "value", args[1] + " -> cleared"));
+            return true;
+        }
+
+        if (subCommand.equals("action-enabled") && args.length >= 3) {
+            Boolean enabled = parseBooleanInput(args[2]);
+            if (enabled == null) {
+                sender.sendMessage(plugin.getLang().prefixed("messages.invalid-boolean", "input", args[2]));
+                return true;
+            }
+            plugin.getSetupService().setWebhookActionEnabled(args[1], enabled);
+            sender.sendMessage(plugin.getLang().prefixed("messages.setup-updated", "setting", "webhooks.action-enabled", "value", args[1] + " -> " + enabled));
+            return true;
+        }
+
+        sender.sendMessage(plugin.getLang().prefixed("messages.usage-setup-webhooks"));
+        return true;
+    }
+
+    private boolean executeGeneralSetup(CommandSender sender, String[] args) {
+        if (args.length < 2) {
+            sender.sendMessage(plugin.getLang().prefixed("messages.usage-setup-general"));
+            return true;
+        }
+
+        String subCommand = args[0].toLowerCase(Locale.ROOT);
+        boolean success;
+        String value = args[1];
+        switch (subCommand) {
+            case "language" -> success = plugin.getSetupService().setLanguageFile(value);
+            case "timezone" -> success = plugin.getSetupService().setTimezone(value);
+            case "server-profile" -> success = plugin.getSetupService().setServerProfile(value);
+            default -> {
+                sender.sendMessage(plugin.getLang().prefixed("messages.usage-setup-general"));
+                return true;
+            }
+        }
+
+        if (!success) {
+            sender.sendMessage(plugin.getLang().prefixed("messages.reload-failed"));
+            return true;
+        }
+        sender.sendMessage(plugin.getLang().prefixed("messages.setup-updated", "setting", "general." + subCommand, "value", value));
+        return true;
+    }
+
+    private boolean executeFeedback(CommandSender sender, String[] args) {
+        if (!hasPermission(sender, "starbans.command.feedback")) {
+            deny(sender);
+            return true;
+        }
+        if (args.length < 1) {
+            sender.sendMessage(plugin.getLang().prefixed("messages.usage-feedback"));
+            return true;
+        }
+
+        String message = joinArgs(args, 0);
+        if (message.length() < 6) {
+            sender.sendMessage(plugin.getLang().prefixed("messages.feedback-too-short"));
+            return true;
+        }
+
+        sender.sendMessage(plugin.getLang().prefixed("messages.feedback-started"));
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                File latestDump = plugin.getSupportDumpService().getLatestDumpFile();
+                var result = plugin.getFeedbackService().sendFeedback(sender, message, latestDump.exists() ? latestDump.getName() : "");
+                plugin.getServer().getScheduler().runTask(plugin, () -> sender.sendMessage(plugin.getLang().prefixed("messages.feedback-success")));
+            } catch (Exception exception) {
+                LoggerUtil.error("The feedback command failed.", exception);
+                plugin.getServer().getScheduler().runTask(plugin, () -> sender.sendMessage(plugin.getLang().prefixed("messages.feedback-failed")));
+            }
+        });
+        return true;
+    }
+
     private boolean executeNotes(CommandSender sender, String[] args) throws Exception {
         if (!hasPermission(sender, "starbans.command.notes")) {
             deny(sender);
@@ -1317,10 +1497,19 @@ public final class StarBansCommand implements CommandExecutor, TabCompleter {
         if (args.length == 2 && args[0].equalsIgnoreCase("template")) {
             return filter(TEMPLATE_SUBCOMMANDS, args[1]);
         }
+        if (args.length == 2 && args[0].equalsIgnoreCase("setup")) {
+            return filter(SETUP_ROOT_SUBCOMMANDS, args[1]);
+        }
         if (args.length == 2 && List.of("case", "undo", "reopen", "webhooktest", "audit").contains(args[0].toLowerCase(Locale.ROOT))) {
             if (args[0].equalsIgnoreCase("case")) {
                 return filter(List.of("tags"), args[1]);
             }
+        }
+        if (args.length == 3 && args[0].equalsIgnoreCase("setup") && args[1].equalsIgnoreCase("webhooks")) {
+            return filter(SETUP_WEBHOOK_SUBCOMMANDS, args[2]);
+        }
+        if (args.length == 3 && args[0].equalsIgnoreCase("setup") && args[1].equalsIgnoreCase("general")) {
+            return filter(SETUP_GENERAL_SUBCOMMANDS, args[2]);
         }
         if (args.length == 3 && List.of("tempban", "tempmute", "tempipban").contains(args[0].toLowerCase(Locale.ROOT))) {
             return filter(DURATION_SUGGESTIONS, args[2]);
@@ -1339,6 +1528,21 @@ public final class StarBansCommand implements CommandExecutor, TabCompleter {
         }
         if (args.length == 4 && args[0].equalsIgnoreCase("template") && args[1].equalsIgnoreCase("apply")) {
             return filter(plugin.getPlayerLookupService().suggestNames(args[3]), args[3]);
+        }
+        if (args.length == 4 && args[0].equalsIgnoreCase("setup") && args[1].equalsIgnoreCase("webhooks") && List.of("action-url", "clear-action-url", "action-enabled").contains(args[2].toLowerCase(Locale.ROOT))) {
+            return filter(plugin.getSetupService().getWebhookActions(), args[3]);
+        }
+        if (args.length == 4 && args[0].equalsIgnoreCase("setup") && args[1].equalsIgnoreCase("general") && args[2].equalsIgnoreCase("language")) {
+            return filter(List.of("lang-en.yml", "lang-de.yml"), args[3]);
+        }
+        if (args.length == 4 && args[0].equalsIgnoreCase("setup") && args[1].equalsIgnoreCase("general") && args[2].equalsIgnoreCase("server-profile")) {
+            return filter(List.of(plugin.getServerRuleService().getActiveProfileId()), args[3]);
+        }
+        if (args.length == 5 && args[0].equalsIgnoreCase("setup") && args[1].equalsIgnoreCase("webhooks") && List.of("enabled", "action-enabled").contains(args[2].toLowerCase(Locale.ROOT))) {
+            return filter(List.of("true", "false"), args[4]);
+        }
+        if (args.length == 4 && args[0].equalsIgnoreCase("setup") && args[1].equalsIgnoreCase("webhooks") && args[2].equalsIgnoreCase("enabled")) {
+            return filter(List.of("true", "false"), args[3]);
         }
         if (args.length == 3 && args[0].equalsIgnoreCase("case") && args[1].equalsIgnoreCase("tags")) {
             return Collections.emptyList();
@@ -1428,6 +1632,19 @@ public final class StarBansCommand implements CommandExecutor, TabCompleter {
         } catch (NumberFormatException exception) {
             return fallback;
         }
+    }
+
+    private Boolean parseBooleanInput(String input) {
+        if (input == null) {
+            return null;
+        }
+        if (input.equalsIgnoreCase("true") || input.equalsIgnoreCase("on") || input.equalsIgnoreCase("yes")) {
+            return true;
+        }
+        if (input.equalsIgnoreCase("false") || input.equalsIgnoreCase("off") || input.equalsIgnoreCase("no")) {
+            return false;
+        }
+        return null;
     }
 
     private long safeReference(CaseRecord record) {
