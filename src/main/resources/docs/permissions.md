@@ -8,7 +8,8 @@
 
 ## Commands
 
-- `starbans.command.gui`: use `/starbans` and `/sb`
+- `starbans.command.base`: use `/starbans` and `/sb`
+- `starbans.command.gui`: open the GUI via `/starbans` or `/sb`
 - `starbans.command.reload`: reload config, `discord-webhooks.yml` and language files
 - `starbans.command.check`: use `/bancheck`
 - `starbans.command.cases`: use `/scases`, `/banhistory`
@@ -24,6 +25,15 @@
 - `starbans.command.tempmute`: temporary mutes
 - `starbans.command.unmute`: remove mutes
 - `starbans.command.kick`: kicks
+- `starbans.command.warn`: warning system with points
+- `starbans.command.watchlist`: watchlist management
+- `starbans.command.template`: template browsing / application
+- `starbans.command.webhooktest`: webhook test dispatch
+- `starbans.command.audit`: moderator audit summaries
+- `starbans.command.undo`: revert active cases
+- `starbans.command.reopen`: reopen inactive cases
+- `starbans.command.export`: export player case history
+- `starbans.command.tags`: edit case tags
 - `starbans.command.alt`: alt-flag management
 - `starbans.command.ipblacklist`: IP blacklist management
 
@@ -54,3 +64,4 @@
 
 - GUI actions still also require the related command permission.
 - Example: for GUI temp-bans you should grant both `starbans.command.tempban` and `starbans.gui.punish.tempban`.
+- Join alerts use `starbans.alerts.receive`.

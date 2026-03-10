@@ -7,15 +7,25 @@ Included systems:
 - temporary IP bans
 - mutes
 - temporary mutes
+- warnings with points and automatic escalation
 - kicks with case logging
-- notes
+- notes with internal / public visibility
+- case tags, categories and template metadata
 - alt-account markers
+- heuristic alt detection on join
 - IP blacklist
+- player watchlist
+- punishment templates from config
+- moderator audit summaries
+- player file export (`txt` / `json`)
+- undo / reopen case workflow
+- per-server rule profiles for defaults / webhook routing
 - optional command overrides (`/ban`, `/ipban`, `/mute`, `/kick`, ...)
 - case history GUI
 - PlaceholderAPI expansion
 - rich Discord webhook logging per action via external `discord-webhooks.yml`
 - multi-endpoint Discord delivery with embeds, fields, footers and timestamps
-- staff join-intelligence alerts for case history, active mutes and flagged related accounts
+- staff join-intelligence alerts for case history, watchlists, warns and flagged related accounts
+- join-alert exemptions for trusted players / IPs / rule profiles
 - optional VPN / proxy detection using ProxyCheck
 - JSON / SQLite / MariaDB storage

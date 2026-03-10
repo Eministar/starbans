@@ -44,6 +44,8 @@ allowed-mentions:
 # EN: Useful placeholders:
 #     {player} {player_uuid} {actor} {actor_uuid} {reason} {ip}
 #     {case_id} {type} {type_key} {status} {status_key}
+#     {category} {template_key} {tags} {tag_count} {points} {visibility}
+#     {server_profile} {server_profile_name} {reference_case_id}
 #     {created_at} {created_at_iso} {expires_at} {expires_at_iso}
 #     {status_changed_at} {status_changed_at_iso}
 #     {server_name} {server_version} {plugin_name} {plugin_version}
@@ -52,6 +54,8 @@ allowed-mentions:
 # DE: Nützliche Platzhalter:
 #     {player} {player_uuid} {actor} {actor_uuid} {reason} {ip}
 #     {case_id} {type} {type_key} {status} {status_key}
+#     {category} {template_key} {tags} {tag_count} {points} {visibility}
+#     {server_profile} {server_profile_name} {reference_case_id}
 #     {created_at} {created_at_iso} {expires_at} {expires_at_iso}
 #     {status_changed_at} {status_changed_at_iso}
 #     {server_name} {server_version} {plugin_name} {plugin_version}
@@ -327,6 +331,102 @@ actions:
             value: "{reason}"
             inline: false
 
+  warn:
+    enabled: true
+    urls: []
+    embeds:
+      - title: "Warning"
+        color: "#F1C40F"
+        description: "**{player}** received a warning."
+        footer:
+          text: "Case #{case_id} | {server_profile_name}"
+        timestamp: CREATED_AT
+        fields:
+          - name: Player
+            value: "{player}"
+            inline: true
+          - name: Points
+            value: "{points}"
+            inline: true
+          - name: Expires
+            value: "{expires_at}"
+            inline: true
+          - name: Reason
+            value: "{reason}"
+            inline: false
+          - name: Tags
+            value: "{tags}"
+            inline: false
+
+  warn-escalated:
+    enabled: true
+    urls: []
+    embeds:
+      - title: "Warning Escalation"
+        color: "#E67E22"
+        description: "Warning points escalated into **{type}** for **{player}**."
+        footer:
+          text: "Case #{case_id} | ref #{reference_case_id}"
+        timestamp: CREATED_AT
+        fields:
+          - name: Player
+            value: "{player}"
+            inline: true
+          - name: Type
+            value: "{type}"
+            inline: true
+          - name: Reference Warning
+            value: "{reference_case_id}"
+            inline: true
+          - name: Reason
+            value: "{reason}"
+            inline: false
+
+  watchlist-add:
+    enabled: true
+    urls: []
+    embeds:
+      - title: "Watchlist Added"
+        color: "#F39C12"
+        description: "**{player}** was added to the watchlist."
+        footer:
+          text: "Case #{case_id} | {server_profile_name}"
+        timestamp: CREATED_AT
+        fields:
+          - name: Player
+            value: "{player}"
+            inline: true
+          - name: Expires
+            value: "{expires_at}"
+            inline: true
+          - name: Actor
+            value: "{actor}"
+            inline: true
+          - name: Reason
+            value: "{reason}"
+            inline: false
+
+  watchlist-remove:
+    enabled: true
+    urls: []
+    embeds:
+      - title: "Watchlist Removed"
+        color: "#27AE60"
+        description: "**{player}** was removed from the watchlist."
+        footer:
+          text: "Case #{case_id} | {server_profile_name}"
+        timestamp: STATUS_CHANGED_AT
+        fields:
+          - name: Player
+            value: "{player}"
+            inline: true
+          - name: Status Actor
+            value: "{status_actor}"
+            inline: true
+          - name: Note
+            value: "{status_note}"
+            inline: false
+
   altflag:
     enabled: true
     urls: []
@@ -377,6 +477,75 @@ actions:
           - name: Status Note
             value: "{status_note}"
             inline: false
+
+  reopen:
+    enabled: true
+    urls: []
+    embeds:
+      - title: "Case Reopened"
+        color: "#3498DB"
+        description: "Case **#{case_id}** was reopened."
+        footer:
+          text: "{type} | {server_profile_name}"
+        timestamp: STATUS_CHANGED_AT
+        fields:
+          - name: Type
+            value: "{type}"
+            inline: true
+          - name: Target
+            value: "{player}"
+            inline: true
+          - name: Status Actor
+            value: "{status_actor}"
+            inline: true
+          - name: Status Note
+            value: "{status_note}"
+            inline: false
+
+  undo:
+    enabled: true
+    urls: []
+    embeds:
+      - title: "Case Reverted"
+        color: "#95A5A6"
+        description: "Case **#{case_id}** was reverted / undone."
+        footer:
+          text: "{type} | {server_profile_name}"
+        timestamp: STATUS_CHANGED_AT
+        fields:
+          - name: Type
+            value: "{type}"
+            inline: true
+          - name: Target
+            value: "{player}"
+            inline: true
+          - name: Status Actor
+            value: "{status_actor}"
+            inline: true
+          - name: Status Note
+            value: "{status_note}"
+            inline: false
+
+  case-updated:
+    enabled: true
+    urls: []
+    embeds:
+      - title: "Case Metadata Updated"
+        color: "#7F8C8D"
+        description: "Case **#{case_id}** metadata was updated."
+        footer:
+          text: "{type} | {server_profile_name}"
+        timestamp: EVENT_TIME
+        fields:
+          - name: Tags
+            value: "{tags}"
+            inline: false
+          - name: Category
+            value: "{category}"
+            inline: true
+          - name: Visibility
+            value: "{visibility}"
+            inline: true
 
   expired:
     enabled: true
@@ -497,6 +666,12 @@ actions:
           - name: Alt Flags
             value: "{alt_count}"
             inline: true
+          - name: Warning Points
+            value: "{warning_points}"
+            inline: true
+          - name: Watchlist
+            value: "{active_watchlist_reason}"
+            inline: false
           - name: Active Mute
             value: "{active_mute_reason}"
             inline: false
@@ -505,6 +680,36 @@ actions:
             inline: false
           - name: Flagged Related
             value: "{flagged_related_count}/{related_count} -> {related_players}"
+            inline: false
+          - name: Alt Analysis
+            value: "Score {alt_detection_score} | {alt_detection_reasons}"
+            inline: false
+
+  alt-detected:
+    enabled: true
+    urls: []
+    embeds:
+      - title: "Alt Detection"
+        color: "#8E44AD"
+        description: "Suspicious alt-account pattern detected for **{player}**."
+        footer:
+          text: "{server_profile_name} | {event_time}"
+        timestamp: EVENT_TIME
+        fields:
+          - name: Player
+            value: "{player}"
+            inline: true
+          - name: IP
+            value: "{ip}"
+            inline: true
+          - name: Score
+            value: "{score}"
+            inline: true
+          - name: Related
+            value: "{suspicious_count}/{related_count} -> {related_players}"
+            inline: false
+          - name: Reasons
+            value: "{reasons}"
             inline: false
 
   plugin-enabled:

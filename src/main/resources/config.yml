@@ -320,7 +320,7 @@ alt-detection:
   warn-threshold: 2
   max-reasons: 4
   auto-note:
-    enabled: true
+    enabled: false
     label: alt-detected
     template: 'Suspicious alt pattern detected'
   auto-alt-flag:
