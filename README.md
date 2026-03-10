@@ -11,7 +11,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Minecraft](https://img.shields.io/badge/Minecraft-1.21+-brightgreen.svg)](https://www.spigotmc.org/)
 [![Java](https://img.shields.io/badge/Java-21-orange.svg)](https://www.oracle.com/java/)
-[![Website](https://img.shields.io/badge/Website-star--dev.xyz-blue.svg)](https://star-dev.xyz)
+[![Website](https://img.shields.io/badge/Website-star--dev.xyz-blue.svg)](https://hub.star-dev.xyz/starbans)
 
 **A premium, design-focused moderation and punishment management plugin for Spigot/Paper servers.**
 
