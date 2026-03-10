@@ -191,7 +191,7 @@ public final class ModerationService {
             }
         }
 
-        if (plugin.getConfig().getBoolean("broadcasts.player-ban.enabled", true)) {
+        if (plugin.getServerRuleService().resolveBoolean("broadcasts.player-ban", plugin.getConfig().getBoolean("broadcasts.player-ban.enabled", true))) {
             broadcast("messages.broadcasts.player-ban", recordReplacements(stored));
         }
 
@@ -221,7 +221,7 @@ public final class ModerationService {
             online.sendMessage(buildMuteMessage(stored));
         }
 
-        if (plugin.getConfig().getBoolean("broadcasts.player-mute.enabled", false)) {
+        if (plugin.getServerRuleService().resolveBoolean("broadcasts.player-mute", plugin.getConfig().getBoolean("broadcasts.player-mute.enabled", false))) {
             broadcast("messages.broadcasts.player-mute", recordReplacements(stored));
         }
 
@@ -256,7 +256,7 @@ public final class ModerationService {
             }
         }
 
-        if (plugin.getConfig().getBoolean("broadcasts.ip-ban.enabled", true)) {
+        if (plugin.getServerRuleService().resolveBoolean("broadcasts.ip-ban", plugin.getConfig().getBoolean("broadcasts.ip-ban.enabled", true))) {
             broadcast("messages.broadcasts.ip-ban", recordReplacements(stored));
         }
 
@@ -524,7 +524,7 @@ public final class ModerationService {
             online.kickPlayer(buildKickScreen(stored));
         }
 
-        if (plugin.getConfig().getBoolean("broadcasts.kick.enabled", false)) {
+        if (plugin.getServerRuleService().resolveBoolean("broadcasts.kick", plugin.getConfig().getBoolean("broadcasts.kick.enabled", false))) {
             broadcast("messages.broadcasts.kick", recordReplacements(stored));
         }
 
