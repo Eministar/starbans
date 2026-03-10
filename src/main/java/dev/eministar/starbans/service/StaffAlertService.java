@@ -24,13 +24,15 @@ public final class StaffAlertService {
                               String ipAddress,
                               PlayerSummary summary,
                               List<PlayerProfile> relatedProfiles,
-                              List<PlayerProfile> flaggedRelatedProfiles) {
+                              List<PlayerProfile> flaggedRelatedProfiles,
+                              AltDetectionService.AltAnalysisResult altAnalysis) {
         if (!plugin.getConfig().getBoolean("staff-alerts.enabled", true)
                 || !plugin.getConfig().getBoolean("staff-alerts.joins.enabled", true)) {
             return;
         }
 
         CaseRecord activeMute = summary.activeMute();
+        CaseRecord activeWatchlist = summary.activeWatchlist();
         CaseRecord latestCase = summary.latestCase();
         int previewLimit = Math.max(1, plugin.getConfig().getInt("staff-alerts.joins.related-preview-limit", 3));
 
@@ -41,13 +43,18 @@ public final class StaffAlertService {
                 "case_count", summary.visibleCaseCount(),
                 "note_count", summary.noteCount(),
                 "alt_count", summary.altFlagCount(),
+                "warn_count", summary.warnCount(),
+                "warning_points", summary.warningPoints(),
                 "active_mute_reason", activeMute == null ? plugin.getLang().get("labels.none") : activeMute.getReason(),
                 "active_mute_expires", activeMute == null ? plugin.getLang().get("labels.none") : plugin.getModerationService().formatExpiry(activeMute),
+                "active_watchlist_reason", activeWatchlist == null ? plugin.getLang().get("labels.none") : activeWatchlist.getReason(),
                 "last_case_type", latestCase == null ? plugin.getLang().get("labels.none") : plugin.getModerationService().formatCaseType(latestCase.getType()),
                 "last_case_reason", latestCase == null ? plugin.getLang().get("labels.none") : latestCase.getReason(),
                 "related_count", relatedProfiles.size(),
                 "flagged_related_count", flaggedRelatedProfiles.size(),
-                "related_players", buildRelatedPreview(flaggedRelatedProfiles, previewLimit)
+                "related_players", buildRelatedPreview(flaggedRelatedProfiles, previewLimit),
+                "alt_detection_score", altAnalysis == null ? 0 : altAnalysis.score(),
+                "alt_detection_reasons", altAnalysis == null || altAnalysis.reasons().isEmpty() ? plugin.getLang().get("labels.none") : String.join("; ", altAnalysis.reasons())
         );
     }
 
@@ -64,6 +71,26 @@ public final class StaffAlertService {
                 "risk", String.valueOf(result.risk()),
                 "details", safe(result.details()),
                 "action", blocked ? "BLOCK" : "NOTE"
+        );
+    }
+
+    public void sendAltDetectionAlert(PlayerIdentity player, String ipAddress, AltDetectionService.AltAnalysisResult result) {
+        if (!plugin.getConfig().getBoolean("staff-alerts.enabled", true)
+                || !plugin.getConfig().getBoolean("staff-alerts.alt-detected.enabled", true)
+                || result == null
+                || !result.flagged()) {
+            return;
+        }
+
+        sendToStaff(
+                "messages.staff-alert-alt",
+                "player", safe(player.name()),
+                "ip", safe(ipAddress),
+                "score", result.score(),
+                "reasons", result.reasons().isEmpty() ? plugin.getLang().get("labels.none") : String.join("; ", result.reasons()),
+                "related_count", result.relatedProfiles().size(),
+                "suspicious_count", result.suspiciousProfiles().size(),
+                "related_players", buildRelatedPreview(result.suspiciousProfiles(), Math.max(1, plugin.getConfig().getInt("staff-alerts.joins.related-preview-limit", 3)))
         );
     }
 

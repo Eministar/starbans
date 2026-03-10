@@ -23,6 +23,10 @@ settings:
   # DE: Zeitzone für die Formatierung. Mit "system" wird die Server-Systemzone benutzt.
   timezone: system
 
+  # EN: Logical server / backend identifier used for per-server rule profiles and webhook placeholders.
+  # DE: Logische Server- / Backend-ID für serverbezogene Regelprofile und Webhook-Placeholder.
+  server-id: default
+
 # ----------------------------------------------------------
 # EN: Storage configuration. Supported types: JSON, SQLITE, MARIADB.
 #     Recommendation: SQLITE for most servers.
@@ -224,6 +228,9 @@ staff-alerts:
     # EN: Also alert when the player has an active mute.
     # DE: Ebenfalls alarmieren, wenn der Spieler einen aktiven Mute hat.
     notify-for-active-mutes: true
+    # EN: Also alert when the player is currently on the watchlist.
+    # DE: Ebenfalls alarmieren, wenn der Spieler aktuell auf der Watchlist steht.
+    notify-for-watchlist: true
     # EN: Scan same-IP profiles and alert if related accounts already have moderation history.
     # DE: Prüft Profile mit derselben IP und alarmiert, wenn verknüpfte Accounts bereits Moderationsverlauf haben.
     notify-for-flagged-related-accounts: true
@@ -233,9 +240,25 @@ staff-alerts:
     # EN: Maximum related account names shown inside alerts and webhooks.
     # DE: Maximale Anzahl an verknüpften Account-Namen in Alerts und Webhooks.
     related-preview-limit: 3
+    exemptions:
+      enabled: true
+      # EN: Skip join alerts for these exact player names.
+      # DE: Join-Alerts für diese exakten Spielernamen überspringen.
+      player-names: []
+      # EN: Skip join alerts for these UUIDs.
+      # DE: Join-Alerts für diese UUIDs überspringen.
+      player-uuids: []
+      # EN: Skip join alerts for trusted IPs.
+      # DE: Join-Alerts für vertrauenswürdige IPs überspringen.
+      trusted-ips: [ "127.0.0.1" ]
+      # EN: Skip join alerts entirely on these rule profiles / backends.
+      # DE: Join-Alerts auf diesen Regelprofilen / Backends komplett überspringen.
+      server-profiles: []
   vpn-detected:
     # EN: Notify staff when VPN / proxy detection flags a login.
     # DE: Benachrichtigt Staff, wenn die VPN-/Proxy-Erkennung einen Login markiert.
+    enabled: true
+  alt-detected:
     enabled: true
 
 # ----------------------------------------------------------
@@ -259,11 +282,103 @@ broadcasts:
 notes:
   default-label: general-note
   default-text: 'No additional note provided.'
+  default-visibility: INTERNAL
   console-limit: 10
 
 alt-flags:
   default-label: alt-account
   default-note: 'Linked as a suspicious / alternate account.'
+
+warnings:
+  default-reason: '&7No reason specified.'
+  default-points: 1
+  default-category: conduct
+  default-duration: 30d
+  escalation:
+    enabled: true
+    steps:
+      - threshold: 3
+        action: MUTE
+        duration: 12h
+        reason: '&6Automatic mute after {warning_points} warning points.'
+        tags: [ auto-escalation, warnings ]
+      - threshold: 6
+        action: BAN
+        duration: 7d
+        reason: '&cAutomatic ban after {warning_points} warning points.'
+        tags: [ auto-escalation, warnings ]
+
+watchlist:
+  default-label: watchlist
+  default-category: security
+  default-reason: '&eAdded to watchlist.'
+
+alt-detection:
+  enabled: true
+  minimum-score: 4
+  name-prefix-threshold: 4
+  warn-threshold: 2
+  max-reasons: 4
+  auto-note:
+    enabled: true
+    label: alt-detected
+    template: 'Suspicious alt pattern detected'
+  auto-alt-flag:
+    enabled: false
+    label: auto-alt-detected
+    note: 'Automatically flagged by join analysis.'
+
+cases:
+  undo-note: '&7Action reverted manually.'
+  reopen-note: '&7Case reopened manually.'
+
+audit:
+  console-limit: 5
+
+templates:
+  entries:
+    cheating-ban:
+      enabled: true
+      display-name: Cheating Ban
+      type: BAN
+      category: cheating
+      reason: '&cCheating / unfair advantage.'
+      duration: 30d
+      tags: [ cheat, combat ]
+    toxicity-mute:
+      enabled: true
+      display-name: Toxicity Mute
+      type: MUTE
+      category: chat
+      reason: '&6Toxic chat behaviour.'
+      duration: 12h
+      tags: [ toxicity, chat ]
+    advertising-warn:
+      enabled: true
+      display-name: Advertising Warn
+      type: WARN
+      category: advertising
+      reason: '&eAdvertising is not allowed.'
+      points: 2
+      duration: 14d
+      tags: [ advertising ]
+    watch-suspicious:
+      enabled: true
+      display-name: Suspicious Watchlist
+      type: WATCHLIST
+      category: security
+      reason: '&eSuspicious activity, observe on join.'
+      duration: 30d
+      tags: [ security, monitor ]
+    appeal-note:
+      enabled: true
+      display-name: Appeal Note
+      type: NOTE
+      label: appeal
+      category: appeals
+      reason: '&bAppeal context added by template.'
+      visibility: INTERNAL
+      tags: [ appeal ]
 
 punishments:
   defaults:
@@ -271,6 +386,7 @@ punishments:
     mute-reason: '&7No reason specified.'
     ip-ban-reason: '&7No reason specified.'
     ip-blacklist-reason: '&7No reason specified.'
+    kick-reason: '&7No reason specified.'
     unban-note: '&7No reason specified.'
     resolve-note: '&7Resolved manually.'
     expired-note: '&7Case duration elapsed.'
@@ -288,6 +404,17 @@ commands:
   # EN: Number of case entries shown in console output.
   # DE: Anzahl der Case-Einträge in der Konsolen-Ausgabe.
   console-history-limit: 10
+
+server-rules:
+  active-profile: default
+  profiles:
+    default:
+      display-name: Global
+      defaults: {}
+      default-tags:
+        global: []
+      webhook-actions: {}
+      flags: {}
 
 # ----------------------------------------------------------
 # EN: Update checker.

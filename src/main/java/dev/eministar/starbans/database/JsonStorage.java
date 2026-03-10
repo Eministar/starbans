@@ -79,6 +79,21 @@ public final class JsonStorage implements ModerationStorage {
     }
 
     @Override
+    public synchronized CaseRecord updateCase(CaseRecord record) throws Exception {
+        for (int index = 0; index < document.cases.size(); index++) {
+            if (document.cases.get(index).getId() != record.getId()) {
+                continue;
+            }
+
+            document.cases.set(index, record);
+            save();
+            return record;
+        }
+
+        throw new IllegalArgumentException("No case record found for id " + record.getId());
+    }
+
+    @Override
     public synchronized Optional<CaseRecord> findCaseById(long caseId) {
         return document.cases.stream()
                 .filter(record -> record.getId() == caseId)
@@ -142,9 +157,54 @@ public final class JsonStorage implements ModerationStorage {
     }
 
     @Override
+    public synchronized List<CaseRecord> getCasesByType(CaseType type, int limit, int offset) {
+        return document.cases.stream()
+                .filter(record -> type == record.getType())
+                .sorted(Comparator.comparingLong(CaseRecord::getCreatedAt).reversed())
+                .skip(offset)
+                .limit(limit)
+                .toList();
+    }
+
+    @Override
+    public synchronized List<CaseRecord> getActiveCasesForPlayer(UUID playerUniqueId, CaseType type) {
+        long now = System.currentTimeMillis();
+        return document.cases.stream()
+                .filter(record -> type == record.getType())
+                .filter(record -> playerUniqueId.equals(record.getTargetPlayerUniqueId()))
+                .filter(record -> record.isActive(now))
+                .sorted(Comparator.comparingLong(CaseRecord::getCreatedAt).reversed())
+                .toList();
+    }
+
+    @Override
     public synchronized List<CaseRecord> getRecentCases(int limit, int offset) {
         return document.cases.stream()
                 .sorted(Comparator.comparingLong(CaseRecord::getCreatedAt).reversed())
+                .skip(offset)
+                .limit(limit)
+                .toList();
+    }
+
+    @Override
+    public synchronized List<CaseRecord> getCasesByActor(String actorName, int limit, int offset) {
+        String normalized = actorName == null ? "" : actorName.toLowerCase(Locale.ROOT);
+        return document.cases.stream()
+                .filter(record -> record.getActorName() != null)
+                .filter(record -> record.getActorName().toLowerCase(Locale.ROOT).equals(normalized))
+                .sorted(Comparator.comparingLong(CaseRecord::getCreatedAt).reversed())
+                .skip(offset)
+                .limit(limit)
+                .toList();
+    }
+
+    @Override
+    public synchronized List<CaseRecord> getCasesByStatusActor(String actorName, int limit, int offset) {
+        String normalized = actorName == null ? "" : actorName.toLowerCase(Locale.ROOT);
+        return document.cases.stream()
+                .filter(record -> record.getStatusActorName() != null)
+                .filter(record -> record.getStatusActorName().toLowerCase(Locale.ROOT).equals(normalized))
+                .sorted(Comparator.comparing(CaseRecord::getStatusChangedAt, Comparator.nullsLast(Long::compareTo)).reversed())
                 .skip(offset)
                 .limit(limit)
                 .toList();
@@ -172,6 +232,34 @@ public final class JsonStorage implements ModerationStorage {
         return (int) document.cases.stream()
                 .filter(record -> type == record.getType())
                 .filter(record -> record.isVisibleFor(playerUniqueId))
+                .count();
+    }
+
+    @Override
+    public synchronized int countCasesByActor(String actorName) {
+        String normalized = actorName == null ? "" : actorName.toLowerCase(Locale.ROOT);
+        return (int) document.cases.stream()
+                .filter(record -> record.getActorName() != null)
+                .filter(record -> record.getActorName().toLowerCase(Locale.ROOT).equals(normalized))
+                .count();
+    }
+
+    @Override
+    public synchronized int countCasesByActorAndType(String actorName, CaseType type) {
+        String normalized = actorName == null ? "" : actorName.toLowerCase(Locale.ROOT);
+        return (int) document.cases.stream()
+                .filter(record -> type == record.getType())
+                .filter(record -> record.getActorName() != null)
+                .filter(record -> record.getActorName().toLowerCase(Locale.ROOT).equals(normalized))
+                .count();
+    }
+
+    @Override
+    public synchronized int countStatusChangesByActor(String actorName) {
+        String normalized = actorName == null ? "" : actorName.toLowerCase(Locale.ROOT);
+        return (int) document.cases.stream()
+                .filter(record -> record.getStatusActorName() != null)
+                .filter(record -> record.getStatusActorName().toLowerCase(Locale.ROOT).equals(normalized))
                 .count();
     }
 

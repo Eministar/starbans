@@ -1,5 +1,8 @@
 package dev.eministar.starbans.model;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 public final class CaseRecord {
@@ -16,6 +19,12 @@ public final class CaseRecord {
     private String actorName;
     private String reason;
     private String source;
+    private String category;
+    private String templateKey;
+    private List<String> tags;
+    private int points;
+    private CaseVisibility visibility;
+    private Long referenceCaseId;
     private long createdAt;
     private Long expiresAt;
     private CaseStatus status;
@@ -46,6 +55,60 @@ public final class CaseRecord {
                       UUID statusActorUniqueId,
                       String statusActorName,
                       String statusNote) {
+        this(
+                id,
+                type,
+                label,
+                targetPlayerUniqueId,
+                targetPlayerName,
+                targetIp,
+                relatedPlayerUniqueId,
+                relatedPlayerName,
+                actorUniqueId,
+                actorName,
+                reason,
+                source,
+                null,
+                null,
+                List.of(),
+                0,
+                CaseVisibility.INTERNAL,
+                null,
+                createdAt,
+                expiresAt,
+                status,
+                statusChangedAt,
+                statusActorUniqueId,
+                statusActorName,
+                statusNote
+        );
+    }
+
+    public CaseRecord(long id,
+                      CaseType type,
+                      String label,
+                      UUID targetPlayerUniqueId,
+                      String targetPlayerName,
+                      String targetIp,
+                      UUID relatedPlayerUniqueId,
+                      String relatedPlayerName,
+                      UUID actorUniqueId,
+                      String actorName,
+                      String reason,
+                      String source,
+                      String category,
+                      String templateKey,
+                      List<String> tags,
+                      int points,
+                      CaseVisibility visibility,
+                      Long referenceCaseId,
+                      long createdAt,
+                      Long expiresAt,
+                      CaseStatus status,
+                      Long statusChangedAt,
+                      UUID statusActorUniqueId,
+                      String statusActorName,
+                      String statusNote) {
         this.id = id;
         this.type = type;
         this.label = label;
@@ -58,6 +121,12 @@ public final class CaseRecord {
         this.actorName = actorName;
         this.reason = reason;
         this.source = source;
+        this.category = category;
+        this.templateKey = templateKey;
+        this.tags = normalizeTags(tags);
+        this.points = Math.max(0, points);
+        this.visibility = visibility == null ? CaseVisibility.INTERNAL : visibility;
+        this.referenceCaseId = referenceCaseId;
         this.createdAt = createdAt;
         this.expiresAt = expiresAt;
         this.status = status;
@@ -76,6 +145,25 @@ public final class CaseRecord {
                                     String reason,
                                     String source,
                                     Long expiresAt) {
+        return create(type, label, targetPlayer, targetIp, relatedPlayer, actor, reason, source, expiresAt, null, null, List.of(), 0, CaseVisibility.INTERNAL, null);
+    }
+
+    public static CaseRecord create(CaseType type,
+                                    String label,
+                                    PlayerIdentity targetPlayer,
+                                    String targetIp,
+                                    PlayerIdentity relatedPlayer,
+                                    CommandActor actor,
+                                    String reason,
+                                    String source,
+                                    Long expiresAt,
+                                    String category,
+                                    String templateKey,
+                                    List<String> tags,
+                                    int points,
+                                    CaseVisibility visibility,
+                                    Long referenceCaseId) {
+        boolean kick = type == CaseType.KICK;
         return new CaseRecord(
                 0L,
                 type,
@@ -89,12 +177,18 @@ public final class CaseRecord {
                 actor == null ? "SYSTEM" : actor.name(),
                 reason,
                 source,
+                category,
+                templateKey,
+                tags,
+                points,
+                visibility,
+                referenceCaseId,
                 System.currentTimeMillis(),
                 expiresAt,
-                type == CaseType.KICK ? CaseStatus.RESOLVED : CaseStatus.ACTIVE,
-                type == CaseType.KICK ? System.currentTimeMillis() : null,
-                type == CaseType.KICK && actor != null ? actor.uniqueId() : null,
-                type == CaseType.KICK && actor != null ? actor.name() : null,
+                kick ? CaseStatus.RESOLVED : CaseStatus.ACTIVE,
+                kick ? System.currentTimeMillis() : null,
+                kick && actor != null ? actor.uniqueId() : null,
+                kick && actor != null ? actor.name() : null,
                 null
         );
     }
@@ -145,6 +239,37 @@ public final class CaseRecord {
 
     public String getSource() {
         return source;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public String getTemplateKey() {
+        return templateKey;
+    }
+
+    public List<String> getTags() {
+        return tags == null ? List.of() : List.copyOf(tags);
+    }
+
+    public String getTagsDisplay() {
+        if (getTags().isEmpty()) {
+            return "";
+        }
+        return String.join(", ", getTags());
+    }
+
+    public int getPoints() {
+        return points;
+    }
+
+    public CaseVisibility getVisibility() {
+        return visibility == null ? CaseVisibility.INTERNAL : visibility;
+    }
+
+    public Long getReferenceCaseId() {
+        return referenceCaseId;
     }
 
     public long getCreatedAt() {
@@ -208,6 +333,12 @@ public final class CaseRecord {
                 actorName,
                 reason,
                 source,
+                category,
+                templateKey,
+                getTags(),
+                points,
+                getVisibility(),
+                referenceCaseId,
                 createdAt,
                 expiresAt,
                 status,
@@ -236,6 +367,12 @@ public final class CaseRecord {
                 actorName,
                 reason,
                 source,
+                category,
+                templateKey,
+                getTags(),
+                points,
+                getVisibility(),
+                referenceCaseId,
                 createdAt,
                 expiresAt,
                 newStatus,
@@ -244,5 +381,59 @@ public final class CaseRecord {
                 changedByName,
                 note
         );
+    }
+
+    public CaseRecord withMetadata(String newCategory,
+                                   String newTemplateKey,
+                                   List<String> newTags,
+                                   int newPoints,
+                                   CaseVisibility newVisibility,
+                                   Long newReferenceCaseId) {
+        return new CaseRecord(
+                id,
+                type,
+                label,
+                targetPlayerUniqueId,
+                targetPlayerName,
+                targetIp,
+                relatedPlayerUniqueId,
+                relatedPlayerName,
+                actorUniqueId,
+                actorName,
+                reason,
+                source,
+                newCategory,
+                newTemplateKey,
+                newTags,
+                newPoints,
+                newVisibility,
+                newReferenceCaseId,
+                createdAt,
+                expiresAt,
+                status,
+                statusChangedAt,
+                statusActorUniqueId,
+                statusActorName,
+                statusNote
+        );
+    }
+
+    private static List<String> normalizeTags(List<String> input) {
+        if (input == null || input.isEmpty()) {
+            return List.of();
+        }
+
+        List<String> output = new ArrayList<>();
+        for (String tag : input) {
+            if (tag == null || tag.isBlank()) {
+                continue;
+            }
+
+            String normalized = tag.trim().toLowerCase(Locale.ROOT);
+            if (!output.contains(normalized)) {
+                output.add(normalized);
+            }
+        }
+        return List.copyOf(output);
     }
 }

@@ -1,3 +1,35 @@
+/*
+ * ███████╗████████╗ █████╗ ██████╗ ██████╗  █████╗ ███╗   ██╗███████╗
+ * ██╔════╝╚══██╔══╝██╔══██╗██╔══██╗██╔══██╗██╔══██╗████╗  ██║██╔════╝
+ * ███████╗   ██║   ███████║██████╔╝██████╔╝███████║██╔██╗ ██║███████╗
+ * ╚════██║   ██║   ██╔══██║██╔══██╗██╔══██╗██╔══██║██║╚██╗██║╚════██║
+ * ███████║   ██║   ██║  ██║██║  ██║██████╔╝██║  ██║██║ ╚████║███████║
+ * ╚══════╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═══╝╚══════╝
+ *
+ * StarBans - Advanced Minecraft Moderation System
+ * Copyright (c) 2026 Eministar
+ *
+ * Licensed under the MIT License.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
 package dev.eministar.starbans;
 
 import dev.eministar.starbans.command.DynamicCommandRegistrar;
@@ -13,8 +45,14 @@ import dev.eministar.starbans.network.NetworkSyncService;
 import dev.eministar.starbans.network.SharedNetworkSnapshotPublisher;
 import dev.eministar.starbans.placeholder.StarBansPlaceholderExpansion;
 import dev.eministar.starbans.service.GuiInputService;
+import dev.eministar.starbans.service.AltDetectionService;
+import dev.eministar.starbans.service.AuditLogService;
+import dev.eministar.starbans.service.CaseExportService;
+import dev.eministar.starbans.service.JoinAlertExemptionService;
 import dev.eministar.starbans.service.ModerationService;
 import dev.eministar.starbans.service.PlayerLookupService;
+import dev.eministar.starbans.service.PunishmentTemplateService;
+import dev.eministar.starbans.service.ServerRuleService;
 import dev.eministar.starbans.service.StaffAlertService;
 import dev.eministar.starbans.service.VpnCheckService;
 import dev.eministar.starbans.utils.Banner;
@@ -41,6 +79,12 @@ public final class StarBans extends JavaPlugin {
     private DiscordWebhookService discordWebhookService;
     private StaffAlertService staffAlertService;
     private VpnCheckService vpnCheckService;
+    private ServerRuleService serverRuleService;
+    private PunishmentTemplateService punishmentTemplateService;
+    private AuditLogService auditLogService;
+    private CaseExportService caseExportService;
+    private JoinAlertExemptionService joinAlertExemptionService;
+    private AltDetectionService altDetectionService;
     private GuiInputService guiInputService;
     private NetworkSyncService networkSyncService;
     private SharedNetworkSnapshotPublisher sharedNetworkSnapshotPublisher;
@@ -144,10 +188,16 @@ public final class StarBans extends JavaPlugin {
 
         discordWebhookService = new DiscordWebhookService(this, discordWebhookConfig);
         vpnCheckService = new VpnCheckService(this);
+        serverRuleService = new ServerRuleService(this);
+        punishmentTemplateService = new PunishmentTemplateService(this);
         moderationService = new ModerationService(this, storage, lang, discordWebhookService);
         playerLookupService = new PlayerLookupService(this);
         guiInputService = new GuiInputService(this);
         staffAlertService = new StaffAlertService(this);
+        auditLogService = new AuditLogService(storage);
+        caseExportService = new CaseExportService(this, moderationService);
+        joinAlertExemptionService = new JoinAlertExemptionService(this, serverRuleService);
+        altDetectionService = new AltDetectionService(this, moderationService);
         if (networkSyncService != null) {
             networkSyncService.reload();
         }
@@ -207,6 +257,30 @@ public final class StarBans extends JavaPlugin {
 
     public VpnCheckService getVpnCheckService() {
         return vpnCheckService;
+    }
+
+    public ServerRuleService getServerRuleService() {
+        return serverRuleService;
+    }
+
+    public PunishmentTemplateService getPunishmentTemplateService() {
+        return punishmentTemplateService;
+    }
+
+    public AuditLogService getAuditLogService() {
+        return auditLogService;
+    }
+
+    public CaseExportService getCaseExportService() {
+        return caseExportService;
+    }
+
+    public JoinAlertExemptionService getJoinAlertExemptionService() {
+        return joinAlertExemptionService;
+    }
+
+    public AltDetectionService getAltDetectionService() {
+        return altDetectionService;
     }
 
     public GuiInputService getGuiInputService() {

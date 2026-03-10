@@ -3,6 +3,7 @@ package dev.eministar.starbans.command;
 import dev.eministar.starbans.StarBans;
 import dev.eministar.starbans.gui.AdminGuiFactory;
 import dev.eministar.starbans.model.CaseRecord;
+import dev.eministar.starbans.model.CaseVisibility;
 import dev.eministar.starbans.model.CommandActor;
 import dev.eministar.starbans.model.ModerationActionResult;
 import dev.eministar.starbans.model.ModerationActionType;
@@ -20,6 +21,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -31,11 +33,15 @@ public final class StarBansCommand implements CommandExecutor, TabCompleter {
 
     private static final List<String> ROOT_SUBCOMMANDS = List.of(
             "help", "reload", "gui", "check", "cases", "case", "notes", "note", "ban", "tempban",
-            "unban", "ipban", "tempipban", "unipban", "mute", "tempmute", "unmute", "kick", "alt", "ipblacklist"
+            "unban", "ipban", "tempipban", "unipban", "mute", "tempmute", "unmute", "kick", "alt", "ipblacklist",
+            "warn", "watchlist", "template", "webhooktest", "audit", "undo", "reopen", "export"
     );
     private static final List<String> DURATION_SUGGESTIONS = List.of("30m", "1h", "12h", "1d", "7d", "30d");
     private static final List<String> ALT_SUBCOMMANDS = List.of("mark", "list", "clear");
     private static final List<String> BLACKLIST_SUBCOMMANDS = List.of("add", "remove");
+    private static final List<String> WATCHLIST_SUBCOMMANDS = List.of("add", "remove", "list");
+    private static final List<String> TEMPLATE_SUBCOMMANDS = List.of("list", "info", "apply");
+    private static final List<String> CASE_TAG_SUBCOMMANDS = List.of("add", "remove", "set", "clear");
 
     private final StarBans plugin;
 
@@ -120,6 +126,14 @@ public final class StarBansCommand implements CommandExecutor, TabCompleter {
             case "kick" -> executeKick(sender, subArguments(args), "COMMAND:ROOT");
             case "alt" -> executeAlt(sender, subArguments(args), "COMMAND:ROOT");
             case "ipblacklist" -> executeIpBlacklist(sender, subArguments(args), "COMMAND:ROOT");
+            case "warn" -> executeWarn(sender, subArguments(args), "COMMAND:ROOT");
+            case "watchlist" -> executeWatchlist(sender, subArguments(args), "COMMAND:ROOT");
+            case "template" -> executeTemplate(sender, subArguments(args));
+            case "webhooktest" -> executeWebhookTest(sender, subArguments(args));
+            case "audit" -> executeAudit(sender, subArguments(args));
+            case "undo" -> executeUndo(sender, subArguments(args));
+            case "reopen" -> executeReopen(sender, subArguments(args));
+            case "export" -> executeExport(sender, subArguments(args));
             default -> {
                 sendHelp(sender);
                 yield true;
@@ -194,9 +208,12 @@ public final class StarBansCommand implements CommandExecutor, TabCompleter {
                 "last_ip", summary.lastKnownIp() == null ? plugin.getLang().get("labels.none") : summary.lastKnownIp(),
                 "active_ban", summary.activeBan() == null ? plugin.getLang().get("labels.none") : summary.activeBan().getReason(),
                 "active_mute", summary.activeMute() == null ? plugin.getLang().get("labels.none") : summary.activeMute().getReason(),
+                "active_watchlist", summary.activeWatchlist() == null ? plugin.getLang().get("labels.none") : summary.activeWatchlist().getReason(),
                 "case_count", summary.visibleCaseCount(),
                 "note_count", summary.noteCount(),
                 "alt_count", summary.altFlagCount(),
+                "warn_count", summary.warnCount(),
+                "warning_points", summary.warningPoints(),
                 "last_case_type", summary.latestCase() == null ? plugin.getLang().get("labels.none") : plugin.getModerationService().formatCaseType(summary.latestCase().getType()),
                 "last_case_reason", summary.latestCase() == null ? plugin.getLang().get("labels.none") : summary.latestCase().getReason()
         )) {
@@ -264,6 +281,9 @@ public final class StarBansCommand implements CommandExecutor, TabCompleter {
             deny(sender);
             return true;
         }
+        if (args.length > 0 && args[0].equalsIgnoreCase("tags")) {
+            return executeCaseTags(sender, subArguments(args));
+        }
         if (args.length < 1) {
             sender.sendMessage(plugin.getLang().prefixed("messages.usage-case"));
             return true;
@@ -294,6 +314,12 @@ public final class StarBansCommand implements CommandExecutor, TabCompleter {
                 "reason", record.get().getReason(),
                 "actor", record.get().getActorName(),
                 "source", record.get().getSource(),
+                "category", record.get().getCategory() == null ? plugin.getLang().get("labels.none") : record.get().getCategory(),
+                "template_key", record.get().getTemplateKey() == null ? plugin.getLang().get("labels.none") : record.get().getTemplateKey(),
+                "tags", record.get().getTagsDisplay().isBlank() ? plugin.getLang().get("labels.none") : record.get().getTagsDisplay(),
+                "points", record.get().getPoints(),
+                "visibility", record.get().getVisibility().name(),
+                "reference_case_id", record.get().getReferenceCaseId() == null ? plugin.getLang().get("labels.none") : record.get().getReferenceCaseId(),
                 "created_at", plugin.getModerationService().formatDate(record.get().getCreatedAt()),
                 "expires_at", plugin.getModerationService().formatExpiry(record.get()),
                 "status", plugin.getLang().get("labels.case-status-" + record.get().getStatus().name().toLowerCase(Locale.ROOT)),
@@ -302,6 +328,426 @@ public final class StarBansCommand implements CommandExecutor, TabCompleter {
         )) {
             sender.sendMessage(line);
         }
+        return true;
+    }
+
+    private boolean executeCaseTags(CommandSender sender, String[] args) throws Exception {
+        if (!hasPermission(sender, "starbans.command.tags")) {
+            deny(sender);
+            return true;
+        }
+        if (args.length < 2) {
+            sender.sendMessage(plugin.getLang().prefixed("messages.usage-case-tags"));
+            return true;
+        }
+
+        long caseId;
+        try {
+            caseId = Long.parseLong(args[0]);
+        } catch (NumberFormatException exception) {
+            sender.sendMessage(plugin.getLang().prefixed("messages.invalid-case-id", "input", args[0]));
+            return true;
+        }
+
+        List<String> tags = splitTags(args, 2);
+        ModerationActionResult result = plugin.getModerationService().updateCaseTags(caseId, CommandActor.fromSender(sender), args[1], tags);
+        if (result.type() == ModerationActionType.NOT_FOUND || result.caseRecord() == null) {
+            sender.sendMessage(plugin.getLang().prefixed("messages.case-not-found", "id", caseId));
+            return true;
+        }
+
+        sender.sendMessage(plugin.getLang().prefixed(
+                "messages.case-tags-updated",
+                "id", caseId,
+                "tags", result.caseRecord().getTagsDisplay().isBlank() ? plugin.getLang().get("labels.none") : result.caseRecord().getTagsDisplay()
+        ));
+        return true;
+    }
+
+    private boolean executeWarn(CommandSender sender, String[] args, String source) throws Exception {
+        if (!hasPermission(sender, "starbans.command.warn")) {
+            deny(sender);
+            return true;
+        }
+        if (args.length < 1) {
+            sender.sendMessage(plugin.getLang().prefixed("messages.usage-warn"));
+            return true;
+        }
+
+        Optional<PlayerIdentity> target = resolveTarget(sender, args[0]);
+        if (target.isEmpty()) {
+            return true;
+        }
+
+        int index = 1;
+        int points = Math.max(1, plugin.getConfig().getInt("warnings.default-points", 1));
+        if (index < args.length && args[index].matches("\\d+")) {
+            points = Math.max(1, Integer.parseInt(args[index]));
+            index++;
+        }
+
+        Long expiresAt = null;
+        if (index < args.length && looksLikeDurationToken(args[index])) {
+            Long duration = parseDuration(sender, args[index]);
+            if (duration == Long.MIN_VALUE) {
+                return true;
+            }
+            expiresAt = duration == null ? null : System.currentTimeMillis() + duration;
+            index++;
+        }
+
+        ModerationActionResult result = plugin.getModerationService().warnPlayer(
+                target.get(),
+                CommandActor.fromSender(sender),
+                joinArgs(args, index),
+                points,
+                expiresAt,
+                source,
+                null,
+                null,
+                List.of()
+        );
+
+        sender.sendMessage(plugin.getLang().prefixed(
+                "messages.warn-success",
+                "player", target.get().name(),
+                "reason", result.caseRecord().getReason(),
+                "points", result.caseRecord().getPoints(),
+                "remaining", plugin.getModerationService().formatExpiry(result.caseRecord())
+        ));
+
+        PlayerSummary summary = plugin.getModerationService().getPlayerSummary(target.get());
+        if (summary.activeBan() != null && result.caseRecord().getId() == safeReference(summary.activeBan())) {
+            sender.sendMessage(plugin.getLang().prefixed("messages.warn-escalation-ban", "player", target.get().name(), "reason", summary.activeBan().getReason()));
+        } else if (summary.activeMute() != null && result.caseRecord().getId() == safeReference(summary.activeMute())) {
+            sender.sendMessage(plugin.getLang().prefixed("messages.warn-escalation-mute", "player", target.get().name(), "reason", summary.activeMute().getReason()));
+        }
+        return true;
+    }
+
+    private boolean executeWatchlist(CommandSender sender, String[] args, String source) throws Exception {
+        if (!hasPermission(sender, "starbans.command.watchlist")) {
+            deny(sender);
+            return true;
+        }
+        if (args.length < 2) {
+            sender.sendMessage(plugin.getLang().prefixed("messages.usage-watchlist"));
+            return true;
+        }
+
+        String subCommand = args[0].toLowerCase(Locale.ROOT);
+        Optional<PlayerIdentity> target = resolveTarget(sender, args[1]);
+        if (target.isEmpty()) {
+            return true;
+        }
+
+        if (subCommand.equals("list")) {
+            PlayerSummary summary = plugin.getModerationService().getPlayerSummary(target.get());
+            if (summary.activeWatchlist() == null) {
+                sender.sendMessage(plugin.getLang().prefixed("messages.watchlist-empty", "player", target.get().name()));
+                return true;
+            }
+            sender.sendMessage(plugin.getLang().prefixed(
+                    "messages.watchlist-entry",
+                    "player", target.get().name(),
+                    "reason", summary.activeWatchlist().getReason(),
+                    "expires_at", plugin.getModerationService().formatExpiry(summary.activeWatchlist())
+            ));
+            return true;
+        }
+
+        if (subCommand.equals("remove")) {
+            ModerationActionResult result = plugin.getModerationService().unwatchlistPlayer(target.get(), CommandActor.fromSender(sender), joinArgs(args, 2));
+            if (result.type() == ModerationActionType.NOT_ACTIVE) {
+                sender.sendMessage(plugin.getLang().prefixed("messages.watchlist-not-active", "player", target.get().name()));
+                return true;
+            }
+            sender.sendMessage(plugin.getLang().prefixed("messages.watchlist-remove-success", "player", target.get().name()));
+            return true;
+        }
+
+        if (!subCommand.equals("add")) {
+            sender.sendMessage(plugin.getLang().prefixed("messages.usage-watchlist"));
+            return true;
+        }
+
+        int index = 2;
+        Long expiresAt = null;
+        if (index < args.length && looksLikeDurationToken(args[index])) {
+            Long duration = parseDuration(sender, args[index]);
+            if (duration == Long.MIN_VALUE) {
+                return true;
+            }
+            expiresAt = duration == null ? null : System.currentTimeMillis() + duration;
+            index++;
+        }
+
+        ModerationActionResult result = plugin.getModerationService().watchlistPlayer(
+                target.get(),
+                CommandActor.fromSender(sender),
+                joinArgs(args, index),
+                expiresAt,
+                source,
+                List.of("watchlist")
+        );
+        if (result.type() == ModerationActionType.ALREADY_ACTIVE) {
+            sender.sendMessage(plugin.getLang().prefixed("messages.watchlist-already-active", "player", target.get().name()));
+            return true;
+        }
+
+        sender.sendMessage(plugin.getLang().prefixed("messages.watchlist-add-success", "player", target.get().name(), "reason", result.caseRecord().getReason()));
+        return true;
+    }
+
+    private boolean executeTemplate(CommandSender sender, String[] args) throws Exception {
+        if (!hasPermission(sender, "starbans.command.template")) {
+            deny(sender);
+            return true;
+        }
+        if (args.length < 1) {
+            sender.sendMessage(plugin.getLang().prefixed("messages.usage-template"));
+            return true;
+        }
+
+        String subCommand = args[0].toLowerCase(Locale.ROOT);
+        if (subCommand.equals("list")) {
+            List<dev.eministar.starbans.service.PunishmentTemplateService.Template> templates = plugin.getPunishmentTemplateService().getTemplates();
+            sender.sendMessage(plugin.getLang().prefixed("messages.template-list-header", "count", templates.size()));
+            for (dev.eministar.starbans.service.PunishmentTemplateService.Template template : templates) {
+                sender.sendMessage(plugin.getLang().prefixed(
+                        "messages.template-entry",
+                        "key", template.key(),
+                        "display", template.displayName(),
+                        "type", template.type().name(),
+                        "points", template.points(),
+                        "duration", template.durationMillis() == null ? plugin.getLang().get("time.permanent") : TimeUtil.formatRemaining(System.currentTimeMillis() + template.durationMillis(), plugin.getLang())
+                ));
+            }
+            return true;
+        }
+
+        if (args.length < 2) {
+            sender.sendMessage(plugin.getLang().prefixed("messages.usage-template"));
+            return true;
+        }
+
+        Optional<dev.eministar.starbans.service.PunishmentTemplateService.Template> template = plugin.getPunishmentTemplateService().getTemplate(args[1]);
+        if (template.isEmpty()) {
+            sender.sendMessage(plugin.getLang().prefixed("messages.template-not-found", "key", args[1]));
+            return true;
+        }
+
+        if (subCommand.equals("info")) {
+            sender.sendMessage(plugin.getLang().prefixed(
+                    "messages.template-info",
+                    "key", template.get().key(),
+                    "display", template.get().displayName(),
+                    "type", template.get().type().name(),
+                    "reason", template.get().reason(),
+                    "category", template.get().category() == null ? plugin.getLang().get("labels.none") : template.get().category(),
+                    "points", template.get().points(),
+                    "visibility", template.get().visibility().name(),
+                    "tags", template.get().tags().isEmpty() ? plugin.getLang().get("labels.none") : String.join(", ", template.get().tags())
+            ));
+            return true;
+        }
+
+        if (!subCommand.equals("apply") || args.length < 3) {
+            sender.sendMessage(plugin.getLang().prefixed("messages.usage-template"));
+            return true;
+        }
+
+        Optional<PlayerIdentity> target = resolveTarget(sender, args[2]);
+        if (target.isEmpty()) {
+            return true;
+        }
+
+        String source = "TEMPLATE:" + template.get().key();
+        Long expiresAt = template.get().durationMillis() == null ? null : System.currentTimeMillis() + template.get().durationMillis();
+
+        switch (template.get().type()) {
+            case BAN -> plugin.getModerationService().banPlayer(target.get(), CommandActor.fromSender(sender), template.get().reason(), expiresAt, source);
+            case MUTE -> plugin.getModerationService().mutePlayer(target.get(), CommandActor.fromSender(sender), template.get().reason(), expiresAt, source);
+            case KICK -> plugin.getModerationService().kickPlayer(target.get(), CommandActor.fromSender(sender), template.get().reason(), source);
+            case NOTE -> plugin.getModerationService().addNote(target.get(), CommandActor.fromSender(sender), template.get().label(), template.get().reason(), source, template.get().visibility(), template.get().tags(), template.get().category(), template.get().key());
+            case WARN -> plugin.getModerationService().warnPlayer(target.get(), CommandActor.fromSender(sender), template.get().reason(), Math.max(1, template.get().points()), expiresAt, source, template.get().category(), template.get().key(), template.get().tags());
+            case WATCHLIST -> plugin.getModerationService().watchlistPlayer(target.get(), CommandActor.fromSender(sender), template.get().reason(), expiresAt, source, template.get().tags());
+            case IP_BAN -> {
+                ResolvedIpTarget ipTarget = resolveIpTarget(sender, target.get().name());
+                if (ipTarget == null) {
+                    return true;
+                }
+                plugin.getModerationService().banIp(ipTarget.ipAddress(), target.get(), CommandActor.fromSender(sender), template.get().reason(), expiresAt, source);
+            }
+            default -> {
+                sender.sendMessage(plugin.getLang().prefixed("messages.template-unsupported", "key", template.get().key(), "type", template.get().type().name()));
+                return true;
+            }
+        }
+
+        sender.sendMessage(plugin.getLang().prefixed("messages.template-apply-success", "key", template.get().key(), "player", target.get().name()));
+        return true;
+    }
+
+    private boolean executeWebhookTest(CommandSender sender, String[] args) {
+        if (!hasPermission(sender, "starbans.command.webhooktest")) {
+            deny(sender);
+            return true;
+        }
+        if (args.length < 1) {
+            sender.sendMessage(plugin.getLang().prefixed("messages.usage-webhooktest"));
+            return true;
+        }
+
+        plugin.getDiscordWebhookService().send(
+                args[0],
+                "player", "WebhookTarget",
+                "target_player", "WebhookTarget",
+                "target_uuid", "00000000-0000-0000-0000-000000000001",
+                "related_player", "RelatedAccount",
+                "related_uuid", "00000000-0000-0000-0000-000000000002",
+                "ip", "127.0.0.1",
+                "reason", "Webhook test dispatch",
+                "actor", sender.getName(),
+                "actor_uuid", sender instanceof Player player ? player.getUniqueId() : "",
+                "source", "COMMAND:WEBHOOKTEST",
+                "category", "testing",
+                "template_key", "webhook-test",
+                "tags", "test, webhook",
+                "points", 3,
+                "server_profile", plugin.getServerRuleService().getActiveProfileId(),
+                "server_profile_name", plugin.getServerRuleService().getDisplayName()
+        );
+        sender.sendMessage(plugin.getLang().prefixed("messages.webhooktest-success", "action", args[0]));
+        return true;
+    }
+
+    private boolean executeAudit(CommandSender sender, String[] args) throws Exception {
+        if (!hasPermission(sender, "starbans.command.audit")) {
+            deny(sender);
+            return true;
+        }
+        if (args.length < 1) {
+            sender.sendMessage(plugin.getLang().prefixed("messages.usage-audit"));
+            return true;
+        }
+
+        int page = args.length >= 2 ? Math.max(0, parsePositiveInt(args[1], 1) - 1) : 0;
+        int limit = Math.max(1, plugin.getConfig().getInt("audit.console-limit", 5));
+        var snapshot = plugin.getAuditLogService().getSnapshot(args[0], limit, page);
+
+        sender.sendMessage(plugin.getLang().prefixed("messages.audit-header", "actor", snapshot.actorName()));
+        sender.sendMessage(plugin.getLang().prefixed(
+                "messages.audit-summary",
+                "total", snapshot.totalActions(),
+                "bans", snapshot.bans(),
+                "mutes", snapshot.mutes(),
+                "warns", snapshot.warns(),
+                "kicks", snapshot.kicks(),
+                "notes", snapshot.notes(),
+                "watchlists", snapshot.watchlists(),
+                "status_changes", snapshot.statusChanges()
+        ));
+
+        for (CaseRecord record : snapshot.recentActions()) {
+            sender.sendMessage(plugin.getLang().prefixed(
+                    "messages.audit-entry",
+                    "id", record.getId(),
+                    "type", plugin.getModerationService().formatCaseType(record.getType()),
+                    "player", record.getTargetPlayerName() == null ? plugin.getLang().get("labels.none") : record.getTargetPlayerName(),
+                    "reason", record.getReason()
+            ));
+        }
+        return true;
+    }
+
+    private boolean executeUndo(CommandSender sender, String[] args) throws Exception {
+        if (!hasPermission(sender, "starbans.command.undo")) {
+            deny(sender);
+            return true;
+        }
+        if (args.length < 1) {
+            sender.sendMessage(plugin.getLang().prefixed("messages.usage-undo"));
+            return true;
+        }
+
+        long caseId;
+        try {
+            caseId = Long.parseLong(args[0]);
+        } catch (NumberFormatException exception) {
+            sender.sendMessage(plugin.getLang().prefixed("messages.invalid-case-id", "input", args[0]));
+            return true;
+        }
+
+        ModerationActionResult result = plugin.getModerationService().undoCase(caseId, CommandActor.fromSender(sender), joinArgs(args, 1));
+        if (result.type() == ModerationActionType.NOT_FOUND) {
+            sender.sendMessage(plugin.getLang().prefixed("messages.case-not-found", "id", caseId));
+            return true;
+        }
+        if (result.type() == ModerationActionType.NOT_ACTIVE) {
+            sender.sendMessage(plugin.getLang().prefixed("messages.case-not-active", "id", caseId));
+            return true;
+        }
+
+        sender.sendMessage(plugin.getLang().prefixed("messages.undo-success", "id", caseId));
+        return true;
+    }
+
+    private boolean executeReopen(CommandSender sender, String[] args) throws Exception {
+        if (!hasPermission(sender, "starbans.command.reopen")) {
+            deny(sender);
+            return true;
+        }
+        if (args.length < 1) {
+            sender.sendMessage(plugin.getLang().prefixed("messages.usage-reopen"));
+            return true;
+        }
+
+        long caseId;
+        try {
+            caseId = Long.parseLong(args[0]);
+        } catch (NumberFormatException exception) {
+            sender.sendMessage(plugin.getLang().prefixed("messages.invalid-case-id", "input", args[0]));
+            return true;
+        }
+
+        ModerationActionResult result = plugin.getModerationService().reopenCase(caseId, CommandActor.fromSender(sender), joinArgs(args, 1));
+        if (result.type() == ModerationActionType.NOT_FOUND) {
+            sender.sendMessage(plugin.getLang().prefixed("messages.case-not-found", "id", caseId));
+            return true;
+        }
+        if (result.type() == ModerationActionType.ALREADY_ACTIVE) {
+            sender.sendMessage(plugin.getLang().prefixed("messages.case-already-active", "id", caseId));
+            return true;
+        }
+
+        sender.sendMessage(plugin.getLang().prefixed("messages.reopen-success", "id", caseId));
+        return true;
+    }
+
+    private boolean executeExport(CommandSender sender, String[] args) throws Exception {
+        if (!hasPermission(sender, "starbans.command.export")) {
+            deny(sender);
+            return true;
+        }
+        if (args.length < 1) {
+            sender.sendMessage(plugin.getLang().prefixed("messages.usage-export"));
+            return true;
+        }
+
+        Optional<PlayerIdentity> target = resolveTarget(sender, args[0]);
+        if (target.isEmpty()) {
+            return true;
+        }
+
+        String format = args.length >= 2 ? args[1].toLowerCase(Locale.ROOT) : "txt";
+        if (!format.equals("txt") && !format.equals("json")) {
+            sender.sendMessage(plugin.getLang().prefixed("messages.export-invalid-format", "format", format));
+            return true;
+        }
+
+        File file = plugin.getCaseExportService().exportPlayerCases(target.get(), format);
+        sender.sendMessage(plugin.getLang().prefixed("messages.export-success", "player", target.get().name(), "file", file.getName()));
         return true;
     }
 
@@ -334,6 +780,7 @@ public final class StarBansCommand implements CommandExecutor, TabCompleter {
                     "id", record.getId(),
                     "label", record.getLabel() == null ? plugin.getLang().get("labels.none") : record.getLabel(),
                     "text", record.getReason(),
+                    "visibility", record.getVisibility().name(),
                     "actor", record.getActorName(),
                     "created_at", plugin.getModerationService().formatDate(record.getCreatedAt())
             ));
@@ -357,9 +804,20 @@ public final class StarBansCommand implements CommandExecutor, TabCompleter {
         }
 
         String label = args[1];
-        String text = joinArgs(args, 2);
-        ModerationActionResult result = plugin.getModerationService().addNote(target.get(), CommandActor.fromSender(sender), label, text, source);
-        sender.sendMessage(plugin.getLang().prefixed("messages.note-success", "player", target.get().name(), "label", result.caseRecord().getLabel()));
+        int textIndex = 2;
+        CaseVisibility visibility = CaseVisibility.fromConfig(plugin.getConfig().getString("notes.default-visibility", "INTERNAL"));
+        if (args.length >= 4 && (args[2].equalsIgnoreCase("internal") || args[2].equalsIgnoreCase("public"))) {
+            visibility = CaseVisibility.fromConfig(args[2]);
+            textIndex = 3;
+        }
+        if (args.length <= textIndex) {
+            sender.sendMessage(plugin.getLang().prefixed("messages.usage-note"));
+            return true;
+        }
+
+        String text = joinArgs(args, textIndex);
+        ModerationActionResult result = plugin.getModerationService().addNote(target.get(), CommandActor.fromSender(sender), label, text, source, visibility, List.of(), null, null);
+        sender.sendMessage(plugin.getLang().prefixed("messages.note-success", "player", target.get().name(), "label", result.caseRecord().getLabel(), "visibility", visibility.name()));
         return true;
     }
 
@@ -853,8 +1311,40 @@ public final class StarBansCommand implements CommandExecutor, TabCompleter {
         if (args.length == 2 && args[0].equalsIgnoreCase("ipblacklist")) {
             return filter(BLACKLIST_SUBCOMMANDS, args[1]);
         }
+        if (args.length == 2 && args[0].equalsIgnoreCase("watchlist")) {
+            return filter(WATCHLIST_SUBCOMMANDS, args[1]);
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("template")) {
+            return filter(TEMPLATE_SUBCOMMANDS, args[1]);
+        }
+        if (args.length == 2 && List.of("case", "undo", "reopen", "webhooktest", "audit").contains(args[0].toLowerCase(Locale.ROOT))) {
+            if (args[0].equalsIgnoreCase("case")) {
+                return filter(List.of("tags"), args[1]);
+            }
+        }
         if (args.length == 3 && List.of("tempban", "tempmute", "tempipban").contains(args[0].toLowerCase(Locale.ROOT))) {
             return filter(DURATION_SUGGESTIONS, args[2]);
+        }
+        if (args.length == 3 && args[0].equalsIgnoreCase("warn")) {
+            return filter(DURATION_SUGGESTIONS, args[2]);
+        }
+        if (args.length == 3 && args[0].equalsIgnoreCase("watchlist") && args[1].equalsIgnoreCase("add")) {
+            return filter(plugin.getPlayerLookupService().suggestNames(args[2]), args[2]);
+        }
+        if (args.length == 3 && args[0].equalsIgnoreCase("watchlist") && List.of("remove", "list").contains(args[1].toLowerCase(Locale.ROOT))) {
+            return filter(plugin.getPlayerLookupService().suggestNames(args[2]), args[2]);
+        }
+        if (args.length == 3 && args[0].equalsIgnoreCase("template") && List.of("info", "apply").contains(args[1].toLowerCase(Locale.ROOT))) {
+            return filter(plugin.getPunishmentTemplateService().getTemplateKeys(), args[2]);
+        }
+        if (args.length == 4 && args[0].equalsIgnoreCase("template") && args[1].equalsIgnoreCase("apply")) {
+            return filter(plugin.getPlayerLookupService().suggestNames(args[3]), args[3]);
+        }
+        if (args.length == 3 && args[0].equalsIgnoreCase("case") && args[1].equalsIgnoreCase("tags")) {
+            return Collections.emptyList();
+        }
+        if (args.length == 4 && args[0].equalsIgnoreCase("case") && args[1].equalsIgnoreCase("tags")) {
+            return filter(CASE_TAG_SUBCOMMANDS, args[3]);
         }
         if (args.length == 3 && args[0].equalsIgnoreCase("alt") && args[1].equalsIgnoreCase("mark")) {
             return List.of("old-old-acc", "same-ip", "suspicious-alt");
@@ -898,7 +1388,7 @@ public final class StarBansCommand implements CommandExecutor, TabCompleter {
     }
 
     private boolean needsPlayer(String subCommand) {
-        return List.of("gui", "check", "cases", "history", "notes", "ban", "tempban", "unban", "mute", "tempmute", "unmute", "kick").contains(subCommand.toLowerCase(Locale.ROOT));
+        return List.of("gui", "check", "cases", "history", "notes", "ban", "tempban", "unban", "mute", "tempmute", "unmute", "kick", "warn", "export").contains(subCommand.toLowerCase(Locale.ROOT));
     }
 
     private List<String> filter(List<String> input, String prefix) {
@@ -910,6 +1400,38 @@ public final class StarBansCommand implements CommandExecutor, TabCompleter {
             }
         }
         return output;
+    }
+
+    private List<String> splitTags(String[] args, int startIndex) {
+        if (args.length <= startIndex) {
+            return List.of();
+        }
+
+        List<String> tags = new ArrayList<>();
+        for (int index = startIndex; index < args.length; index++) {
+            for (String tag : args[index].split(",")) {
+                if (!tag.isBlank()) {
+                    tags.add(tag.trim().toLowerCase(Locale.ROOT));
+                }
+            }
+        }
+        return tags;
+    }
+
+    private boolean looksLikeDurationToken(String input) {
+        return input != null && input.matches("(?i)^\\d+[smhdwoy].*");
+    }
+
+    private int parsePositiveInt(String input, int fallback) {
+        try {
+            return Math.max(1, Integer.parseInt(input));
+        } catch (NumberFormatException exception) {
+            return fallback;
+        }
+    }
+
+    private long safeReference(CaseRecord record) {
+        return record == null || record.getReferenceCaseId() == null ? -1L : record.getReferenceCaseId();
     }
 
     private record ResolvedIpTarget(PlayerIdentity player, String ipAddress) {

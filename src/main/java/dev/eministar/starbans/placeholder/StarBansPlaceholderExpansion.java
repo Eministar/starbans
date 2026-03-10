@@ -57,15 +57,21 @@ public final class StarBansPlaceholderExpansion extends PlaceholderExpansion {
                 case "mute_reason" -> muteReason(player);
                 case "is_muted" -> isMuted(player);
                 case "mute_remaining" -> muteRemaining(player);
+                case "is_watchlisted" -> isWatchlisted(player);
+                case "watchlist_reason" -> watchlistReason(player);
                 case "last_ip" -> lastIp(player);
                 case "case_count" -> caseCount(player);
                 case "note_count" -> noteCount(player);
                 case "alt_count" -> altCount(player);
+                case "warn_count" -> warnCount(player);
+                case "warning_points" -> warningPoints(player);
                 case "last_case_type" -> lastCaseType(player);
                 case "last_case_reason" -> lastCaseReason(player);
                 case "active_bans" -> String.valueOf(stats().activeBans());
                 case "active_ip_bans" -> String.valueOf(stats().activeIpBans());
                 case "active_mutes" -> String.valueOf(stats().activeMutes());
+                case "active_warns" -> String.valueOf(stats().activeWarns());
+                case "active_watchlists" -> String.valueOf(stats().activeWatchlists());
                 case "total_cases" -> String.valueOf(stats().totalCases());
                 default -> "";
             };
@@ -118,6 +124,16 @@ public final class StarBansPlaceholderExpansion extends PlaceholderExpansion {
         return summary != null && summary.activeMute() != null ? plugin.getModerationService().formatRemaining(summary.activeMute()) : plugin.getLang().get("labels.none");
     }
 
+    private String isWatchlisted(OfflinePlayer player) throws Exception {
+        PlayerSummary summary = summary(player);
+        return summary != null && summary.activeWatchlist() != null ? "true" : "false";
+    }
+
+    private String watchlistReason(OfflinePlayer player) throws Exception {
+        PlayerSummary summary = summary(player);
+        return summary != null && summary.activeWatchlist() != null ? summary.activeWatchlist().getReason() : plugin.getLang().get("labels.none");
+    }
+
     private String lastIp(OfflinePlayer player) throws Exception {
         PlayerSummary summary = summary(player);
         return summary == null || summary.lastKnownIp() == null ? plugin.getLang().get("labels.none") : summary.lastKnownIp();
@@ -136,6 +152,16 @@ public final class StarBansPlaceholderExpansion extends PlaceholderExpansion {
     private String altCount(OfflinePlayer player) throws Exception {
         PlayerSummary summary = summary(player);
         return String.valueOf(summary == null ? 0 : summary.altFlagCount());
+    }
+
+    private String warnCount(OfflinePlayer player) throws Exception {
+        PlayerSummary summary = summary(player);
+        return String.valueOf(summary == null ? 0 : summary.warnCount());
+    }
+
+    private String warningPoints(OfflinePlayer player) throws Exception {
+        PlayerSummary summary = summary(player);
+        return String.valueOf(summary == null ? 0 : summary.warningPoints());
     }
 
     private String lastCaseType(OfflinePlayer player) throws Exception {

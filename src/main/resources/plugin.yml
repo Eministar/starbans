@@ -10,7 +10,7 @@ commands:
   starbans:
     description: Main command for StarBans
     aliases: [ sb ]
-    permission: starbans.command.gui
+    permission: starbans.command.base
   sban:
     description: Permanently ban a player
     permission: starbans.command.ban
@@ -75,6 +75,9 @@ permissions:
   starbans.command.reload:
     description: Reload StarBans config and lang files
     default: op
+  starbans.command.base:
+    description: Access the /starbans root command
+    default: op
   starbans.command.gui:
     description: Open the moderation GUI
     default: op
@@ -125,6 +128,33 @@ permissions:
     default: op
   starbans.command.ipblacklist:
     description: Manage the IP blacklist
+    default: op
+  starbans.command.warn:
+    description: Warn players with points
+    default: op
+  starbans.command.watchlist:
+    description: Manage the player watchlist
+    default: op
+  starbans.command.template:
+    description: View and apply punishment templates
+    default: op
+  starbans.command.webhooktest:
+    description: Send test webhook payloads
+    default: op
+  starbans.command.audit:
+    description: Inspect moderator audit history
+    default: op
+  starbans.command.undo:
+    description: Revert an active case
+    default: op
+  starbans.command.reopen:
+    description: Reopen a resolved or expired case
+    default: op
+  starbans.command.export:
+    description: Export player case history
+    default: op
+  starbans.command.tags:
+    description: Edit case tags
     default: op
   starbans.gui.open:
     description: Open the StarBans main GUI

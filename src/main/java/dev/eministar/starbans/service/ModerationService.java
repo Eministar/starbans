@@ -6,6 +6,7 @@ import dev.eministar.starbans.discord.DiscordWebhookService;
 import dev.eministar.starbans.model.CaseRecord;
 import dev.eministar.starbans.model.CaseStatus;
 import dev.eministar.starbans.model.CaseType;
+import dev.eministar.starbans.model.CaseVisibility;
 import dev.eministar.starbans.model.CommandActor;
 import dev.eministar.starbans.model.ModerationActionResult;
 import dev.eministar.starbans.model.ModerationActionType;
@@ -19,6 +20,8 @@ import org.bukkit.entity.Player;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -49,6 +52,10 @@ public final class ModerationService {
         return ensureNotExpired(storage.findActiveCaseForPlayer(playerUniqueId, CaseType.MUTE));
     }
 
+    public Optional<CaseRecord> getActiveWatchlist(UUID playerUniqueId) throws Exception {
+        return ensureNotExpired(storage.findActiveCaseForPlayer(playerUniqueId, CaseType.WATCHLIST));
+    }
+
     public Optional<CaseRecord> getActiveIpBan(String ipAddress) throws Exception {
         return ensureNotExpired(storage.findActiveCaseForIp(IpUtil.normalize(ipAddress), CaseType.IP_BAN));
     }
@@ -59,15 +66,22 @@ public final class ModerationService {
 
     public PlayerSummary getPlayerSummary(PlayerIdentity player) throws Exception {
         Optional<PlayerProfile> profile = storage.findPlayerProfile(player.uniqueId());
+        List<CaseRecord> activeWarnings = getActivePlayerCases(player.uniqueId(), CaseType.WARN);
+        int warningPoints = activeWarnings.stream()
+                .mapToInt(CaseRecord::getPoints)
+                .sum();
         return new PlayerSummary(
                 player,
                 profile.map(PlayerProfile::getLastIp).orElse(null),
                 getActivePlayerBan(player.uniqueId()).orElse(null),
                 getActivePlayerMute(player.uniqueId()).orElse(null),
+                getActiveWatchlist(player.uniqueId()).orElse(null),
                 storage.findLatestCaseForPlayer(player.uniqueId()).orElse(null),
                 storage.countVisibleCasesForPlayer(player.uniqueId()),
                 storage.countCasesByTypeForPlayer(player.uniqueId(), CaseType.NOTE),
-                storage.getActiveAltFlags(player.uniqueId()).size()
+                storage.getActiveAltFlags(player.uniqueId()).size(),
+                activeWarnings.size(),
+                warningPoints
         );
     }
 
@@ -90,6 +104,16 @@ public final class ModerationService {
         return storage.getRecentCases(Math.max(1, pageSize), offset);
     }
 
+    public List<CaseRecord> getCasesByActor(String actorName, int pageSize, int page) throws Exception {
+        int offset = Math.max(0, page) * Math.max(1, pageSize);
+        return storage.getCasesByActor(actorName, Math.max(1, pageSize), offset);
+    }
+
+    public List<CaseRecord> getCasesByStatusActor(String actorName, int pageSize, int page) throws Exception {
+        int offset = Math.max(0, page) * Math.max(1, pageSize);
+        return storage.getCasesByStatusActor(actorName, Math.max(1, pageSize), offset);
+    }
+
     public List<PlayerProfile> getKnownProfiles(int pageSize, int page) throws Exception {
         int offset = Math.max(0, page) * Math.max(1, pageSize);
         return storage.getKnownProfiles(Math.max(1, pageSize), offset);
@@ -101,6 +125,16 @@ public final class ModerationService {
 
     public List<CaseRecord> getAltFlags(UUID playerUniqueId) throws Exception {
         return storage.getActiveAltFlags(playerUniqueId);
+    }
+
+    public List<CaseRecord> getActiveWarnings(UUID playerUniqueId) throws Exception {
+        return getActivePlayerCases(playerUniqueId, CaseType.WARN);
+    }
+
+    public int getWarningPoints(UUID playerUniqueId) throws Exception {
+        return getActiveWarnings(playerUniqueId).stream()
+                .mapToInt(CaseRecord::getPoints)
+                .sum();
     }
 
     public Optional<PlayerProfile> getProfile(UUID playerUniqueId) throws Exception {
@@ -146,7 +180,7 @@ public final class ModerationService {
             return new ModerationActionResult(ModerationActionType.ALREADY_ACTIVE, active.get());
         }
 
-        String effectiveReason = sanitize(reason, plugin.getConfig().getString("punishments.defaults.ban-reason", "No reason specified."));
+        String effectiveReason = sanitize(reason, defaultText("ban-reason", "punishments.defaults.ban-reason", "No reason specified."));
         CaseRecord stored = createAndStore(CaseType.BAN, null, target, null, null, actor, effectiveReason, source, expiresAt);
         notifyCreatedCase(stored);
 
@@ -161,7 +195,7 @@ public final class ModerationService {
             broadcast("messages.broadcasts.player-ban", recordReplacements(stored));
         }
 
-        webhookService.send(stored.isTemporary() ? "tempban" : "ban", recordReplacements(stored));
+        sendWebhook(stored.isTemporary() ? "tempban" : "ban", stored);
         return new ModerationActionResult(ModerationActionType.CREATED, stored);
     }
 
@@ -179,7 +213,7 @@ public final class ModerationService {
             return new ModerationActionResult(ModerationActionType.ALREADY_ACTIVE, active.get());
         }
 
-        String effectiveReason = sanitize(reason, plugin.getConfig().getString("punishments.defaults.mute-reason", "No reason specified."));
+        String effectiveReason = sanitize(reason, defaultText("mute-reason", "punishments.defaults.mute-reason", "No reason specified."));
         CaseRecord stored = createAndStore(CaseType.MUTE, null, target, null, null, actor, effectiveReason, source, expiresAt);
 
         Player online = Bukkit.getPlayer(target.uniqueId());
@@ -191,7 +225,7 @@ public final class ModerationService {
             broadcast("messages.broadcasts.player-mute", recordReplacements(stored));
         }
 
-        webhookService.send(stored.isTemporary() ? "tempmute" : "mute", recordReplacements(stored));
+        sendWebhook(stored.isTemporary() ? "tempmute" : "mute", stored);
         return new ModerationActionResult(ModerationActionType.CREATED, stored);
     }
 
@@ -211,7 +245,7 @@ public final class ModerationService {
             return new ModerationActionResult(ModerationActionType.ALREADY_ACTIVE, active.get());
         }
 
-        String effectiveReason = sanitize(reason, plugin.getConfig().getString("punishments.defaults.ip-ban-reason", "No reason specified."));
+        String effectiveReason = sanitize(reason, defaultText("ip-ban-reason", "punishments.defaults.ip-ban-reason", "No reason specified."));
         CaseRecord stored = createAndStore(CaseType.IP_BAN, null, targetPlayer, normalizedIp, null, actor, effectiveReason, source, expiresAt);
         notifyCreatedCase(stored);
 
@@ -226,7 +260,7 @@ public final class ModerationService {
             broadcast("messages.broadcasts.ip-ban", recordReplacements(stored));
         }
 
-        webhookService.send(stored.isTemporary() ? "tempipban" : "ipban", recordReplacements(stored));
+        sendWebhook(stored.isTemporary() ? "tempipban" : "ipban", stored);
         return new ModerationActionResult(ModerationActionType.CREATED, stored);
     }
 
@@ -237,9 +271,9 @@ public final class ModerationService {
             return new ModerationActionResult(ModerationActionType.NOT_ACTIVE, null);
         }
 
-        String effectiveNote = sanitize(note, plugin.getConfig().getString("punishments.defaults.unban-note", "No reason specified."));
+        String effectiveNote = sanitize(note, defaultText("unban-note", "punishments.defaults.unban-note", "No reason specified."));
         CaseRecord updated = storage.updateCaseStatus(active.get().getId(), CaseStatus.RESOLVED, System.currentTimeMillis(), actor.uniqueId(), actor.name(), effectiveNote);
-        webhookService.send("unipban", recordReplacements(updated));
+        sendWebhook("unipban", updated);
         notifyResolvedCase(updated);
         return new ModerationActionResult(ModerationActionType.REMOVED, updated);
     }
@@ -251,9 +285,9 @@ public final class ModerationService {
             return new ModerationActionResult(ModerationActionType.ALREADY_ACTIVE, active.get());
         }
 
-        String effectiveReason = sanitize(reason, plugin.getConfig().getString("punishments.defaults.ip-blacklist-reason", "No reason specified."));
+        String effectiveReason = sanitize(reason, defaultText("ip-blacklist-reason", "punishments.defaults.ip-blacklist-reason", "No reason specified."));
         CaseRecord stored = createAndStore(CaseType.IP_BLACKLIST, null, null, normalizedIp, null, actor, effectiveReason, source, null);
-        webhookService.send("ipblacklist", recordReplacements(stored));
+        sendWebhook("ipblacklist", stored);
         notifyCreatedCase(stored);
         return new ModerationActionResult(ModerationActionType.CREATED, stored);
     }
@@ -265,9 +299,9 @@ public final class ModerationService {
             return new ModerationActionResult(ModerationActionType.NOT_ACTIVE, null);
         }
 
-        String effectiveNote = sanitize(note, plugin.getConfig().getString("punishments.defaults.unban-note", "No reason specified."));
+        String effectiveNote = sanitize(note, defaultText("unban-note", "punishments.defaults.unban-note", "No reason specified."));
         CaseRecord updated = storage.updateCaseStatus(active.get().getId(), CaseStatus.RESOLVED, System.currentTimeMillis(), actor.uniqueId(), actor.name(), effectiveNote);
-        webhookService.send("ipunblacklist", recordReplacements(updated));
+        sendWebhook("ipunblacklist", updated);
         notifyResolvedCase(updated);
         return new ModerationActionResult(ModerationActionType.REMOVED, updated);
     }
@@ -277,11 +311,109 @@ public final class ModerationService {
                                           String label,
                                           String note,
                                           String source) throws Exception {
+        return addNote(target, actor, label, note, source, CaseVisibility.fromConfig(plugin.getConfig().getString("notes.default-visibility", "INTERNAL")), List.of(), null, null);
+    }
+
+    public ModerationActionResult addNote(PlayerIdentity target,
+                                          CommandActor actor,
+                                          String label,
+                                          String note,
+                                          String source,
+                                          CaseVisibility visibility,
+                                          List<String> tags,
+                                          String category,
+                                          String templateKey) throws Exception {
         String effectiveLabel = sanitize(label, plugin.getConfig().getString("notes.default-label", "note"));
         String effectiveNote = sanitize(note, plugin.getConfig().getString("notes.default-text", "No additional note provided."));
-        CaseRecord stored = createAndStore(CaseType.NOTE, effectiveLabel, target, null, null, actor, effectiveNote, source, null);
-        webhookService.send("note", recordReplacements(stored));
+        CaseRecord stored = createAndStore(
+                CaseType.NOTE,
+                effectiveLabel,
+                target,
+                null,
+                null,
+                actor,
+                effectiveNote,
+                source,
+                null,
+                category,
+                templateKey,
+                tags,
+                0,
+                visibility,
+                null
+        );
+        sendWebhook("note", stored);
         return new ModerationActionResult(ModerationActionType.CREATED, stored);
+    }
+
+    public ModerationActionResult warnPlayer(PlayerIdentity target,
+                                             CommandActor actor,
+                                             String reason,
+                                             int points,
+                                             Long expiresAt,
+                                             String source,
+                                             String category,
+                                             String templateKey,
+                                             List<String> tags) throws Exception {
+        int effectivePoints = Math.max(1, points);
+        String effectiveReason = sanitize(reason, defaultText("warn-reason", "warnings.default-reason", "No reason specified."));
+        CaseRecord stored = createAndStore(
+                CaseType.WARN,
+                null,
+                target,
+                null,
+                null,
+                actor,
+                effectiveReason,
+                source,
+                expiresAt,
+                sanitize(category, plugin.getConfig().getString("warnings.default-category", "warnings")),
+                templateKey,
+                tags,
+                effectivePoints,
+                CaseVisibility.INTERNAL,
+                null
+        );
+        sendWebhook("warn", stored);
+        applyWarnEscalation(target, actor, stored, source);
+        return new ModerationActionResult(ModerationActionType.CREATED, stored);
+    }
+
+    public ModerationActionResult watchlistPlayer(PlayerIdentity target,
+                                                  CommandActor actor,
+                                                  String reason,
+                                                  Long expiresAt,
+                                                  String source,
+                                                  List<String> tags) throws Exception {
+        Optional<CaseRecord> active = getActiveWatchlist(target.uniqueId());
+        if (active.isPresent()) {
+            return new ModerationActionResult(ModerationActionType.ALREADY_ACTIVE, active.get());
+        }
+
+        String effectiveReason = sanitize(reason, defaultText("watchlist-reason", "watchlist.default-reason", "Added to watchlist."));
+        CaseRecord stored = createAndStore(
+                CaseType.WATCHLIST,
+                plugin.getConfig().getString("watchlist.default-label", "watchlist"),
+                target,
+                null,
+                null,
+                actor,
+                effectiveReason,
+                source,
+                expiresAt,
+                plugin.getConfig().getString("watchlist.default-category", "security"),
+                null,
+                tags,
+                0,
+                CaseVisibility.INTERNAL,
+                null
+        );
+        sendWebhook("watchlist-add", stored);
+        return new ModerationActionResult(ModerationActionType.CREATED, stored);
+    }
+
+    public ModerationActionResult unwatchlistPlayer(PlayerIdentity target, CommandActor actor, String note) throws Exception {
+        return resolveActivePlayerCase(target, actor, note, CaseType.WATCHLIST, "watchlist-remove");
     }
 
     public ModerationActionResult addAltFlag(PlayerIdentity first,
@@ -301,7 +433,7 @@ public final class ModerationService {
         String effectiveLabel = sanitize(label, plugin.getConfig().getString("alt-flags.default-label", "alt-account"));
         String effectiveNote = sanitize(note, plugin.getConfig().getString("alt-flags.default-note", "Linked as a suspicious / alternate account."));
         CaseRecord stored = createAndStore(CaseType.ALT_FLAG, effectiveLabel, first, null, second, actor, effectiveNote, source, null);
-        webhookService.send("altflag", recordReplacements(stored));
+        sendWebhook("altflag", stored);
         return new ModerationActionResult(ModerationActionType.CREATED, stored);
     }
 
@@ -314,18 +446,78 @@ public final class ModerationService {
             return new ModerationActionResult(ModerationActionType.NOT_ACTIVE, existing.get());
         }
 
-        String effectiveNote = sanitize(note, plugin.getConfig().getString("punishments.defaults.resolve-note", "Resolved manually."));
+        String effectiveNote = sanitize(note, defaultText("resolve-note", "punishments.defaults.resolve-note", "Resolved manually."));
         CaseRecord updated = storage.updateCaseStatus(caseId, CaseStatus.RESOLVED, System.currentTimeMillis(), actor.uniqueId(), actor.name(), effectiveNote);
-        webhookService.send("resolve", recordReplacements(updated));
+        sendWebhook("resolve", updated);
         notifyResolvedCase(updated);
         return new ModerationActionResult(ModerationActionType.REMOVED, updated);
+    }
+
+    public ModerationActionResult reopenCase(long caseId, CommandActor actor, String note) throws Exception {
+        Optional<CaseRecord> existing = storage.findCaseById(caseId);
+        if (existing.isEmpty()) {
+            return new ModerationActionResult(ModerationActionType.NOT_FOUND, null);
+        }
+        if (existing.get().getStatus() == CaseStatus.ACTIVE) {
+            return new ModerationActionResult(ModerationActionType.ALREADY_ACTIVE, existing.get());
+        }
+
+        String effectiveNote = sanitize(note, plugin.getConfig().getString("cases.reopen-note", "Case reopened manually."));
+        CaseRecord reopened = storage.updateCaseStatus(caseId, CaseStatus.ACTIVE, System.currentTimeMillis(), actor.uniqueId(), actor.name(), effectiveNote);
+        sendWebhook("reopen", reopened);
+        notifyCreatedCase(reopened);
+        return new ModerationActionResult(ModerationActionType.REOPENED, reopened);
+    }
+
+    public ModerationActionResult undoCase(long caseId, CommandActor actor, String note) throws Exception {
+        Optional<CaseRecord> existing = storage.findCaseById(caseId);
+        if (existing.isEmpty()) {
+            return new ModerationActionResult(ModerationActionType.NOT_FOUND, null);
+        }
+        if (existing.get().getStatus() != CaseStatus.ACTIVE) {
+            return new ModerationActionResult(ModerationActionType.NOT_ACTIVE, existing.get());
+        }
+
+        String effectiveNote = sanitize(note, plugin.getConfig().getString("cases.undo-note", "Action reverted manually."));
+        CaseRecord updated = storage.updateCaseStatus(caseId, CaseStatus.RESOLVED, System.currentTimeMillis(), actor.uniqueId(), actor.name(), effectiveNote);
+        sendWebhook("undo", updated);
+        notifyResolvedCase(updated);
+        return new ModerationActionResult(ModerationActionType.REMOVED, updated);
+    }
+
+    public ModerationActionResult updateCaseTags(long caseId, CommandActor actor, String mode, List<String> tags) throws Exception {
+        Optional<CaseRecord> existing = storage.findCaseById(caseId);
+        if (existing.isEmpty()) {
+            return new ModerationActionResult(ModerationActionType.NOT_FOUND, null);
+        }
+
+        List<String> updatedTags = switch (mode == null ? "set" : mode.toLowerCase()) {
+            case "add" -> mergeTags(existing.get().getTags(), tags);
+            case "remove" -> existing.get().getTags().stream()
+                    .filter(tag -> tags == null || tags.stream().noneMatch(input -> input.equalsIgnoreCase(tag)))
+                    .toList();
+            case "clear" -> List.of();
+            default -> mergeTags(List.of(), tags);
+        };
+
+        CaseRecord updated = existing.get().withMetadata(
+                existing.get().getCategory(),
+                existing.get().getTemplateKey(),
+                updatedTags,
+                existing.get().getPoints(),
+                existing.get().getVisibility(),
+                existing.get().getReferenceCaseId()
+        );
+        storage.updateCase(updated);
+        sendWebhook("case-updated", updated);
+        return new ModerationActionResult(ModerationActionType.UPDATED, updated);
     }
 
     public ModerationActionResult kickPlayer(PlayerIdentity target,
                                              CommandActor actor,
                                              String reason,
                                              String source) throws Exception {
-        String effectiveReason = sanitize(reason, plugin.getConfig().getString("punishments.defaults.kick-reason", "No reason specified."));
+        String effectiveReason = sanitize(reason, defaultText("kick-reason", "punishments.defaults.kick-reason", "No reason specified."));
         CaseRecord stored = createAndStore(CaseType.KICK, null, target, null, null, actor, effectiveReason, source, null);
         Player online = Bukkit.getPlayer(target.uniqueId());
         if (online != null) {
@@ -336,7 +528,7 @@ public final class ModerationService {
             broadcast("messages.broadcasts.kick", recordReplacements(stored));
         }
 
-        webhookService.send("kick", recordReplacements(stored));
+        sendWebhook("kick", stored);
         return new ModerationActionResult(ModerationActionType.EXECUTED, stored);
     }
 
@@ -345,6 +537,8 @@ public final class ModerationService {
                 storage.countActiveCases(CaseType.BAN),
                 storage.countActiveCases(CaseType.IP_BAN),
                 storage.countActiveCases(CaseType.MUTE),
+                storage.countActiveCases(CaseType.WARN),
+                storage.countActiveCases(CaseType.WATCHLIST),
                 storage.countAllCases()
         );
     }
@@ -414,9 +608,9 @@ public final class ModerationService {
             return new ModerationActionResult(ModerationActionType.NOT_ACTIVE, null);
         }
 
-        String effectiveNote = sanitize(note, plugin.getConfig().getString("punishments.defaults.unban-note", "No reason specified."));
+        String effectiveNote = sanitize(note, defaultText("unban-note", "punishments.defaults.unban-note", "No reason specified."));
         CaseRecord updated = storage.updateCaseStatus(active.get().getId(), CaseStatus.RESOLVED, System.currentTimeMillis(), actor.uniqueId(), actor.name(), effectiveNote);
-        webhookService.send(webhookKey, recordReplacements(updated));
+        sendWebhook(webhookKey, updated);
         notifyResolvedCase(updated);
         return new ModerationActionResult(ModerationActionType.REMOVED, updated);
     }
@@ -437,10 +631,19 @@ public final class ModerationService {
                 System.currentTimeMillis(),
                 null,
                 "SYSTEM",
-                plugin.getConfig().getString("punishments.defaults.expired-note", "Case duration elapsed.")
+                defaultText("expired-note", "punishments.defaults.expired-note", "Case duration elapsed.")
         );
-        webhookService.send("expired", recordReplacements(expired));
+        sendWebhook("expired", expired);
         return Optional.empty();
+    }
+
+    private List<CaseRecord> getActivePlayerCases(UUID playerUniqueId, CaseType type) throws Exception {
+        List<CaseRecord> activeCases = new ArrayList<>();
+        for (CaseRecord record : storage.getActiveCasesForPlayer(playerUniqueId, type)) {
+            Optional<CaseRecord> active = ensureNotExpired(Optional.of(record));
+            active.ifPresent(activeCases::add);
+        }
+        return activeCases;
     }
 
     private CaseRecord createAndStore(CaseType type,
@@ -452,9 +655,44 @@ public final class ModerationService {
                                       String reason,
                                       String source,
                                       Long expiresAt) throws Exception {
+        return createAndStore(type, label, target, ipAddress, related, actor, reason, source, expiresAt, null, null, List.of(), 0, CaseVisibility.INTERNAL, null);
+    }
+
+    private CaseRecord createAndStore(CaseType type,
+                                      String label,
+                                      PlayerIdentity target,
+                                      String ipAddress,
+                                      PlayerIdentity related,
+                                      CommandActor actor,
+                                      String reason,
+                                      String source,
+                                      Long expiresAt,
+                                      String category,
+                                      String templateKey,
+                                      List<String> tags,
+                                      int points,
+                                      CaseVisibility visibility,
+                                      Long referenceCaseId) throws Exception {
         ensureProfileExists(target);
         ensureProfileExists(related);
-        CaseRecord record = CaseRecord.create(type, label, target, ipAddress, related, actor, reason, source, expiresAt);
+        List<String> effectiveTags = mergeTags(plugin.getServerRuleService().getDefaultTags(type.name()), tags);
+        CaseRecord record = CaseRecord.create(
+                type,
+                label,
+                target,
+                ipAddress,
+                related,
+                actor,
+                reason,
+                normalizeSource(source),
+                expiresAt,
+                category,
+                templateKey,
+                effectiveTags,
+                points,
+                visibility,
+                referenceCaseId
+        );
         return storage.createCase(record);
     }
 
@@ -511,6 +749,15 @@ public final class ModerationService {
                 "actor", defaultString(record.getActorName()),
                 "actor_uuid", uuidString(record.getActorUniqueId()),
                 "source", defaultString(record.getSource()),
+                "category", defaultString(record.getCategory()),
+                "template_key", defaultString(record.getTemplateKey()),
+                "tags", record.getTagsDisplay().isBlank() ? lang.get("labels.none") : record.getTagsDisplay(),
+                "tag_count", record.getTags().size(),
+                "points", record.getPoints(),
+                "visibility", record.getVisibility().name(),
+                "reference_case_id", record.getReferenceCaseId() == null ? "" : String.valueOf(record.getReferenceCaseId()),
+                "server_profile", plugin.getServerRuleService().getActiveProfileId(),
+                "server_profile_name", plugin.getServerRuleService().getDisplayName(),
                 "created_at", formatDate(record.getCreatedAt()),
                 "created_at_iso", toIsoTimestamp(record.getCreatedAt()),
                 "expires_at", formatExpiry(record),
@@ -538,6 +785,134 @@ public final class ModerationService {
             return fallback;
         }
         return input.trim();
+    }
+
+    private String defaultText(String key, String fallbackPath, String fallback) {
+        return plugin.getServerRuleService().resolveDefaultText(key, fallbackPath, fallback);
+    }
+
+    private String normalizeSource(String source) {
+        return plugin.getServerRuleService().decorateSource(source);
+    }
+
+    private void sendWebhook(String actionKey, CaseRecord record) {
+        webhookService.send(plugin.getServerRuleService().resolveWebhookAction(actionKey), recordReplacements(record));
+    }
+
+    private List<String> mergeTags(Collection<String> base, Collection<String> extra) {
+        LinkedHashSet<String> merged = new LinkedHashSet<>();
+        if (base != null) {
+            for (String value : base) {
+                if (value != null && !value.isBlank()) {
+                    merged.add(value.trim().toLowerCase());
+                }
+            }
+        }
+        if (extra != null) {
+            for (String value : extra) {
+                if (value != null && !value.isBlank()) {
+                    merged.add(value.trim().toLowerCase());
+                }
+            }
+        }
+        return List.copyOf(merged);
+    }
+
+    private void applyWarnEscalation(PlayerIdentity target, CommandActor actor, CaseRecord warning, String source) throws Exception {
+        if (!plugin.getConfig().getBoolean("warnings.escalation.enabled", true)) {
+            return;
+        }
+
+        int warningPoints = getWarningPoints(target.uniqueId());
+        List<?> steps = plugin.getConfig().getList("warnings.escalation.steps");
+        if (steps == null) {
+            return;
+        }
+
+        for (Object entry : steps) {
+            if (!(entry instanceof java.util.Map<?, ?> map)) {
+                continue;
+            }
+
+            int threshold = readInt(map.get("threshold"), Integer.MAX_VALUE);
+            if (warningPoints < threshold) {
+                continue;
+            }
+
+            String action = String.valueOf(map.containsKey("action") ? map.get("action") : "").trim().toUpperCase();
+            String reason = replaceSimplePlaceholders(
+                    String.valueOf(map.containsKey("reason") ? map.get("reason") : "Automatic escalation after warning points"),
+                    "player", target.name(),
+                    "warning_points", String.valueOf(warningPoints),
+                    "case_id", String.valueOf(warning.getId())
+            );
+            List<String> tags = toStringList(map.get("tags"));
+            Long duration = null;
+            Object durationRaw = map.get("duration");
+            if (durationRaw != null && !String.valueOf(durationRaw).isBlank()) {
+                try {
+                    duration = TimeUtil.parseDuration(String.valueOf(durationRaw));
+                } catch (IllegalArgumentException ignored) {
+                    duration = null;
+                }
+            }
+            Long expiresAt = duration == null ? null : System.currentTimeMillis() + duration;
+
+            if (action.equals("MUTE") && getActivePlayerMute(target.uniqueId()).isEmpty()) {
+                CaseRecord escalated = createAndStore(CaseType.MUTE, null, target, null, null, actor, reason, source, expiresAt, "auto-escalation", null, tags, 0, CaseVisibility.INTERNAL, warning.getId());
+                Player online = Bukkit.getPlayer(target.uniqueId());
+                if (online != null && plugin.getConfig().getBoolean("punishments.player-mute.notify-player", true)) {
+                    online.sendMessage(buildMuteMessage(escalated));
+                }
+                sendWebhook("warn-escalated", escalated);
+                return;
+            }
+            if (action.equals("BAN") && getActivePlayerBan(target.uniqueId()).isEmpty()) {
+                CaseRecord escalated = createAndStore(CaseType.BAN, null, target, null, null, actor, reason, source, expiresAt, "auto-escalation", null, tags, 0, CaseVisibility.INTERNAL, warning.getId());
+                notifyCreatedCase(escalated);
+                Player online = Bukkit.getPlayer(target.uniqueId());
+                if (online != null && plugin.getConfig().getBoolean("punishments.player-ban.kick-online-player", true)) {
+                    online.kickPlayer(buildBanScreen(escalated));
+                }
+                sendWebhook("warn-escalated", escalated);
+                return;
+            }
+        }
+    }
+
+    private int readInt(Object input, int fallback) {
+        if (input instanceof Number number) {
+            return number.intValue();
+        }
+        if (input == null) {
+            return fallback;
+        }
+        try {
+            return Integer.parseInt(String.valueOf(input));
+        } catch (NumberFormatException exception) {
+            return fallback;
+        }
+    }
+
+    private List<String> toStringList(Object input) {
+        if (!(input instanceof List<?> list)) {
+            return List.of();
+        }
+        List<String> output = new ArrayList<>();
+        for (Object entry : list) {
+            if (entry != null && !String.valueOf(entry).isBlank()) {
+                output.add(String.valueOf(entry));
+            }
+        }
+        return output;
+    }
+
+    private String replaceSimplePlaceholders(String input, String... replacements) {
+        String output = input == null ? "" : input;
+        for (int index = 0; index + 1 < replacements.length; index += 2) {
+            output = output.replace("{" + replacements[index] + "}", replacements[index + 1]);
+        }
+        return output;
     }
 
     private String toIsoTimestamp(Long epochMillis) {

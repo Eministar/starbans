@@ -59,6 +59,8 @@ public final class AdminGuiFactory {
                     "ban_count", stats.activeBans(),
                     "ip_ban_count", stats.activeIpBans(),
                     "mute_count", stats.activeMutes(),
+                    "warn_count", stats.activeWarns(),
+                    "watchlist_count", stats.activeWatchlists(),
                     "case_count", stats.totalCases()
             );
             placeActionItem(plugin, gui, plugin.getConfig().getInt("gui.main-menu.slots.close", 22), "gui.main-menu.close", event -> viewer.closeInventory());
@@ -110,6 +112,8 @@ public final class AdminGuiFactory {
                         "case_count", summary.visibleCaseCount(),
                         "note_count", summary.noteCount(),
                         "alt_count", summary.altFlagCount(),
+                        "warn_count", summary.warnCount(),
+                        "warning_points", summary.warningPoints(),
                         "last_ip", defaultText(plugin, summary.lastKnownIp()),
                         "last_seen", formatProfileTime(plugin, profile.getLastSeen())
                 );
@@ -158,6 +162,7 @@ public final class AdminGuiFactory {
         boolean online = Bukkit.getPlayer(target.uniqueId()) != null;
         String banStatus = summary.activeBan() == null ? plugin.getLang().get("labels.none") : summary.activeBan().getReason();
         String muteStatus = summary.activeMute() == null ? plugin.getLang().get("labels.none") : summary.activeMute().getReason();
+        String watchlistStatus = summary.activeWatchlist() == null ? plugin.getLang().get("labels.none") : summary.activeWatchlist().getReason();
         String lastCaseType = summary.latestCase() == null ? plugin.getLang().get("labels.none") : plugin.getModerationService().formatCaseType(summary.latestCase().getType());
 
         gui.getInventory().setItem(
@@ -168,9 +173,12 @@ public final class AdminGuiFactory {
                         "player", target.name(),
                         "ban_status", banStatus,
                         "mute_status", muteStatus,
+                        "watchlist_status", watchlistStatus,
                         "case_count", summary.visibleCaseCount(),
                         "note_count", summary.noteCount(),
                         "alt_count", summary.altFlagCount(),
+                        "warn_count", summary.warnCount(),
+                        "warning_points", summary.warningPoints(),
                         "last_case_type", lastCaseType,
                         "last_ip", defaultText(plugin, summary.lastKnownIp()),
                         "online_status", online ? plugin.getLang().get("labels.online") : plugin.getLang().get("labels.offline"),
@@ -690,6 +698,9 @@ public final class AdminGuiFactory {
         }
         if (summary.activeMute() != null) {
             return plugin.getLang().get("labels.status-muted");
+        }
+        if (summary.activeWatchlist() != null) {
+            return plugin.getLang().get("labels.status-watchlisted");
         }
         return plugin.getLang().get("labels.status-clean");
     }

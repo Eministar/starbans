@@ -5,6 +5,8 @@ public record ModerationActionResult(ModerationActionType type, CaseRecord caseR
     public boolean successful() {
         return type == ModerationActionType.CREATED
                 || type == ModerationActionType.EXECUTED
-                || type == ModerationActionType.REMOVED;
+                || type == ModerationActionType.REMOVED
+                || type == ModerationActionType.REOPENED
+                || type == ModerationActionType.UPDATED;
     }
 }

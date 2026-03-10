@@ -15,6 +15,8 @@ public interface ModerationStorage extends AutoCloseable {
 
     CaseRecord createCase(CaseRecord record) throws Exception;
 
+    CaseRecord updateCase(CaseRecord record) throws Exception;
+
     Optional<CaseRecord> findCaseById(long caseId) throws Exception;
 
     Optional<CaseRecord> findLatestCaseForPlayer(UUID playerUniqueId) throws Exception;
@@ -29,13 +31,27 @@ public interface ModerationStorage extends AutoCloseable {
 
     List<CaseRecord> getCasesByTypeForPlayer(UUID playerUniqueId, CaseType type, int limit, int offset) throws Exception;
 
+    List<CaseRecord> getCasesByType(CaseType type, int limit, int offset) throws Exception;
+
+    List<CaseRecord> getActiveCasesForPlayer(UUID playerUniqueId, CaseType type) throws Exception;
+
     List<CaseRecord> getRecentCases(int limit, int offset) throws Exception;
+
+    List<CaseRecord> getCasesByActor(String actorName, int limit, int offset) throws Exception;
+
+    List<CaseRecord> getCasesByStatusActor(String actorName, int limit, int offset) throws Exception;
 
     List<CaseRecord> getActiveAltFlags(UUID playerUniqueId) throws Exception;
 
     int countVisibleCasesForPlayer(UUID playerUniqueId) throws Exception;
 
     int countCasesByTypeForPlayer(UUID playerUniqueId, CaseType type) throws Exception;
+
+    int countCasesByActor(String actorName) throws Exception;
+
+    int countCasesByActorAndType(String actorName, CaseType type) throws Exception;
+
+    int countStatusChangesByActor(String actorName) throws Exception;
 
     int countActiveCases(CaseType type) throws Exception;
 

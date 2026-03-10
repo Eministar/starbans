@@ -6,6 +6,7 @@ import dev.eministar.starbans.model.CommandActor;
 import dev.eministar.starbans.model.PlayerIdentity;
 import dev.eministar.starbans.model.PlayerProfile;
 import dev.eministar.starbans.model.PlayerSummary;
+import dev.eministar.starbans.service.AltDetectionService;
 import dev.eministar.starbans.service.IpUtil;
 import dev.eministar.starbans.service.VpnCheckResult;
 import dev.eministar.starbans.utils.LoggerUtil;
@@ -96,28 +97,36 @@ public final class LoginListener implements Listener {
                 || !plugin.getConfig().getBoolean("staff-alerts.joins.enabled", true)) {
             return;
         }
+        if (plugin.getJoinAlertExemptionService().isExempt(player, ipAddress)) {
+            return;
+        }
 
         PlayerSummary summary = plugin.getModerationService().getPlayerSummary(player);
         List<PlayerProfile> relatedProfiles = plugin.getModerationService().getRelatedProfiles(player.uniqueId());
         List<PlayerProfile> flaggedRelatedProfiles = collectFlaggedRelatedProfiles(relatedProfiles);
+        AltDetectionService.AltAnalysisResult altAnalysis = analyzeAltPattern(player, ipAddress);
 
         boolean hasHistory = summary.visibleCaseCount() >= Math.max(1, plugin.getConfig().getInt("staff-alerts.joins.minimum-visible-cases", 1));
         boolean hasActiveMute = plugin.getConfig().getBoolean("staff-alerts.joins.notify-for-active-mutes", true)
                 && summary.activeMute() != null;
+        boolean hasActiveWatchlist = plugin.getConfig().getBoolean("staff-alerts.joins.notify-for-watchlist", true)
+                && summary.activeWatchlist() != null;
         boolean hasFlaggedRelatedProfiles = plugin.getConfig().getBoolean("staff-alerts.joins.notify-for-flagged-related-accounts", true)
                 && !flaggedRelatedProfiles.isEmpty();
+        boolean hasAltDetection = altAnalysis != null && altAnalysis.flagged();
 
-        if (!hasHistory && !hasActiveMute && !hasFlaggedRelatedProfiles) {
+        if (!hasHistory && !hasActiveMute && !hasActiveWatchlist && !hasFlaggedRelatedProfiles && !hasAltDetection) {
             return;
         }
 
         String none = plugin.getLang().get("labels.none");
         String activeMuteReason = summary.activeMute() == null ? none : summary.activeMute().getReason();
         String activeMuteExpires = summary.activeMute() == null ? none : plugin.getModerationService().formatExpiry(summary.activeMute());
+        String activeWatchlistReason = summary.activeWatchlist() == null ? none : summary.activeWatchlist().getReason();
         String lastCaseType = summary.latestCase() == null ? none : plugin.getModerationService().formatCaseType(summary.latestCase().getType());
         String lastCaseReason = summary.latestCase() == null ? none : summary.latestCase().getReason();
         String relatedPreview = buildRelatedPreview(
-                flaggedRelatedProfiles,
+                hasAltDetection && !altAnalysis.suspiciousProfiles().isEmpty() ? altAnalysis.suspiciousProfiles() : flaggedRelatedProfiles,
                 Math.max(1, plugin.getConfig().getInt("staff-alerts.joins.related-preview-limit", 3))
         );
 
@@ -129,17 +138,28 @@ public final class LoginListener implements Listener {
                 "case_count", summary.visibleCaseCount(),
                 "note_count", summary.noteCount(),
                 "alt_count", summary.altFlagCount(),
+                "warn_count", summary.warnCount(),
+                "warning_points", summary.warningPoints(),
                 "active_mute_reason", activeMuteReason,
                 "active_mute_expires", activeMuteExpires,
+                "active_watchlist_reason", activeWatchlistReason,
                 "last_case_type", lastCaseType,
                 "last_case_reason", lastCaseReason,
                 "related_count", relatedProfiles.size(),
                 "flagged_related_count", flaggedRelatedProfiles.size(),
-                "related_players", relatedPreview
+                "related_players", relatedPreview,
+                "alt_detection_score", altAnalysis == null ? 0 : altAnalysis.score(),
+                "alt_detection_reasons", altAnalysis == null || altAnalysis.reasons().isEmpty() ? none : String.join("; ", altAnalysis.reasons()),
+                "server_profile", plugin.getServerRuleService().getActiveProfileId()
         );
         plugin.getServer().getScheduler().runTask(
                 plugin,
-                () -> plugin.getStaffAlertService().sendJoinAlert(player, ipAddress, summary, relatedProfiles, flaggedRelatedProfiles)
+                () -> {
+                    plugin.getStaffAlertService().sendJoinAlert(player, ipAddress, summary, relatedProfiles, flaggedRelatedProfiles, altAnalysis);
+                    if (altAnalysis != null && altAnalysis.flagged()) {
+                        plugin.getStaffAlertService().sendAltDetectionAlert(player, ipAddress, altAnalysis);
+                    }
+                }
         );
     }
 
@@ -184,5 +204,53 @@ public final class LoginListener implements Listener {
             builder.append(" +").append(remaining);
         }
         return builder.toString();
+    }
+
+    private AltDetectionService.AltAnalysisResult analyzeAltPattern(PlayerIdentity player, String ipAddress) throws Exception {
+        if (!plugin.getConfig().getBoolean("alt-detection.enabled", true)) {
+            return null;
+        }
+
+        AltDetectionService.AltAnalysisResult result = plugin.getAltDetectionService().analyze(player, ipAddress);
+        if (!result.flagged()) {
+            return result;
+        }
+
+        if (plugin.getConfig().getBoolean("alt-detection.auto-note.enabled", true)) {
+            plugin.getModerationService().addNote(
+                    player,
+                    CommandActor.system(),
+                    plugin.getConfig().getString("alt-detection.auto-note.label", "alt-detected"),
+                    plugin.getConfig().getString("alt-detection.auto-note.template", "Suspicious alt pattern detected")
+                            + " | score=" + result.score()
+                            + " | reasons=" + String.join("; ", result.reasons()),
+                    "SYSTEM:ALT-DETECTION"
+            );
+        }
+
+        if (plugin.getConfig().getBoolean("alt-detection.auto-alt-flag.enabled", false) && !result.suspiciousProfiles().isEmpty()) {
+            PlayerProfile related = result.suspiciousProfiles().get(0);
+            plugin.getModerationService().addAltFlag(
+                    player,
+                    new PlayerIdentity(related.getUniqueId(), related.getLastName()),
+                    CommandActor.system(),
+                    plugin.getConfig().getString("alt-detection.auto-alt-flag.label", "auto-alt-detected"),
+                    plugin.getConfig().getString("alt-detection.auto-alt-flag.note", "Automatically flagged by join analysis."),
+                    "SYSTEM:ALT-DETECTION"
+            );
+        }
+
+        plugin.getDiscordWebhookService().send(
+                "alt-detected",
+                "player", player.name(),
+                "player_uuid", player.uniqueId(),
+                "ip", ipAddress,
+                "score", result.score(),
+                "reasons", result.reasons().isEmpty() ? plugin.getLang().get("labels.none") : String.join("; ", result.reasons()),
+                "related_count", result.relatedProfiles().size(),
+                "suspicious_count", result.suspiciousProfiles().size(),
+                "related_players", buildRelatedPreview(result.suspiciousProfiles(), Math.max(1, plugin.getConfig().getInt("staff-alerts.joins.related-preview-limit", 3)))
+        );
+        return result;
     }
 }
