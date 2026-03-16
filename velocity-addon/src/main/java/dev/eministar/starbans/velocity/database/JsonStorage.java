@@ -80,6 +80,21 @@ public final class JsonStorage implements VelocityStorage {
     }
 
     @Override
+    public synchronized Optional<CaseRecord> findLatestCaseForPlayer(UUID playerUniqueId, CaseType type) {
+        return document.cases.stream()
+                .filter(record -> record.getType() == type)
+                .filter(record -> playerUniqueId.equals(record.getTargetPlayerUniqueId()))
+                .max(Comparator.comparingLong(CaseRecord::getCreatedAt));
+    }
+
+    @Override
+    public synchronized Optional<CaseRecord> findCaseById(long caseId) {
+        return document.cases.stream()
+                .filter(record -> record.getId() == caseId)
+                .findFirst();
+    }
+
+    @Override
     public synchronized Optional<PlayerProfile> findPlayerProfile(UUID playerUniqueId) {
         return document.profiles.stream()
                 .filter(profile -> playerUniqueId.equals(profile.getUniqueId()))

@@ -169,10 +169,12 @@ network:
     # EN: Enable backend -> Velocity sync messages.
     #     This is used by the separate Velocity addon to enforce
     #     network-wide bans immediately after backend actions.
+    #     Requires database.type=MARIADB for safe shared storage.
     # DE: Backend -> Velocity Sync-Nachrichten aktivieren.
     #     Das wird vom separaten Velocity-Addon genutzt, um
     #     netzwerkweite Bans sofort nach Backend-Aktionen durchzusetzen.
-    enabled: true
+    #     Benötigt database.type=MARIADB für sicheren Shared-Storage.
+    enabled: false
 
     # EN: Custom plugin messaging channel. Must match the Velocity addon.
     # DE: Custom-Plugin-Messaging-Channel. Muss mit dem Velocity-Addon übereinstimmen.

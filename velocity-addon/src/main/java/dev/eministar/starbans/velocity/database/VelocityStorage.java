@@ -17,6 +17,10 @@ public interface VelocityStorage extends AutoCloseable {
 
     Optional<CaseRecord> findActiveCaseForIp(String ipAddress, CaseType type) throws Exception;
 
+    Optional<CaseRecord> findLatestCaseForPlayer(UUID playerUniqueId, CaseType type) throws Exception;
+
+    Optional<CaseRecord> findCaseById(long caseId) throws Exception;
+
     Optional<PlayerProfile> findPlayerProfile(UUID playerUniqueId) throws Exception;
 
     Optional<PlayerProfile> findPlayerProfileByName(String playerName) throws Exception;

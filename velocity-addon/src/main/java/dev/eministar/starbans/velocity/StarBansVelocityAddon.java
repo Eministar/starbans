@@ -83,6 +83,7 @@ public final class StarBansVelocityAddon {
     private ActiveBanEnforcer activeBanEnforcer;
     private SharedNetworkSnapshotService sharedNetworkSnapshotService;
     private com.velocitypowered.api.scheduler.ScheduledTask enforcementTask;
+    private MinecraftChannelIdentifier bridgeIdentifier;
 
     @Inject
     public StarBansVelocityAddon(ProxyServer server, Logger logger, @DataDirectory Path dataDirectory) {
@@ -97,11 +98,9 @@ public final class StarBansVelocityAddon {
             return;
         }
 
-        registerBridge();
         server.getEventManager().register(this, new ProxyLoginListener(this));
         server.getEventManager().register(this, new BridgeMessageListener(this));
         registerCommands();
-        scheduleEnforcementTask();
         logger.info("StarBans Velocity Addon enabled.");
     }
 
@@ -110,30 +109,63 @@ public final class StarBansVelocityAddon {
         closeStorage();
     }
 
-    public boolean reload() {
+    public synchronized boolean reload() {
+        YamlConfig loadedConfig = null;
+        YamlConfig loadedLangConfig = null;
+        VelocityStorage newStorage = null;
+        SharedNetworkSnapshotService newSnapshotService = null;
+        YamlConfig previousConfig = config;
+        YamlConfig previousLangConfig = langConfig;
+        MessageUtil previousLang = lang;
+        VelocityStorage previousStorage = storage;
+        ModerationService previousModerationService = moderationService;
+        ActiveBanEnforcer previousActiveBanEnforcer = activeBanEnforcer;
+        SharedNetworkSnapshotService previousSnapshotService = sharedNetworkSnapshotService;
+        MinecraftChannelIdentifier previousBridgeIdentifier = bridgeIdentifier;
         try {
-            config = new YamlConfig(dataDirectory.resolve("config.yml"), "config.yml", getClass().getClassLoader());
-            config.load();
+            loadedConfig = new YamlConfig(dataDirectory.resolve("config.yml"), "config.yml", getClass().getClassLoader());
+            loadedConfig.load();
+            validateStorageSettings(loadedConfig);
 
-            String languageFile = config.getString("settings.language-file", "lang-en.yml");
-            langConfig = new YamlConfig(dataDirectory.resolve(languageFile), languageFile, getClass().getClassLoader());
-            langConfig.load();
-            lang = new MessageUtil(langConfig);
+            String languageFile = loadedConfig.getString("settings.language-file", "lang-en.yml");
+            loadedLangConfig = new YamlConfig(dataDirectory.resolve(languageFile), languageFile, getClass().getClassLoader());
+            loadedLangConfig.load();
+            MessageUtil loadedLang = new MessageUtil(loadedLangConfig);
 
-            closeStorage();
-            storage = StorageFactory.create(this);
-            storage.init();
-            if (sharedNetworkSnapshotService == null) {
-                sharedNetworkSnapshotService = new SharedNetworkSnapshotService(this);
-            }
-            sharedNetworkSnapshotService.reload();
-            moderationService = new ModerationService(this, storage);
+            newStorage = StorageFactory.create(this, loadedConfig);
+            newStorage.init();
+
+            newSnapshotService = new SharedNetworkSnapshotService(this);
+            newSnapshotService.reload(loadedConfig);
+            MinecraftChannelIdentifier nextBridgeIdentifier = resolveBridgeIdentifier(loadedConfig);
+
+            config = loadedConfig;
+            langConfig = loadedLangConfig;
+            lang = loadedLang;
+            storage = newStorage;
+            moderationService = new ModerationService(this, newStorage);
             activeBanEnforcer = new ActiveBanEnforcer(this);
-            logStorageHints(StorageSettings.fromConfig(config));
-            registerBridge();
+            sharedNetworkSnapshotService = newSnapshotService;
+
+            logStorageHints(StorageSettings.fromConfig(loadedConfig));
+            updateBridgeRegistration(nextBridgeIdentifier);
             scheduleEnforcementTask();
+
+            closeStorage(previousStorage, previousSnapshotService);
             return true;
         } catch (Exception exception) {
+            config = previousConfig;
+            langConfig = previousLangConfig;
+            lang = previousLang;
+            storage = previousStorage;
+            moderationService = previousModerationService;
+            activeBanEnforcer = previousActiveBanEnforcer;
+            sharedNetworkSnapshotService = previousSnapshotService;
+            updateBridgeRegistration(previousBridgeIdentifier);
+            if (previousConfig != null && previousActiveBanEnforcer != null) {
+                scheduleEnforcementTask();
+            }
+            closeStorage(newStorage, newSnapshotService);
             logger.error("StarBans Velocity Addon could not be loaded.", exception);
             return false;
         }
@@ -200,6 +232,17 @@ public final class StarBansVelocityAddon {
         return getNetworkText("general.prefix", lang.get("general.prefix", ""));
     }
 
+    public boolean isFailClosedOnStorageError() {
+        return config != null && config.getBoolean("resilience.fail-closed-on-storage-error", true);
+    }
+
+    public String getStorageUnavailableText() {
+        if (lang == null) {
+            return "&cThe moderation backend is currently unavailable. Please try again in a moment.";
+        }
+        return lang.prefixed("messages.storage-unavailable");
+    }
+
     private void registerCommands() {
         CommandManager commandManager = server.getCommandManager();
         List<String> aliases = new ArrayList<>(config.getStringList("commands.aliases"));
@@ -216,29 +259,11 @@ public final class StarBansVelocityAddon {
             enforcementTask.cancel();
             enforcementTask = null;
         }
-        if (storage == null) {
-            if (sharedNetworkSnapshotService != null) {
-                try {
-                    sharedNetworkSnapshotService.close();
-                } catch (Exception exception) {
-                    logger.error("StarBans Velocity network snapshot storage could not be closed cleanly.", exception);
-                }
-            }
-            return;
-        }
-        try {
-            storage.close();
-        } catch (Exception exception) {
-            logger.error("StarBans Velocity storage could not be closed cleanly.", exception);
-        }
-        if (sharedNetworkSnapshotService != null) {
-            try {
-                sharedNetworkSnapshotService.close();
-            } catch (Exception exception) {
-                logger.error("StarBans Velocity network snapshot storage could not be closed cleanly.", exception);
-            }
-        }
+
+        updateBridgeRegistration(null);
+        closeStorage(storage, sharedNetworkSnapshotService);
         storage = null;
+        sharedNetworkSnapshotService = null;
     }
 
     private void logStorageHints(StorageSettings settings) {
@@ -249,9 +274,43 @@ public final class StarBansVelocityAddon {
         }
     }
 
-    private void registerBridge() {
-        String channel = config.getString("bridge.channel", "starbans:sync").toLowerCase();
-        server.getChannelRegistrar().register(MinecraftChannelIdentifier.from(channel));
+    private void updateBridgeRegistration() {
+        updateBridgeRegistration(resolveBridgeIdentifier(config));
+    }
+
+    private void updateBridgeRegistration(MinecraftChannelIdentifier nextIdentifier) {
+        if (bridgeIdentifier != null && !bridgeIdentifier.equals(nextIdentifier)) {
+            try {
+                server.getChannelRegistrar().unregister(bridgeIdentifier);
+            } catch (Exception exception) {
+                logger.warn("StarBans Velocity bridge channel {} could not be unregistered cleanly.", bridgeIdentifier.getId(), exception);
+            }
+            bridgeIdentifier = null;
+        }
+
+        if (nextIdentifier != null && !nextIdentifier.equals(bridgeIdentifier)) {
+            server.getChannelRegistrar().register(nextIdentifier);
+            bridgeIdentifier = nextIdentifier;
+        }
+    }
+
+    private MinecraftChannelIdentifier resolveBridgeIdentifier(YamlConfig configSource) {
+        if (configSource == null || !configSource.getBoolean("bridge.enabled", true)) {
+            return null;
+        }
+
+        String channel = configSource.getString("bridge.channel", "starbans:sync").toLowerCase();
+        return MinecraftChannelIdentifier.from(channel);
+    }
+
+    private void validateStorageSettings(YamlConfig configSource) {
+        StorageSettings settings = StorageSettings.fromConfig(configSource);
+        if (settings.type() != StorageType.MARIADB) {
+            throw new IllegalStateException(
+                    "StarBans Velocity Addon requires database.type=MARIADB for synchronized network moderation. " +
+                            "Configured type: " + settings.type().name()
+            );
+        }
     }
 
     private void scheduleEnforcementTask() {
@@ -269,5 +328,22 @@ public final class StarBansVelocityAddon {
                 .buildTask(this, new ActiveBanEnforcementTask(this))
                 .repeat(interval, TimeUnit.SECONDS)
                 .schedule();
+    }
+
+    private void closeStorage(VelocityStorage storageToClose, SharedNetworkSnapshotService snapshotServiceToClose) {
+        if (storageToClose != null) {
+            try {
+                storageToClose.close();
+            } catch (Exception exception) {
+                logger.error("StarBans Velocity storage could not be closed cleanly.", exception);
+            }
+        }
+        if (snapshotServiceToClose != null) {
+            try {
+                snapshotServiceToClose.close();
+            } catch (Exception exception) {
+                logger.error("StarBans Velocity network snapshot storage could not be closed cleanly.", exception);
+            }
+        }
     }
 }

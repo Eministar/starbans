@@ -35,7 +35,7 @@ public final class YamlConfig {
         }
         if (Files.notExists(path)) {
             InputStream bundled = classLoader.getResourceAsStream(bundledName);
-            if (bundled == null && !"lang.yml".equalsIgnoreCase(bundledName) && !"lang-en.yml".equalsIgnoreCase(bundledName)) {
+            if (bundled == null && !"lang.yml".equalsIgnoreCase(bundledName)) {
                 bundled = classLoader.getResourceAsStream("lang.yml");
             }
             if (bundled == null && !"lang-en.yml".equalsIgnoreCase(bundledName)) {

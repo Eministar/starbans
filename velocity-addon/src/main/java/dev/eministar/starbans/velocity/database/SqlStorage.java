@@ -97,6 +97,24 @@ public final class SqlStorage implements VelocityStorage {
     }
 
     @Override
+    public Optional<CaseRecord> findLatestCaseForPlayer(UUID playerUniqueId, CaseType type) throws Exception {
+        String sql = "SELECT * FROM " + casesTable + " WHERE target_player_uuid = ? AND type = ? ORDER BY created_at DESC LIMIT 1";
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, playerUniqueId.toString());
+            statement.setString(2, type.name());
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next() ? Optional.of(mapCase(resultSet)) : Optional.empty();
+            }
+        }
+    }
+
+    @Override
+    public Optional<CaseRecord> findCaseById(long caseId) throws Exception {
+        return loadCaseById(caseId);
+    }
+
+    @Override
     public Optional<PlayerProfile> findPlayerProfile(UUID playerUniqueId) throws Exception {
         String sql = "SELECT * FROM " + profilesTable + " WHERE player_uuid = ?";
         try (Connection connection = dataSource.getConnection();
@@ -161,7 +179,7 @@ public final class SqlStorage implements VelocityStorage {
                                        UUID changedByUniqueId,
                                        String changedByName,
                                        String note) throws Exception {
-        CaseRecord current = findCaseById(caseId).orElseThrow(() -> new IllegalArgumentException("No case record found for id " + caseId));
+        CaseRecord current = loadCaseById(caseId).orElseThrow(() -> new IllegalArgumentException("No case record found for id " + caseId));
         String sql = "UPDATE " + casesTable + " SET status = ?, status_changed_at = ?, status_actor_uuid = ?, status_actor_name = ?, status_note = ? WHERE id = ?";
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -204,7 +222,7 @@ public final class SqlStorage implements VelocityStorage {
         }
     }
 
-    private Optional<CaseRecord> findCaseById(long caseId) throws Exception {
+    private Optional<CaseRecord> loadCaseById(long caseId) throws Exception {
         String sql = "SELECT * FROM " + casesTable + " WHERE id = ?";
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {

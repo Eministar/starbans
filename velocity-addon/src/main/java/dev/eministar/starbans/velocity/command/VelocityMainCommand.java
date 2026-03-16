@@ -112,12 +112,13 @@ public final class VelocityMainCommand implements SimpleCommand {
 
         PlayerProfile profile = profileOptional.get();
         Optional<CaseRecord> playerBan = plugin.getModerationService().getActivePlayerBan(profile.getUniqueId());
+        Optional<CaseRecord> playerMute = plugin.getModerationService().getActivePlayerMute(profile.getUniqueId());
         Optional<CaseRecord> ipBan = profile.getLastIp() == null ? Optional.empty() : plugin.getModerationService().getActiveIpBan(profile.getLastIp());
         Optional<CaseRecord> ipBlacklist = profile.getLastIp() == null ? Optional.empty() : plugin.getModerationService().getActiveIpBlacklist(profile.getLastIp());
         String none = plugin.getNetworkText("labels.none", plugin.getLang().get("labels.none", "&7none"));
 
         sendLine(source, plugin.getNetworkPrefix() + plugin.getNetworkText("messages.check-header", plugin.getLang().get("messages.check-header", "&8---------- &6Proxy Check: &f{target} &8----------"), "target", profile.getLastName(), "player", profile.getLastName()));
-        for (String line : buildCheckLines(none, profile.getLastIp() == null ? none : profile.getLastIp(), playerBan, ipBan, ipBlacklist, profile.getLastName())) {
+        for (String line : buildCheckLines(none, profile.getLastIp() == null ? none : profile.getLastIp(), playerBan, playerMute, ipBan, ipBlacklist, profile.getLastName())) {
             sendLine(source, plugin.getNetworkPrefix() + line);
         }
     }
@@ -133,12 +134,13 @@ public final class VelocityMainCommand implements SimpleCommand {
     }
 
     private List<String> buildCheckLines(String none, String lastIp, Optional<CaseRecord> ipBan, Optional<CaseRecord> ipBlacklist) {
-        return buildCheckLines(none, lastIp, Optional.empty(), ipBan, ipBlacklist, none);
+        return buildCheckLines(none, lastIp, Optional.empty(), Optional.empty(), ipBan, ipBlacklist, none);
     }
 
     private List<String> buildCheckLines(String none,
                                          String lastIp,
                                          Optional<CaseRecord> playerBan,
+                                         Optional<CaseRecord> playerMute,
                                          Optional<CaseRecord> ipBan,
                                          Optional<CaseRecord> ipBlacklist,
                                          String name) {
@@ -149,7 +151,7 @@ public final class VelocityMainCommand implements SimpleCommand {
                 "player", name,
                 "last_ip", lastIp,
                 "active_ban", playerBan.map(CaseRecord::getReason).orElse(none),
-                "active_mute", none,
+                "active_mute", playerMute.map(CaseRecord::getReason).orElse(none),
                 "case_count", none,
                 "note_count", none,
                 "alt_count", none,

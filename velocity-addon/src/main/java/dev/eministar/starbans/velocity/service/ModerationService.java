@@ -45,6 +45,14 @@ public final class ModerationService {
             "&7Actor: &f{actor}",
             "&8&m----------------------------------------"
     );
+    private static final List<String> DEFAULT_KICK_SCREEN = List.of(
+            "&8&m----------------------------------------",
+            "&cYou were kicked from this network",
+            "",
+            "&7Reason: &f{reason}",
+            "&7Actor: &f{actor}",
+            "&8&m----------------------------------------"
+    );
 
     private final StarBansVelocityAddon plugin;
     private final VelocityStorage storage;
@@ -58,12 +66,24 @@ public final class ModerationService {
         return ensureNotExpired(storage.findActiveCaseForPlayer(uniqueId, CaseType.BAN));
     }
 
+    public Optional<CaseRecord> getActivePlayerMute(UUID uniqueId) throws Exception {
+        return ensureNotExpired(storage.findActiveCaseForPlayer(uniqueId, CaseType.MUTE));
+    }
+
     public Optional<CaseRecord> getActiveIpBan(String ipAddress) throws Exception {
         return ensureNotExpired(storage.findActiveCaseForIp(IpUtil.normalize(ipAddress), CaseType.IP_BAN));
     }
 
     public Optional<CaseRecord> getActiveIpBlacklist(String ipAddress) throws Exception {
         return ensureNotExpired(storage.findActiveCaseForIp(IpUtil.normalize(ipAddress), CaseType.IP_BLACKLIST));
+    }
+
+    public Optional<CaseRecord> getLatestPlayerKick(UUID uniqueId) throws Exception {
+        return storage.findLatestCaseForPlayer(uniqueId, CaseType.KICK);
+    }
+
+    public Optional<CaseRecord> getCase(long caseId) throws Exception {
+        return storage.findCaseById(caseId);
     }
 
     public Optional<PlayerProfile> getProfile(UUID uniqueId) throws Exception {
@@ -108,6 +128,10 @@ public final class ModerationService {
 
     public String buildIpBlacklistScreen(CaseRecord record) {
         return buildScreen("screens.ip-blacklist", DEFAULT_IP_BLACKLIST_SCREEN, record);
+    }
+
+    public String buildKickScreen(CaseRecord record) {
+        return buildScreen("screens.kick", DEFAULT_KICK_SCREEN, record);
     }
 
     public String formatDate(long epochMillis) {

@@ -519,6 +519,7 @@ public final class ModerationService {
                                              String source) throws Exception {
         String effectiveReason = sanitize(reason, defaultText("kick-reason", "punishments.defaults.kick-reason", "No reason specified."));
         CaseRecord stored = createAndStore(CaseType.KICK, null, target, null, null, actor, effectiveReason, source, null);
+        notifyCreatedCase(stored);
         Player online = Bukkit.getPlayer(target.uniqueId());
         if (online != null) {
             online.kickPlayer(buildKickScreen(stored));
@@ -941,6 +942,11 @@ public final class ModerationService {
                     plugin.getNetworkSyncService().notifyPlayerBan(record.getTargetPlayerUniqueId(), record.getId());
                 } else {
                     plugin.getNetworkSyncService().requestImmediateSync();
+                }
+            }
+            case KICK -> {
+                if (record.getTargetPlayerUniqueId() != null) {
+                    plugin.getNetworkSyncService().notifyPlayerKick(record.getTargetPlayerUniqueId(), record.getId());
                 }
             }
             case IP_BAN -> {

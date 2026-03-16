@@ -52,6 +52,10 @@ public final class NetworkSyncService {
         sendPayload(NetworkBridgePayload.player(BridgeEventType.UNBAN_PLAYER, playerUniqueId, caseId));
     }
 
+    public void notifyPlayerKick(UUID playerUniqueId, long caseId) {
+        sendPayload(NetworkBridgePayload.player(BridgeEventType.KICK_PLAYER, playerUniqueId, caseId));
+    }
+
     public void notifyIpBan(String ipAddress, long caseId) {
         sendPayload(NetworkBridgePayload.ip(BridgeEventType.BAN_IP, IpUtil.normalize(ipAddress), caseId));
     }
@@ -72,13 +76,11 @@ public final class NetworkSyncService {
         if (!isEnabled()) {
             return;
         }
-
         Runnable action = () -> dispatchPayload(payload);
         if (Bukkit.isPrimaryThread()) {
             action.run();
             return;
         }
-
         plugin.getServer().getScheduler().runTask(plugin, action);
     }
 
@@ -90,15 +92,18 @@ public final class NetworkSyncService {
         } catch (Exception ignored) {
         }
 
-        Player carrier = plugin.getServer().getOnlinePlayers().stream().findFirst().orElse(null);
-        if (carrier == null) {
-            return;
+        Exception lastFailure = null;
+        for (Player carrier : plugin.getServer().getOnlinePlayers()) {
+            try {
+                carrier.sendPluginMessage(plugin, channel, bytes);
+                return;
+            } catch (Exception exception) {
+                lastFailure = exception;
+            }
         }
 
-        try {
-            carrier.sendPluginMessage(plugin, channel, bytes);
-        } catch (Exception exception) {
-            LoggerUtil.error("The Velocity bridge payload could not be sent.", exception);
+        if (lastFailure != null) {
+            LoggerUtil.error("The Velocity bridge payload could not be sent.", lastFailure);
         }
     }
 

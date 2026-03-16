@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.connection.PluginMessageEvent;
+import com.velocitypowered.api.proxy.ServerConnection;
 import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
 import dev.eministar.starbans.velocity.StarBansVelocityAddon;
 import dev.eministar.starbans.velocity.network.BridgeEventType;
@@ -32,9 +33,16 @@ public final class BridgeMessageListener {
             return;
         }
 
+        if (!(event.getSource() instanceof ServerConnection)) {
+            return;
+        }
+
         event.setResult(PluginMessageEvent.ForwardResult.handled());
         String payload = new String(event.getData(), StandardCharsets.UTF_8);
         NetworkBridgePayload message = parsePayload(payload);
+        if (message == null) {
+            return;
+        }
         plugin.getServer().getScheduler().buildTask(plugin, () -> handlePayload(message)).schedule();
     }
 
@@ -46,12 +54,13 @@ public final class BridgeMessageListener {
         try {
             NetworkBridgePayload message = gson.fromJson(payload, NetworkBridgePayload.class);
             if (message == null || message.type() == null) {
-                return new NetworkBridgePayload(BridgeEventType.SYNC_NOW, null, null, null, System.currentTimeMillis());
+                plugin.getLogger().warn("Ignoring incomplete StarBans bridge payload: {}", payload);
+                return null;
             }
             return message;
         } catch (JsonSyntaxException exception) {
             plugin.getLogger().warn("Ignoring malformed StarBans bridge payload: {}", payload);
-            return new NetworkBridgePayload(BridgeEventType.SYNC_NOW, null, null, null, System.currentTimeMillis());
+            return null;
         }
     }
 
@@ -60,6 +69,7 @@ public final class BridgeMessageListener {
             case SNAPSHOT_REFRESH -> plugin.getSharedNetworkSnapshotService().forceRefresh();
             case BAN_PLAYER -> plugin.getActiveBanEnforcer().enforcePlayer(payload.playerUniqueId());
             case BAN_IP, IP_BLACKLIST -> plugin.getActiveBanEnforcer().enforceIp(payload.ipAddress());
+            case KICK_PLAYER -> plugin.getActiveBanEnforcer().enforceKick(payload.playerUniqueId(), payload.caseId());
             case UNBAN_PLAYER, UNBAN_IP, IP_UNBLACKLIST -> {
             }
             case SYNC_NOW -> {

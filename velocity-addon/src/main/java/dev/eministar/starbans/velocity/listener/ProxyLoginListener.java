@@ -31,7 +31,11 @@ public final class ProxyLoginListener {
             if (plugin.getConfig().getBoolean("tracking.store-last-ip", true)) {
                 plugin.getModerationService().trackPlayer(player.getUniqueId(), player.getUsername(), ipAddress, System.currentTimeMillis());
             }
+        } catch (Exception exception) {
+            plugin.getLogger().error("Proxy profile tracking failed for {}.", player.getUsername(), exception);
+        }
 
+        try {
             if (plugin.getConfig().getBoolean("checks.ip-blacklist", true)) {
                 Optional<CaseRecord> ipBlacklist = plugin.getModerationService().getActiveIpBlacklist(ipAddress);
                 if (ipBlacklist.isPresent()) {
@@ -56,6 +60,9 @@ public final class ProxyLoginListener {
             }
         } catch (Exception exception) {
             plugin.getLogger().error("Proxy login moderation check failed.", exception);
+            if (plugin.isFailClosedOnStorageError()) {
+                deny(event, plugin.getStorageUnavailableText());
+            }
         }
     }
 

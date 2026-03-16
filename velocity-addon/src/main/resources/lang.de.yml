@@ -11,6 +11,7 @@ labels:
 messages:
   no-permission: '&cDu hast keine Berechtigung für diese Aktion.'
   internal-error: '&cEin interner Proxy-Fehler ist aufgetreten. Prüfe die Konsole.'
+  storage-unavailable: '&cDas Moderations-Backend ist aktuell nicht erreichbar. Bitte versuche es gleich erneut.'
   reload-success: '&aVelocity-Addon, Config und Speicher wurden neu geladen.'
   reload-failed: '&cVelocity-Addon-Reload fehlgeschlagen. Prüfe die Konsole.'
   player-not-found: '&cKein bekannter Spieler für &f{player}&c gefunden.'
@@ -28,6 +29,7 @@ messages:
     - '&7Bekannter Name: &f{name}'
     - '&7Bekannte IP: &f{last_ip}'
     - '&7Aktiver Spieler-Ban: &f{player_ban}'
+    - '&7Aktiver Spieler-Mute: &f{active_mute}'
     - '&7Aktiver IP-Ban: &f{ip_ban}'
     - '&7Aktive IP-Blacklist: &f{ip_blacklist}'
 

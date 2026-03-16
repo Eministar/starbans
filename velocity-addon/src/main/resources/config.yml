@@ -17,15 +17,13 @@ settings:
 
 # ----------------------------------------------------------
 # EN: Shared storage settings.
-#     Recommendation for proxy + backend: MARIADB.
-#     SQLITE can work on one machine with one shared file,
-#     but file locking can still be a limitation.
-#     JSON is not recommended for proxy setups.
+#     Velocity network mode requires MARIADB.
+#     SQLITE and JSON are rejected on the Velocity addon to
+#     prevent desyncs and fail-open moderation states.
 # DE: Gemeinsame Speicher-Einstellungen.
-#     Empfehlung für Proxy + Backend: MARIADB.
-#     SQLITE kann auf einer Maschine mit einer Datei laufen,
-#     aber Dateisperren bleiben eine Einschränkung.
-#     JSON wird für Proxy-Setups nicht empfohlen.
+#     Der Velocity-Netzwerkmodus verlangt MARIADB.
+#     SQLITE und JSON werden im Velocity-Addon abgelehnt,
+#     um Desyncs und offene Fehlzustände zu verhindern.
 # ----------------------------------------------------------
 database:
   type: MARIADB
@@ -72,6 +70,13 @@ tracking:
   # DE: Das gemeinsame Spielerprofil mit der Proxy-Login-IP aktualisieren.
   store-last-ip: true
 
+resilience:
+  # EN: If the moderation storage is unavailable, deny joins and disconnect
+  #     already connected players instead of failing open.
+  # DE: Wenn der Moderationsspeicher nicht erreichbar ist, Logins verweigern
+  #     und bereits verbundene Spieler trennen, statt offen fehlzuschlagen.
+  fail-closed-on-storage-error: true
+
 sync:
   online-enforcement:
     # EN: Re-check already connected proxy players against the shared DB.
@@ -83,6 +88,17 @@ sync:
     # EN: Re-check interval in seconds.
     # DE: Prüfintervall in Sekunden.
     interval-seconds: 2
+
+  network-kick:
+    # EN: Also disconnect already connected proxy players for newly created KICK cases.
+    #     This acts as a DB-backed fallback if an immediate bridge message is missed.
+    # DE: Bereits verbundene Proxy-Spieler auch bei neuen KICK-Cases trennen.
+    #     Das dient als DB-basierter Fallback, falls eine Bridge-Nachricht verpasst wird.
+    enabled: true
+
+    # EN: How long a kick case stays relevant for proxy-wide enforcement.
+    # DE: Wie lange ein Kick-Case für die proxyweite Durchsetzung relevant bleibt.
+    recent-window-seconds: 15
 
 bridge:
   # EN: Listen for backend -> proxy sync messages.

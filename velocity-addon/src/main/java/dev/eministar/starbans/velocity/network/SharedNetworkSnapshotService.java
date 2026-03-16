@@ -5,6 +5,7 @@ import com.google.gson.reflect.TypeToken;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import dev.eministar.starbans.velocity.StarBansVelocityAddon;
+import dev.eministar.starbans.velocity.config.YamlConfig;
 import dev.eministar.starbans.velocity.database.StorageSettings;
 import dev.eministar.starbans.velocity.database.StorageType;
 
@@ -37,8 +38,12 @@ public final class SharedNetworkSnapshotService implements AutoCloseable {
     }
 
     public void reload() throws Exception {
+        reload(plugin.getConfig());
+    }
+
+    public void reload(YamlConfig configSource) throws Exception {
         close();
-        settings = StorageSettings.fromConfig(plugin.getConfig());
+        settings = StorageSettings.fromConfig(configSource);
         if (settings.type() == StorageType.JSON) {
             snapshot = new LinkedHashMap<>();
             lastRefresh = System.currentTimeMillis();

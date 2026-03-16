@@ -38,6 +38,8 @@ import dev.eministar.starbans.config.BundledYamlConfigSynchronizer;
 import dev.eministar.starbans.config.DiscordWebhookConfig;
 import dev.eministar.starbans.database.ModerationStorage;
 import dev.eministar.starbans.database.StorageFactory;
+import dev.eministar.starbans.database.StorageSettings;
+import dev.eministar.starbans.database.StorageType;
 import dev.eministar.starbans.discord.DiscordWebhookService;
 import dev.eministar.starbans.listener.ChatListener;
 import dev.eministar.starbans.listener.GuiListener;
@@ -163,6 +165,14 @@ public final class StarBans extends JavaPlugin {
         synchronizeMainConfig();
         reloadConfig();
         installBundledResources();
+
+        try {
+            validateVelocityBridgeStorage();
+        } catch (IllegalStateException exception) {
+            LoggerUtil.error(exception.getMessage());
+            getServer().getPluginManager().disablePlugin(this);
+            return false;
+        }
 
         if (lang == null) {
             lang = new Lang(this);
@@ -426,5 +436,16 @@ public final class StarBans extends JavaPlugin {
 
         String mode = getConfig().getString("network.proxy-support.mode", "NONE");
         LoggerUtil.info("Proxy-aware mode enabled for " + mode + ". This Paper/Spigot jar does not run natively on Velocity; a separate proxy bootstrap is required for that.");
+    }
+
+    private void validateVelocityBridgeStorage() {
+        if (!getConfig().getBoolean("network.velocity-bridge.enabled", false)) {
+            return;
+        }
+
+        StorageSettings settings = StorageFactory.readSettings(this);
+        if (settings.type() != StorageType.MARIADB) {
+            throw new IllegalStateException("network.velocity-bridge.enabled requires database.type=MARIADB for safe network synchronization.");
+        }
     }
 }

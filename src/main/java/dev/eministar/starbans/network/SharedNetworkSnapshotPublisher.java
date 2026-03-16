@@ -180,6 +180,7 @@ public final class SharedNetworkSnapshotPublisher implements AutoCloseable {
         Map<String, Object> screens = new LinkedHashMap<>();
         screens.put("player-ban", plugin.getLang().getRawList("screens.player-ban"));
         screens.put("ip-ban", plugin.getLang().getRawList("screens.ip-ban"));
+        screens.put("kick", plugin.getLang().getRawList("screens.kick"));
         screens.put("ip-blacklist", plugin.getLang().getRawList("screens.ip-blacklist"));
         root.put("screens", screens);
 
