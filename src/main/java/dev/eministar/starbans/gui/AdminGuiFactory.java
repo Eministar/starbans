@@ -1,7 +1,11 @@
 package dev.eministar.starbans.gui;
 
 import dev.eministar.starbans.StarBans;
+import dev.eministar.starbans.model.CasePriority;
 import dev.eministar.starbans.model.CaseRecord;
+import dev.eministar.starbans.model.CaseSearchFilter;
+import dev.eministar.starbans.model.CaseStatus;
+import dev.eministar.starbans.model.CaseType;
 import dev.eministar.starbans.model.CommandActor;
 import dev.eministar.starbans.model.ModerationActionResult;
 import dev.eministar.starbans.model.ModerationActionType;
@@ -50,6 +54,18 @@ public final class AdminGuiFactory {
             placeStaticItem(plugin, gui, activitySlot, "gui.main-menu.activity", "case_count", stats.totalCases());
             gui.setAction(activitySlot, event -> openRecentActivity(plugin, viewer, 0));
 
+            int queueSlot = plugin.getConfig().getInt("gui.main-menu.slots.queue", 14);
+            placeStaticItem(
+                    plugin,
+                    gui,
+                    queueSlot,
+                    "gui.main-menu.queue",
+                    "report_count", stats.activeReports(),
+                    "quarantine_count", stats.activeQuarantines(),
+                    "review_count", stats.activeReviews()
+            );
+            gui.setAction(queueSlot, event -> openReportQueue(plugin, viewer, 0));
+
             placeStaticItem(
                     plugin,
                     gui,
@@ -61,6 +77,9 @@ public final class AdminGuiFactory {
                     "mute_count", stats.activeMutes(),
                     "warn_count", stats.activeWarns(),
                     "watchlist_count", stats.activeWatchlists(),
+                    "report_count", stats.activeReports(),
+                    "quarantine_count", stats.activeQuarantines(),
+                    "review_count", stats.activeReviews(),
                     "case_count", stats.totalCases()
             );
             placeActionItem(plugin, gui, plugin.getConfig().getInt("gui.main-menu.slots.close", 22), "gui.main-menu.close", event -> viewer.closeInventory());
@@ -591,6 +610,92 @@ public final class AdminGuiFactory {
         }
     }
 
+    public static void openReportQueue(StarBans plugin, Player viewer, int requestedPage) {
+        if (!ensurePermission(plugin, viewer, "starbans.command.queue")) {
+            return;
+        }
+
+        List<Integer> entrySlots = plugin.getConfig().getIntegerList("gui.report-queue.entry-slots");
+        if (entrySlots.isEmpty()) {
+            viewer.sendMessage(plugin.getLang().prefixed("messages.gui-misconfigured"));
+            return;
+        }
+
+        try {
+            CaseSearchFilter filter = new CaseSearchFilter(
+                    CaseType.REPORT,
+                    CaseStatus.ACTIVE,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+            );
+            int totalEntries = plugin.getModerationService().countCases(filter);
+            int maxPage = Math.max(1, (int) Math.ceil(totalEntries / (double) entrySlots.size()));
+            int page = clampPage(requestedPage, maxPage);
+            List<CaseRecord> reports = plugin.getModerationService().searchCases(filter, entrySlots.size(), page);
+            long claimedCount = reports.stream().filter(report -> report.getClaimActorName() != null && !report.getClaimActorName().isBlank()).count();
+            long criticalCount = reports.stream().filter(report -> report.getPriority() == CasePriority.CRITICAL).count();
+
+            InteractiveGui gui = new InteractiveGui(
+                    normalizeSize(plugin.getConfig().getInt("gui.report-queue.size", 54)),
+                    plugin.getLang().get("gui.report-queue.title", "page", page + 1, "max_page", maxPage)
+            );
+            fillWithFiller(plugin, gui);
+            gui.getInventory().setItem(
+                    plugin.getConfig().getInt("gui.report-queue.slots.header", 4),
+                    GuiItemFactory.create(
+                            plugin,
+                            plugin.getConfig().getConfigurationSection("gui.report-queue.header"),
+                            null,
+                            "report_count", totalEntries,
+                            "claimed_count", claimedCount,
+                            "critical_count", criticalCount
+                    )
+            );
+
+            for (int index = 0; index < reports.size() && index < entrySlots.size(); index++) {
+                CaseRecord report = reports.get(index);
+                int slot = entrySlots.get(index);
+                gui.getInventory().setItem(
+                        slot,
+                        GuiItemFactory.create(
+                                plugin,
+                                plugin.getConfig().getConfigurationSection("gui.report-queue.entry"),
+                                report.getTargetPlayerUniqueId() == null ? null : Bukkit.getOfflinePlayer(report.getTargetPlayerUniqueId()),
+                                plugin.getModerationService().recordReplacements(report)
+                        )
+                );
+                gui.setAction(slot, event -> handleReportQueueClick(plugin, viewer, report, page, event.getClick()));
+            }
+
+            setNavigation(
+                    plugin,
+                    gui,
+                    page,
+                    maxPage,
+                    "gui.report-queue.previous",
+                    "gui.report-queue.next",
+                    requested -> openReportQueue(plugin, viewer, requested)
+            );
+            placeActionItem(plugin, gui, plugin.getConfig().getInt("gui.report-queue.slots.back", 45), "gui.report-queue.back", event -> openMainMenu(plugin, viewer));
+            placeActionItem(plugin, gui, plugin.getConfig().getInt("gui.report-queue.slots.close", 49), "gui.report-queue.close", event -> viewer.closeInventory());
+            viewer.openInventory(gui.getInventory());
+            SoundUtil.play(plugin, viewer, requestedPage == page ? "gui.open" : "gui.navigate");
+        } catch (Exception exception) {
+            LoggerUtil.error("The report queue GUI could not be opened.", exception);
+            viewer.sendMessage(plugin.getLang().prefixed("messages.internal-error"));
+            SoundUtil.play(plugin, viewer, "gui.error");
+        }
+    }
+
     private static void handleRelatedProfileClick(StarBans plugin,
                                                   Player viewer,
                                                   PlayerIdentity target,
@@ -629,6 +734,69 @@ public final class AdminGuiFactory {
         }
 
         openActionMenu(plugin, viewer, related, returnPage);
+    }
+
+    private static void handleReportQueueClick(StarBans plugin,
+                                               Player viewer,
+                                               CaseRecord report,
+                                               int page,
+                                               ClickType clickType) {
+        if (clickType == ClickType.SHIFT_RIGHT) {
+            try {
+                ModerationActionResult result = plugin.getModerationService().setCasePriority(
+                        report.getId(),
+                        CommandActor.fromSender(viewer),
+                        nextPriority(report.getPriority())
+                );
+                if (result.type() == ModerationActionType.NOT_FOUND || result.caseRecord() == null) {
+                    viewer.sendMessage(plugin.getLang().prefixed("messages.case-not-found", "id", report.getId()));
+                    SoundUtil.play(plugin, viewer, "gui.error");
+                } else {
+                    viewer.sendMessage(plugin.getLang().prefixed(
+                            "messages.queue-priority-success",
+                            "id", report.getId(),
+                            "priority", result.caseRecord().getPriority().name()
+                    ));
+                    SoundUtil.play(plugin, viewer, "gui.success");
+                }
+            } catch (Exception exception) {
+                LoggerUtil.error("The queue priority action failed.", exception);
+                viewer.sendMessage(plugin.getLang().prefixed("messages.internal-error"));
+                SoundUtil.play(plugin, viewer, "gui.error");
+            }
+            openReportQueue(plugin, viewer, page);
+            return;
+        }
+
+        if (clickType == ClickType.RIGHT) {
+            try {
+                ModerationActionResult result = plugin.getModerationService().claimCase(report.getId(), CommandActor.fromSender(viewer));
+                if (result.type() == ModerationActionType.NOT_FOUND || result.caseRecord() == null) {
+                    viewer.sendMessage(plugin.getLang().prefixed("messages.case-not-found", "id", report.getId()));
+                    SoundUtil.play(plugin, viewer, "gui.error");
+                } else {
+                    viewer.sendMessage(plugin.getLang().prefixed(
+                            "messages.queue-claim-success",
+                            "id", report.getId(),
+                            "actor", viewer.getName()
+                    ));
+                    SoundUtil.play(plugin, viewer, "gui.success");
+                }
+            } catch (Exception exception) {
+                LoggerUtil.error("The queue claim action failed.", exception);
+                viewer.sendMessage(plugin.getLang().prefixed("messages.internal-error"));
+                SoundUtil.play(plugin, viewer, "gui.error");
+            }
+            openReportQueue(plugin, viewer, page);
+            return;
+        }
+
+        if (clickType == ClickType.SHIFT_LEFT && report.getTargetPlayerUniqueId() != null && report.getTargetPlayerName() != null) {
+            openActionMenu(plugin, viewer, new PlayerIdentity(report.getTargetPlayerUniqueId(), report.getTargetPlayerName()), 0);
+            return;
+        }
+
+        openCaseDetails(plugin, viewer, report.getId(), () -> openReportQueue(plugin, viewer, page));
     }
 
     private static void attachTimedPresets(StarBans plugin, InteractiveGui gui, Player viewer, PlayerIdentity target, int returnPage, String path, boolean banPreset) {
@@ -698,6 +866,9 @@ public final class AdminGuiFactory {
         }
         if (summary.activeMute() != null) {
             return plugin.getLang().get("labels.status-muted");
+        }
+        if (summary.activeQuarantine() != null) {
+            return plugin.getLang().get("labels.status-quarantined");
         }
         if (summary.activeWatchlist() != null) {
             return plugin.getLang().get("labels.status-watchlisted");
@@ -808,6 +979,15 @@ public final class AdminGuiFactory {
 
     private static int clampPage(int requestedPage, int maxPage) {
         return Math.max(0, Math.min(requestedPage, Math.max(0, maxPage - 1)));
+    }
+
+    private static CasePriority nextPriority(CasePriority current) {
+        return switch (current == null ? CasePriority.NORMAL : current) {
+            case LOW -> CasePriority.NORMAL;
+            case NORMAL -> CasePriority.HIGH;
+            case HIGH -> CasePriority.CRITICAL;
+            case CRITICAL -> CasePriority.LOW;
+        };
     }
 }
 

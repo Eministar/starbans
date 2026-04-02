@@ -5,10 +5,13 @@ public record PlayerSummary(PlayerIdentity player,
                             CaseRecord activeBan,
                             CaseRecord activeMute,
                             CaseRecord activeWatchlist,
+                            CaseRecord activeQuarantine,
                             CaseRecord latestCase,
                             int visibleCaseCount,
                             int noteCount,
                             int altFlagCount,
                             int warnCount,
-                            int warningPoints) {
+                            int warningPoints,
+                            int riskScore,
+                            String riskLevel) {
 }

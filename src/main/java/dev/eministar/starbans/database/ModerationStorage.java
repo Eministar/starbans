@@ -1,6 +1,7 @@
 package dev.eministar.starbans.database;
 
 import dev.eministar.starbans.model.CaseRecord;
+import dev.eministar.starbans.model.CaseSearchFilter;
 import dev.eministar.starbans.model.CaseStatus;
 import dev.eministar.starbans.model.CaseType;
 import dev.eministar.starbans.model.PlayerProfile;
@@ -37,6 +38,8 @@ public interface ModerationStorage extends AutoCloseable {
 
     List<CaseRecord> getRecentCases(int limit, int offset) throws Exception;
 
+    List<CaseRecord> searchCases(CaseSearchFilter filter, int limit, int offset) throws Exception;
+
     List<CaseRecord> getCasesByActor(String actorName, int limit, int offset) throws Exception;
 
     List<CaseRecord> getCasesByStatusActor(String actorName, int limit, int offset) throws Exception;
@@ -52,6 +55,8 @@ public interface ModerationStorage extends AutoCloseable {
     int countCasesByActorAndType(String actorName, CaseType type) throws Exception;
 
     int countStatusChangesByActor(String actorName) throws Exception;
+
+    int countCases(CaseSearchFilter filter) throws Exception;
 
     int countActiveCases(CaseType type) throws Exception;
 

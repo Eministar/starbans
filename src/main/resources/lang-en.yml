@@ -9,6 +9,7 @@ labels:
   status-banned: '&cBanned'
   status-muted: '&6Muted'
   status-watchlisted: '&eWatchlisted'
+  status-quarantined: '&cQuarantined'
   case-status-active: '&cACTIVE'
   case-status-resolved: '&aRESOLVED'
   case-status-expired: '&eEXPIRED'
@@ -21,6 +22,10 @@ labels:
   case-type-alt-flag: '&dAlt-Flag'
   case-type-ip-blacklist: '&4IP-Blacklist'
   case-type-watchlist: '&eWatchlist'
+  case-type-report: '&cReport'
+  case-type-incident: '&5Incident'
+  case-type-quarantine: '&4Quarantine'
+  case-type-review: '&bReview'
 
 time:
   permanent: '&cPermanent'
@@ -46,6 +51,8 @@ messages:
   player-has-no-known-ip: '&cNo known IP could be found for &f{player}&c.'
   invalid-duration: '&cInvalid duration &f{input}&c. Example: &f30m 12h 7d'
   invalid-case-id: '&cInvalid case id: &f{input}&c.'
+  invalid-case-type: '&cInvalid case type: &f{input}&c.'
+  invalid-case-status: '&cInvalid case status: &f{input}&c.'
   case-resolved: '&aCase &f#{id} &awas resolved.'
   staff-alert-join:
     - '&8[&#FFB84D&lStarBans Alert&8] &e{player} joined with moderation context'
@@ -64,6 +71,11 @@ messages:
     - '&7IP: &f{ip} &8| &7Score: &f{score} &8| &7Suspicious: &f{suspicious_count}/{related_count}'
     - '&7Preview: &f{related_players}'
     - '&7Reasons: &f{reasons}'
+  staff-alert-review-due:
+    - '&8[&#FFB84D&lStarBans Alert&8] &bReview due for &f{player}'
+    - '&7Case: &f#{case_id} &8| &7Priority: &f{priority}'
+    - '&7Reason: &f{reason}'
+    - '&7Review reason: &f{review_reason}'
   gui-note-prompt-start: '&eType the note for &f{player} &ein chat. Write &fcancel &eto abort.'
   gui-note-prompt-cancelled: '&7The GUI note prompt for &f{player} &7was cancelled.'
 
@@ -100,6 +112,15 @@ messages:
   usage-setup-webhooks: '&cUsage: /starbans setup webhooks <list|enabled|default-url|clear-default|action-url|clear-action-url|action-enabled> ...'
   usage-setup-general: '&cUsage: /starbans setup general <language|timezone|server-profile> <value>'
   usage-feedback: '&cUsage: /starbans feedback <message>'
+  usage-report: '&cUsage: /report <player> [priority] <reason>'
+  usage-queue: '&cUsage: /starbans queue <list|claim|priority> [caseId] [priority]'
+  usage-appeal: '&cUsage: /starbans appeal <open|reviewing|accept|deny|note> <caseId> [duration] [note]'
+  usage-evidence: '&cUsage: /starbans evidence <caseId> <link|image|video|text> <value> [note]'
+  usage-incident: '&cUsage: /starbans incident <create|link> ...'
+  usage-review: '&cUsage: /starbans review <create|done|list> ...'
+  usage-quarantine: '&cUsage: /starbans quarantine <add|remove> <player> [duration] [reason]'
+  usage-search: '&cUsage: /starbans search <type|*> <status|*> <actor|*> <tag|*> <server-profile|*> [days]'
+  usage-import: '&cUsage: /starbans import <starbans_json|litebans_sqlite|advancedban_sqlite> <path>'
 
   already-banned: '&c{player} is already banned. Current reason: &f{reason}'
   ban-success: '&a{player} was permanently banned for &f{reason}&a.'
@@ -132,6 +153,28 @@ messages:
   alt-list-empty: '&7No active alt flags found for &f{player}&7.'
   alt-entry: '&8#&f{id} &7| &f{label} &7| &f{player} &7<-> &f{related_player} &7| &f{actor} &7| &f{reason}'
   alt-clear-success: '&aAlt flag / active case &f#{id} &awas resolved.'
+  report-success: '&aReport submitted for &f{player}&a. Priority: &f{priority} &8| &7Reason: &f{reason}'
+  queue-header: '&8---------- &cReport Queue &8({count}) ----------'
+  queue-entry: '&8#&f{id} &7| &f{player} &7| &f{actor} &7| &f{priority} &7| &f{claim_actor} &7| &f{reason}'
+  queue-claim-success: '&aCase &f#{id} &awas claimed by &f{actor}&a.'
+  queue-priority-success: '&aCase &f#{id} &apriority updated to &f{priority}&a.'
+  appeal-update-success: '&aAppeal state for case &f#{id} &awas updated to &f{status}&a.'
+  evidence-add-success: '&aEvidence added to case &f#{id}&a. Total entries: &f{count}'
+  incident-create-success: '&aIncident &f{id} &awas created as case &f#{case_id}&a.'
+  incident-link-success: '&aCase &f#{id} &awas linked to incident &f{incident_id}&a.'
+  review-create-success: '&aReview case &f#{id} &acreated for &f{player}&a.'
+  review-done-success: '&aReview case &f#{id} &awas updated.'
+  review-list-header: '&8---------- &bDue Reviews &8({count}) ----------'
+  review-list-entry: '&8#&f{id} &7| &f{player} &7| &f{review_at} &7| &f{reason}'
+  quarantine-add-success: '&a{player} was quarantined. Reason: &f{reason}'
+  quarantine-remove-success: '&aQuarantine removed from &f{player}&a.'
+  quarantine-already-active: '&e{player} is already quarantined.'
+  quarantine-not-active: '&e{player} is not currently quarantined.'
+  quarantine-chat-blocked: '&cYou are quarantined. &7Reason: &f{reason} &8| &7Remaining: &f{remaining}'
+  quarantine-command-blocked: '&cYou are quarantined and cannot use &f/{command}&c right now. &7Reason: &f{reason} &8| &7Remaining: &f{remaining}'
+  search-header: '&8---------- &6Search Results &8({count}) ----------'
+  search-entry: '&8#&f{id} &7| &f{type} &7| &f{player} &7| &f{actor} &7| &f{status} &7| &f{priority} &7| &f{reason}'
+  import-success: '&aImport completed from &f{source}&a. Cases: &f{case_count} &8| &7Profiles: &f{profile_count} &8| &7Skipped: &f{skipped}'
 
   ip-already-blacklisted: '&cThe IP &f{ip} &cis already blacklisted.'
   ipblacklist-add-success: '&aThe IP &f{ip} &awas added to the blacklist.'
@@ -171,6 +214,8 @@ messages:
     - '&7Related player: &f{related_player}'
     - '&7IP: &f{ip}'
     - '&7Label: &f{label}'
+    - '&7Incident: &f{incident_id}'
+    - '&7Priority: &f{priority}'
     - '&7Reason: &f{reason}'
     - '&7Actor: &f{actor}'
     - '&7Source: &f{source}'
@@ -185,6 +230,14 @@ messages:
     - '&7Status: &f{status}'
     - '&7Status actor: &f{status_actor}'
     - '&7Status note: &f{status_note}'
+    - '&7Claimed by: &f{claim_actor}'
+    - '&7Claimed at: &f{claim_changed_at}'
+    - '&7Appeal status: &f{appeal_status}'
+    - '&7Appeal deadline: &f{appeal_deadline}'
+    - '&7Appeal notes: &f{appeal_note_count}'
+    - '&7Review at: &f{review_at}'
+    - '&7Review reason: &f{review_reason}'
+    - '&7Evidence count: &f{evidence_count}'
   case-tags-updated: '&aCase &f#{id} &atags updated: &f{tags}'
 
   notes-header: '&8---------- &6Notes for &f{player} &8({note_count}) ----------'
@@ -246,6 +299,15 @@ messages:
     - '&e/starbans feedback <message> &7- send developer feedback'
     - '&e/salt mark <label> <player1> <player2> [note] &7- mark alts'
     - '&e/sipblacklist <add|remove> <ip> [reason] &7- manage the IP blacklist'
+    - '&e/report <player> [priority] <reason> &7- submit a player report'
+    - '&e/starbans queue ... &7- work through open reports'
+    - '&e/starbans appeal ... &7- update appeal workflows'
+    - '&e/starbans evidence ... &7- attach proof to cases'
+    - '&e/starbans incident ... &7- create or link incidents'
+    - '&e/starbans review ... &7- schedule and resolve reviews'
+    - '&e/starbans quarantine ... &7- isolate suspicious players'
+    - '&e/starbans search ... &7- filter the case database'
+    - '&e/starbans import ... &7- import external moderation data'
 
   broadcasts:
     player-ban:
@@ -341,6 +403,8 @@ gui:
     title: '&8StarBans &7| &fRelated: {player} &8(&f{page}&7/&f{max_page}&8)'
   activity:
     title: '&8StarBans &7| &fRecent Activity &8(&f{page}&7/&f{max_page}&8)'
+  report-queue:
+    title: '&8StarBans &7| &fReport Queue &8(&f{page}&7/&f{max_page}&8)'
   case-details:
     title: '&8StarBans &7| &fCase #{id}'
 
@@ -357,6 +421,13 @@ gui-items:
       lore:
         - '&8Total cases: &f{case_count}'
         - '&7Open the global case / staff activity log.'
+    queue:
+      name: '&c&lReport Queue'
+      lore:
+        - '&8Open reports: &f{report_count}'
+        - '&8Quarantines: &f{quarantine_count}'
+        - '&8Reviews due: &f{review_count}'
+        - '&7Open the active staff workflow queue.'
     stats:
       name: '&e&lOverview'
       lore:
@@ -366,6 +437,9 @@ gui-items:
         - '&8Active mutes: &f{mute_count}'
         - '&8Active warns: &f{warn_count}'
         - '&8Watchlists: &f{watchlist_count}'
+        - '&8Reports: &f{report_count}'
+        - '&8Quarantines: &f{quarantine_count}'
+        - '&8Reviews due: &f{review_count}'
         - '&8All cases: &f{case_count}'
     close:
       name: '&cClose'
@@ -671,6 +745,45 @@ gui-items:
       lore:
         - '&7Close the GUI.'
 
+  report-queue:
+    header:
+      name: '&#FFB84D&lReport Queue'
+      lore:
+        - '&8Open reports: &f{report_count}'
+        - '&8Claimed: &f{claimed_count}'
+        - '&8Critical: &f{critical_count}'
+        - '&7Right click: claim report'
+        - '&7Shift right: cycle priority'
+        - '&7Shift left: open target profile'
+    previous:
+      name: '&ePrevious page'
+      lore:
+        - '&7Open the previous queue page.'
+    next:
+      name: '&eNext page'
+      lore:
+        - '&7Open the next queue page.'
+    back:
+      name: '&eMain Menu'
+      lore:
+        - '&7Return to the StarBans main GUI.'
+    close:
+      name: '&cClose'
+      lore:
+        - '&7Close this GUI.'
+    entry:
+      name: '&c&lReport &8#&f{id}'
+      lore:
+        - '&8Player: &f{player}'
+        - '&8Reporter: &f{related_player}'
+        - '&8Priority: &f{priority}'
+        - '&8Claimed by: &f{claim_actor}'
+        - '&8Created: &f{created_at}'
+        - '&8Reason: &f{reason}'
+        - '&7Left click: open case details'
+        - '&7Right click: claim report'
+        - '&7Shift right: change priority'
+
   case-details:
     header:
       name: '&#FFB84D&lCase #{id}'
@@ -680,11 +793,14 @@ gui-items:
         - '&8Related: &f{related_player}'
         - '&8IP: &f{ip}'
         - '&8Label: &f{label}'
+        - '&8Incident: &f{incident_id}'
+        - '&8Priority: &f{priority}'
         - '&8Reason: &f{reason}'
         - '&8Actor: &f{actor}'
         - '&8Source: &f{source}'
         - '&8Created: &f{created_at}'
         - '&8Expires: &f{expires_at}'
+        - '&8Evidence: &f{evidence_count}'
     status:
       name: '&e&lStatus'
       lore:
@@ -692,6 +808,13 @@ gui-items:
         - '&8Status by: &f{status_actor}'
         - '&8Changed at: &f{status_changed_at}'
         - '&8Status note: &f{status_note}'
+        - '&8Claimed by: &f{claim_actor}'
+        - '&8Claimed at: &f{claim_changed_at}'
+        - '&8Appeal: &f{appeal_status}'
+        - '&8Appeal deadline: &f{appeal_deadline}'
+        - '&8Appeal notes: &f{appeal_note_count}'
+        - '&8Review at: &f{review_at}'
+        - '&8Review reason: &f{review_reason}'
     target:
       name: '&b&lOpen Target'
       lore:

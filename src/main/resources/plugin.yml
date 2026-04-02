@@ -62,6 +62,9 @@ commands:
   banhistory:
     description: Open the case history for a player
     permission: starbans.command.cases
+  report:
+    description: Submit a player report
+    permission: starbans.command.report
 permissions:
   starbans.admin:
     description: Access to all StarBans commands
@@ -164,6 +167,33 @@ permissions:
     default: op
   starbans.command.tags:
     description: Edit case tags
+    default: op
+  starbans.command.report:
+    description: Submit player reports
+    default: true
+  starbans.command.queue:
+    description: View and manage the player report queue
+    default: op
+  starbans.command.appeal:
+    description: Manage case appeals
+    default: op
+  starbans.command.evidence:
+    description: Attach evidence to cases
+    default: op
+  starbans.command.incident:
+    description: Create and link incidents
+    default: op
+  starbans.command.review:
+    description: Manage review reminders and review cases
+    default: op
+  starbans.command.quarantine:
+    description: Quarantine suspicious players
+    default: op
+  starbans.command.search:
+    description: Search the case database with filters
+    default: op
+  starbans.command.import:
+    description: Import data from supported moderation systems
     default: op
   starbans.gui.open:
     description: Open the StarBans main GUI

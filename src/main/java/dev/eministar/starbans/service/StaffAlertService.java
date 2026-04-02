@@ -94,6 +94,13 @@ public final class StaffAlertService {
         );
     }
 
+    public void sendCustomAlert(String path, Object... replacements) {
+        if (!plugin.getConfig().getBoolean("staff-alerts.enabled", true)) {
+            return;
+        }
+        sendToStaff(path, replacements);
+    }
+
     private void sendToStaff(String path, Object... replacements) {
         List<String> lines = plugin.getLang().prefixedList(path, replacements);
         if (lines.isEmpty()) {

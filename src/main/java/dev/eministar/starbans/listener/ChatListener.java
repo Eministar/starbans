@@ -26,6 +26,17 @@ public final class ChatListener implements Listener {
                 return;
             }
 
+            Optional<CaseRecord> quarantine = plugin.getModerationService().getActiveQuarantine(event.getPlayer().getUniqueId());
+            if (quarantine.isPresent()) {
+                event.setCancelled(true);
+                event.getPlayer().sendMessage(plugin.getLang().prefixed(
+                        "messages.quarantine-chat-blocked",
+                        "reason", quarantine.get().getReason(),
+                        "remaining", plugin.getModerationService().formatRemaining(quarantine.get())
+                ));
+                return;
+            }
+
             Optional<CaseRecord> mute = plugin.getModerationService().getActivePlayerMute(event.getPlayer().getUniqueId());
             if (mute.isEmpty()) {
                 return;
@@ -34,7 +45,7 @@ public final class ChatListener implements Listener {
             event.setCancelled(true);
             event.getPlayer().sendMessage(plugin.getModerationService().buildMuteMessage(mute.get()));
         } catch (Exception exception) {
-            LoggerUtil.error("The mute check failed.", exception);
+            LoggerUtil.error("The chat moderation check failed.", exception);
         }
     }
 }

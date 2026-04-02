@@ -9,6 +9,7 @@ labels:
   status-banned: '&cGebannt'
   status-muted: '&6Stummgeschaltet'
   status-watchlisted: '&eWatchlist'
+  status-quarantined: '&cQuarantäne'
   case-status-active: '&cAKTIV'
   case-status-resolved: '&aAUFGELÖST'
   case-status-expired: '&eABGELAUFEN'
@@ -21,6 +22,10 @@ labels:
   case-type-alt-flag: '&dAlt-Markierung'
   case-type-ip-blacklist: '&4IP-Blacklist'
   case-type-watchlist: '&eWatchlist'
+  case-type-report: '&cReport'
+  case-type-incident: '&5Vorfall'
+  case-type-quarantine: '&4Quarantäne'
+  case-type-review: '&bReview'
 
 time:
   permanent: '&cPermanent'
@@ -46,6 +51,8 @@ messages:
   player-has-no-known-ip: '&cEs konnte keine bekannte IP für &f{player}&c gefunden werden.'
   invalid-duration: '&cUngültige Dauer &f{input}&c. Beispiel: &f30m 12h 7d'
   invalid-case-id: '&cUngültige Case-ID: &f{input}&c.'
+  invalid-case-type: '&cUngültiger Case-Typ: &f{input}&c.'
+  invalid-case-status: '&cUngültiger Case-Status: &f{input}&c.'
   case-resolved: '&aCase &f#{id} &awurde aufgelöst.'
   staff-alert-join:
     - '&8[&#FFB84D&lStarBans Alert&8] &e{player} ist mit Moderationskontext gejoint'
@@ -64,6 +71,11 @@ messages:
     - '&7IP: &f{ip} &8| &7Score: &f{score} &8| &7Auffällig: &f{suspicious_count}/{related_count}'
     - '&7Vorschau: &f{related_players}'
     - '&7Gründe: &f{reasons}'
+  staff-alert-review-due:
+    - '&8[&#FFB84D&lStarBans Alert&8] &bReview fällig für &f{player}'
+    - '&7Case: &f#{case_id} &8| &7Priorität: &f{priority}'
+    - '&7Grund: &f{reason}'
+    - '&7Review-Grund: &f{review_reason}'
   gui-note-prompt-start: '&eSchreibe die Notiz für &f{player} &eim Chat. Schreibe &fcancel &ezum Abbrechen.'
   gui-note-prompt-cancelled: '&7Die GUI-Notizeingabe für &f{player} &7wurde abgebrochen.'
 
@@ -100,6 +112,15 @@ messages:
   usage-setup-webhooks: '&cBenutzung: /starbans setup webhooks <list|enabled|default-url|clear-default|action-url|clear-action-url|action-enabled> ...'
   usage-setup-general: '&cBenutzung: /starbans setup general <language|timezone|server-profile> <wert>'
   usage-feedback: '&cBenutzung: /starbans feedback <nachricht>'
+  usage-report: '&cBenutzung: /report <spieler> [priorität] <grund>'
+  usage-queue: '&cBenutzung: /starbans queue <list|claim|priority> [caseId] [priorität]'
+  usage-appeal: '&cBenutzung: /starbans appeal <open|reviewing|accept|deny|note> <caseId> [dauer] [notiz]'
+  usage-evidence: '&cBenutzung: /starbans evidence <caseId> <link|image|video|text> <wert> [notiz]'
+  usage-incident: '&cBenutzung: /starbans incident <create|link> ...'
+  usage-review: '&cBenutzung: /starbans review <create|done|list> ...'
+  usage-quarantine: '&cBenutzung: /starbans quarantine <add|remove> <spieler> [dauer] [grund]'
+  usage-search: '&cBenutzung: /starbans search <typ|*> <status|*> <akteur|*> <tag|*> <server-profil|*> [tage]'
+  usage-import: '&cBenutzung: /starbans import <starbans_json|litebans_sqlite|advancedban_sqlite> <pfad>'
 
   already-banned: '&c{player} ist bereits gebannt. Aktueller Grund: &f{reason}'
   ban-success: '&a{player} wurde permanent für &f{reason} &agebannt.'
@@ -132,6 +153,28 @@ messages:
   alt-list-empty: '&7Keine aktiven Alt-Markierungen für &f{player} &7gefunden.'
   alt-entry: '&8#&f{id} &7| &f{label} &7| &f{player} &7<-> &f{related_player} &7| &f{actor} &7| &f{reason}'
   alt-clear-success: '&aAlt-Markierung / aktiver Case &f#{id} &awurde aufgelöst.'
+  report-success: '&aReport für &f{player} &aerstellt. Priorität: &f{priority} &8| &7Grund: &f{reason}'
+  queue-header: '&8---------- &cReport-Queue &8({count}) ----------'
+  queue-entry: '&8#&f{id} &7| &f{player} &7| &f{actor} &7| &f{priority} &7| &f{claim_actor} &7| &f{reason}'
+  queue-claim-success: '&aCase &f#{id} &awurde von &f{actor} &aübernommen.'
+  queue-priority-success: '&aPriorität von Case &f#{id} &aauf &f{priority} &agesetzt.'
+  appeal-update-success: '&aAppeal-Status für Case &f#{id} &awurde auf &f{status} &agesetzt.'
+  evidence-add-success: '&aBeweis zu Case &f#{id} &ahinzugefügt. Einträge gesamt: &f{count}'
+  incident-create-success: '&aVorfall &f{id} &awurde als Case &f#{case_id} &aerstellt.'
+  incident-link-success: '&aCase &f#{id} &awurde mit Vorfall &f{incident_id} &averknüpft.'
+  review-create-success: '&aReview-Case &f#{id} &afür &f{player} &aerstellt.'
+  review-done-success: '&aReview-Case &f#{id} &awurde aktualisiert.'
+  review-list-header: '&8---------- &bFällige Reviews &8({count}) ----------'
+  review-list-entry: '&8#&f{id} &7| &f{player} &7| &f{review_at} &7| &f{reason}'
+  quarantine-add-success: '&a{player} wurde in Quarantäne gesetzt. Grund: &f{reason}'
+  quarantine-remove-success: '&aQuarantäne von &f{player} &aentfernt.'
+  quarantine-already-active: '&e{player} ist bereits in Quarantäne.'
+  quarantine-not-active: '&e{player} ist aktuell nicht in Quarantäne.'
+  quarantine-chat-blocked: '&cDu bist in Quarantäne. &7Grund: &f{reason} &8| &7Verbleibend: &f{remaining}'
+  quarantine-command-blocked: '&cDu bist in Quarantäne und kannst &f/{command} &caktuell nicht nutzen. &7Grund: &f{reason} &8| &7Verbleibend: &f{remaining}'
+  search-header: '&8---------- &6Suchergebnisse &8({count}) ----------'
+  search-entry: '&8#&f{id} &7| &f{type} &7| &f{player} &7| &f{actor} &7| &f{status} &7| &f{priority} &7| &f{reason}'
+  import-success: '&aImport aus &f{source} &aabgeschlossen. Cases: &f{case_count} &8| &7Profile: &f{profile_count} &8| &7Übersprungen: &f{skipped}'
 
   ip-already-blacklisted: '&cDie IP &f{ip} &cist bereits auf der Blacklist.'
   ipblacklist-add-success: '&aDie IP &f{ip} &awurde zur Blacklist hinzugefügt.'
@@ -171,6 +214,8 @@ messages:
     - '&7Verknüpfter Spieler: &f{related_player}'
     - '&7IP: &f{ip}'
     - '&7Label: &f{label}'
+    - '&7Vorfall: &f{incident_id}'
+    - '&7Priorität: &f{priority}'
     - '&7Grund: &f{reason}'
     - '&7Ausgeführt von: &f{actor}'
     - '&7Quelle: &f{source}'
@@ -185,6 +230,14 @@ messages:
     - '&7Status: &f{status}'
     - '&7Status-Akteur: &f{status_actor}'
     - '&7Status-Notiz: &f{status_note}'
+    - '&7Übernommen von: &f{claim_actor}'
+    - '&7Übernommen am: &f{claim_changed_at}'
+    - '&7Appeal-Status: &f{appeal_status}'
+    - '&7Appeal-Frist: &f{appeal_deadline}'
+    - '&7Appeal-Notizen: &f{appeal_note_count}'
+    - '&7Review am: &f{review_at}'
+    - '&7Review-Grund: &f{review_reason}'
+    - '&7Beweis-Anzahl: &f{evidence_count}'
   case-tags-updated: '&aCase &f#{id} &aTags aktualisiert: &f{tags}'
 
   notes-header: '&8---------- &6Notizen für &f{player} &8({note_count}) ----------'
@@ -246,6 +299,15 @@ messages:
     - '&e/starbans feedback <nachricht> &7- Developer-Feedback senden'
     - '&e/salt mark <label> <spieler1> <spieler2> [notiz] &7- markiert Alts'
     - '&e/sipblacklist <add|remove> <ip> [grund] &7- verwaltet die IP-Blacklist'
+    - '&e/report <spieler> [priorität] <grund> &7- erstellt einen Spieler-Report'
+    - '&e/starbans queue ... &7- bearbeitet offene Reports'
+    - '&e/starbans appeal ... &7- verwaltet Appeals'
+    - '&e/starbans evidence ... &7- hängt Beweise an Cases'
+    - '&e/starbans incident ... &7- erstellt oder verknüpft Vorfälle'
+    - '&e/starbans review ... &7- plant und erledigt Reviews'
+    - '&e/starbans quarantine ... &7- isoliert verdächtige Spieler'
+    - '&e/starbans search ... &7- filtert die Case-Datenbank'
+    - '&e/starbans import ... &7- importiert externe Moderationsdaten'
 
   broadcasts:
     player-ban:
@@ -341,6 +403,8 @@ gui:
     title: '&8StarBans &7| &fVerknüpft: {player} &8(&f{page}&7/&f{max_page}&8)'
   activity:
     title: '&8StarBans &7| &fLetzte Aktivität &8(&f{page}&7/&f{max_page}&8)'
+  report-queue:
+    title: '&8StarBans &7| &fReport-Queue &8(&f{page}&7/&f{max_page}&8)'
   case-details:
     title: '&8StarBans &7| &fCase #{id}'
 
@@ -357,6 +421,13 @@ gui-items:
       lore:
         - '&8Gesamte Cases: &f{case_count}'
         - '&7Öffnet das globale Case- / Team-Log.'
+    queue:
+      name: '&c&lReport-Queue'
+      lore:
+        - '&8Offene Reports: &f{report_count}'
+        - '&8Quarantänen: &f{quarantine_count}'
+        - '&8Fällige Reviews: &f{review_count}'
+        - '&7Öffnet die aktive Staff-Workflow-Queue.'
     stats:
       name: '&e&lÜbersicht'
       lore:
@@ -366,6 +437,9 @@ gui-items:
         - '&8Aktive Mutes: &f{mute_count}'
         - '&8Aktive Warns: &f{warn_count}'
         - '&8Watchlists: &f{watchlist_count}'
+        - '&8Reports: &f{report_count}'
+        - '&8Quarantänen: &f{quarantine_count}'
+        - '&8Fällige Reviews: &f{review_count}'
         - '&8Alle Cases: &f{case_count}'
     close:
       name: '&cSchließen'
@@ -671,6 +745,45 @@ gui-items:
       lore:
         - '&7Schließt die GUI.'
 
+  report-queue:
+    header:
+      name: '&#FFB84D&lReport-Queue'
+      lore:
+        - '&8Offene Reports: &f{report_count}'
+        - '&8Übernommen: &f{claimed_count}'
+        - '&8Kritisch: &f{critical_count}'
+        - '&7Rechtsklick: Report übernehmen'
+        - '&7Shift-Rechtsklick: Priorität wechseln'
+        - '&7Shift-Linksklick: Zielprofil öffnen'
+    previous:
+      name: '&eVorherige Seite'
+      lore:
+        - '&7Öffnet die vorherige Queue-Seite.'
+    next:
+      name: '&eNächste Seite'
+      lore:
+        - '&7Öffnet die nächste Queue-Seite.'
+    back:
+      name: '&eHauptmenü'
+      lore:
+        - '&7Zurück zur StarBans-Haupt-GUI.'
+    close:
+      name: '&cSchließen'
+      lore:
+        - '&7Schließt diese GUI.'
+    entry:
+      name: '&c&lReport &8#&f{id}'
+      lore:
+        - '&8Spieler: &f{player}'
+        - '&8Reporter: &f{related_player}'
+        - '&8Priorität: &f{priority}'
+        - '&8Übernommen von: &f{claim_actor}'
+        - '&8Erstellt: &f{created_at}'
+        - '&8Grund: &f{reason}'
+        - '&7Linksklick: Case-Details öffnen'
+        - '&7Rechtsklick: Report übernehmen'
+        - '&7Shift-Rechtsklick: Priorität ändern'
+
   case-details:
     header:
       name: '&#FFB84D&lCase #{id}'
@@ -680,11 +793,14 @@ gui-items:
         - '&8Verknüpft: &f{related_player}'
         - '&8IP: &f{ip}'
         - '&8Label: &f{label}'
+        - '&8Vorfall: &f{incident_id}'
+        - '&8Priorität: &f{priority}'
         - '&8Grund: &f{reason}'
         - '&8Akteur: &f{actor}'
         - '&8Quelle: &f{source}'
         - '&8Erstellt: &f{created_at}'
         - '&8Läuft ab: &f{expires_at}'
+        - '&8Beweise: &f{evidence_count}'
     status:
       name: '&e&lStatus'
       lore:
@@ -692,6 +808,13 @@ gui-items:
         - '&8Status von: &f{status_actor}'
         - '&8Geändert am: &f{status_changed_at}'
         - '&8Status-Notiz: &f{status_note}'
+        - '&8Übernommen von: &f{claim_actor}'
+        - '&8Übernommen am: &f{claim_changed_at}'
+        - '&8Appeal: &f{appeal_status}'
+        - '&8Appeal-Frist: &f{appeal_deadline}'
+        - '&8Appeal-Notizen: &f{appeal_note_count}'
+        - '&8Review am: &f{review_at}'
+        - '&8Review-Grund: &f{review_reason}'
     target:
       name: '&b&lZiel öffnen'
       lore:

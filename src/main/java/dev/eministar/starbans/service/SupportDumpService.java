@@ -126,7 +126,7 @@ public final class SupportDumpService {
             return plugin.getModerationService().getStats();
         } catch (Exception exception) {
             checks.add(new DiagnosticCheck("moderation-stats", Status.FAIL, safeMessage(exception)));
-            return new PluginStats(0, 0, 0, 0, 0, 0);
+            return new PluginStats(0, 0, 0, 0, 0, 0, 0, 0, 0);
         }
     }
 

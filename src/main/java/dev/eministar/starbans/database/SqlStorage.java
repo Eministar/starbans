@@ -4,7 +4,12 @@ import com.google.gson.Gson;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import dev.eministar.starbans.StarBans;
+import dev.eministar.starbans.model.AppealStatus;
+import dev.eministar.starbans.model.CaseComment;
+import dev.eministar.starbans.model.CaseEvidence;
+import dev.eministar.starbans.model.CasePriority;
 import dev.eministar.starbans.model.CaseRecord;
+import dev.eministar.starbans.model.CaseSearchFilter;
 import dev.eministar.starbans.model.CaseStatus;
 import dev.eministar.starbans.model.CaseType;
 import dev.eministar.starbans.model.CaseVisibility;
@@ -80,7 +85,7 @@ public final class SqlStorage implements ModerationStorage {
 
     @Override
     public CaseRecord createCase(CaseRecord record) throws Exception {
-        String sql = "INSERT INTO " + casesTable + " (type, label, target_player_uuid, target_player_name, target_ip, related_player_uuid, related_player_name, actor_uuid, actor_name, reason, source, category, template_key, tags, points, visibility, reference_case_id, created_at, expires_at, status, status_changed_at, status_actor_uuid, status_actor_name, status_note) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO " + casesTable + " (type, label, target_player_uuid, target_player_name, target_ip, related_player_uuid, related_player_name, actor_uuid, actor_name, reason, source, category, template_key, tags, points, visibility, reference_case_id, server_profile_id, incident_id, priority, claim_actor_uuid, claim_actor_name, claim_changed_at, appeal_status, appeal_deadline_at, appeal_changed_at, appeal_actor_uuid, appeal_actor_name, appeal_notes, next_review_at, last_reviewed_at, review_reason, evidence, created_at, expires_at, status, status_changed_at, status_actor_uuid, status_actor_name, status_note) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             statement.setString(1, record.getType().name());
@@ -100,13 +105,29 @@ public final class SqlStorage implements ModerationStorage {
             statement.setInt(15, record.getPoints());
             statement.setString(16, record.getVisibility().name());
             setLong(statement, 17, record.getReferenceCaseId());
-            statement.setLong(18, record.getCreatedAt());
-            setLong(statement, 19, record.getExpiresAt());
-            statement.setString(20, record.getStatus().name());
-            setLong(statement, 21, record.getStatusChangedAt());
-            setUuid(statement, 22, record.getStatusActorUniqueId());
-            statement.setString(23, record.getStatusActorName());
-            statement.setString(24, record.getStatusNote());
+            statement.setString(18, record.getServerProfileId());
+            statement.setString(19, record.getIncidentId());
+            statement.setString(20, record.getPriority().name());
+            setUuid(statement, 21, record.getClaimActorUniqueId());
+            statement.setString(22, record.getClaimActorName());
+            setLong(statement, 23, record.getClaimChangedAt());
+            statement.setString(24, record.getAppealStatus().name());
+            setLong(statement, 25, record.getAppealDeadlineAt());
+            setLong(statement, 26, record.getAppealChangedAt());
+            setUuid(statement, 27, record.getAppealActorUniqueId());
+            statement.setString(28, record.getAppealActorName());
+            statement.setString(29, encodeComments(record.getAppealNotes()));
+            setLong(statement, 30, record.getNextReviewAt());
+            setLong(statement, 31, record.getLastReviewedAt());
+            statement.setString(32, record.getReviewReason());
+            statement.setString(33, encodeEvidence(record.getEvidence()));
+            statement.setLong(34, record.getCreatedAt());
+            setLong(statement, 35, record.getExpiresAt());
+            statement.setString(36, record.getStatus().name());
+            setLong(statement, 37, record.getStatusChangedAt());
+            setUuid(statement, 38, record.getStatusActorUniqueId());
+            statement.setString(39, record.getStatusActorName());
+            statement.setString(40, record.getStatusNote());
             statement.executeUpdate();
 
             try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
@@ -120,7 +141,7 @@ public final class SqlStorage implements ModerationStorage {
 
     @Override
     public CaseRecord updateCase(CaseRecord record) throws Exception {
-        String sql = "UPDATE " + casesTable + " SET type = ?, label = ?, target_player_uuid = ?, target_player_name = ?, target_ip = ?, related_player_uuid = ?, related_player_name = ?, actor_uuid = ?, actor_name = ?, reason = ?, source = ?, category = ?, template_key = ?, tags = ?, points = ?, visibility = ?, reference_case_id = ?, created_at = ?, expires_at = ?, status = ?, status_changed_at = ?, status_actor_uuid = ?, status_actor_name = ?, status_note = ? WHERE id = ?";
+        String sql = "UPDATE " + casesTable + " SET type = ?, label = ?, target_player_uuid = ?, target_player_name = ?, target_ip = ?, related_player_uuid = ?, related_player_name = ?, actor_uuid = ?, actor_name = ?, reason = ?, source = ?, category = ?, template_key = ?, tags = ?, points = ?, visibility = ?, reference_case_id = ?, server_profile_id = ?, incident_id = ?, priority = ?, claim_actor_uuid = ?, claim_actor_name = ?, claim_changed_at = ?, appeal_status = ?, appeal_deadline_at = ?, appeal_changed_at = ?, appeal_actor_uuid = ?, appeal_actor_name = ?, appeal_notes = ?, next_review_at = ?, last_reviewed_at = ?, review_reason = ?, evidence = ?, created_at = ?, expires_at = ?, status = ?, status_changed_at = ?, status_actor_uuid = ?, status_actor_name = ?, status_note = ? WHERE id = ?";
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, record.getType().name());
@@ -140,14 +161,30 @@ public final class SqlStorage implements ModerationStorage {
             statement.setInt(15, record.getPoints());
             statement.setString(16, record.getVisibility().name());
             setLong(statement, 17, record.getReferenceCaseId());
-            statement.setLong(18, record.getCreatedAt());
-            setLong(statement, 19, record.getExpiresAt());
-            statement.setString(20, record.getStatus().name());
-            setLong(statement, 21, record.getStatusChangedAt());
-            setUuid(statement, 22, record.getStatusActorUniqueId());
-            statement.setString(23, record.getStatusActorName());
-            statement.setString(24, record.getStatusNote());
-            statement.setLong(25, record.getId());
+            statement.setString(18, record.getServerProfileId());
+            statement.setString(19, record.getIncidentId());
+            statement.setString(20, record.getPriority().name());
+            setUuid(statement, 21, record.getClaimActorUniqueId());
+            statement.setString(22, record.getClaimActorName());
+            setLong(statement, 23, record.getClaimChangedAt());
+            statement.setString(24, record.getAppealStatus().name());
+            setLong(statement, 25, record.getAppealDeadlineAt());
+            setLong(statement, 26, record.getAppealChangedAt());
+            setUuid(statement, 27, record.getAppealActorUniqueId());
+            statement.setString(28, record.getAppealActorName());
+            statement.setString(29, encodeComments(record.getAppealNotes()));
+            setLong(statement, 30, record.getNextReviewAt());
+            setLong(statement, 31, record.getLastReviewedAt());
+            statement.setString(32, record.getReviewReason());
+            statement.setString(33, encodeEvidence(record.getEvidence()));
+            statement.setLong(34, record.getCreatedAt());
+            setLong(statement, 35, record.getExpiresAt());
+            statement.setString(36, record.getStatus().name());
+            setLong(statement, 37, record.getStatusChangedAt());
+            setUuid(statement, 38, record.getStatusActorUniqueId());
+            statement.setString(39, record.getStatusActorName());
+            statement.setString(40, record.getStatusNote());
+            statement.setLong(41, record.getId());
             statement.executeUpdate();
         }
         return record;
@@ -281,6 +318,20 @@ public final class SqlStorage implements ModerationStorage {
     }
 
     @Override
+    public List<CaseRecord> searchCases(CaseSearchFilter filter, int limit, int offset) throws Exception {
+        SearchQuery query = buildSearchQuery(filter, false);
+        String sql = query.sql() + " ORDER BY created_at DESC LIMIT ? OFFSET ?";
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            bindQuery(statement, query.params());
+            int base = query.params().size();
+            statement.setInt(base + 1, limit);
+            statement.setInt(base + 2, offset);
+            return readCases(statement);
+        }
+    }
+
+    @Override
     public List<CaseRecord> getCasesByActor(String actorName, int limit, int offset) throws Exception {
         String sql = "SELECT * FROM " + casesTable + " WHERE LOWER(actor_name) = LOWER(?) ORDER BY created_at DESC LIMIT ? OFFSET ?";
         try (Connection connection = dataSource.getConnection();
@@ -367,6 +418,16 @@ public final class SqlStorage implements ModerationStorage {
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, actorName);
+            return readCount(statement);
+        }
+    }
+
+    @Override
+    public int countCases(CaseSearchFilter filter) throws Exception {
+        SearchQuery query = buildSearchQuery(filter, true);
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query.sql())) {
+            bindQuery(statement, query.params());
             return readCount(statement);
         }
     }
@@ -517,6 +578,22 @@ public final class SqlStorage implements ModerationStorage {
                         + "points INTEGER NOT NULL DEFAULT 0, "
                         + "visibility VARCHAR(16) NOT NULL DEFAULT 'INTERNAL', "
                         + "reference_case_id BIGINT NULL, "
+                        + "server_profile_id VARCHAR(64) NULL, "
+                        + "incident_id VARCHAR(64) NULL, "
+                        + "priority VARCHAR(16) NOT NULL DEFAULT 'NORMAL', "
+                        + "claim_actor_uuid VARCHAR(36) NULL, "
+                        + "claim_actor_name VARCHAR(64) NULL, "
+                        + "claim_changed_at BIGINT NULL, "
+                        + "appeal_status VARCHAR(16) NOT NULL DEFAULT 'NONE', "
+                        + "appeal_deadline_at BIGINT NULL, "
+                        + "appeal_changed_at BIGINT NULL, "
+                        + "appeal_actor_uuid VARCHAR(36) NULL, "
+                        + "appeal_actor_name VARCHAR(64) NULL, "
+                        + "appeal_notes TEXT NULL, "
+                        + "next_review_at BIGINT NULL, "
+                        + "last_reviewed_at BIGINT NULL, "
+                        + "review_reason TEXT NULL, "
+                        + "evidence TEXT NULL, "
                         + "created_at BIGINT NOT NULL, "
                         + "expires_at BIGINT NULL, "
                         + "status VARCHAR(16) NOT NULL, "
@@ -539,6 +616,9 @@ public final class SqlStorage implements ModerationStorage {
                 statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_" + casesTable + "_status ON " + casesTable + " (status)");
                 statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_" + casesTable + "_actor_name ON " + casesTable + " (actor_name)");
                 statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_" + casesTable + "_status_actor_name ON " + casesTable + " (status_actor_name)");
+                statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_" + casesTable + "_server_profile ON " + casesTable + " (server_profile_id)");
+                statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_" + casesTable + "_incident ON " + casesTable + " (incident_id)");
+                statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_" + casesTable + "_appeal_status ON " + casesTable + " (appeal_status)");
                 statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_" + profilesTable + "_name ON " + profilesTable + " (player_name)");
                 statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_" + profilesTable + "_ip ON " + profilesTable + " (last_ip)");
             } else {
@@ -561,6 +641,22 @@ public final class SqlStorage implements ModerationStorage {
                         + "points INT NOT NULL DEFAULT 0, "
                         + "visibility VARCHAR(16) NOT NULL DEFAULT 'INTERNAL', "
                         + "reference_case_id BIGINT NULL, "
+                        + "server_profile_id VARCHAR(64) NULL, "
+                        + "incident_id VARCHAR(64) NULL, "
+                        + "priority VARCHAR(16) NOT NULL DEFAULT 'NORMAL', "
+                        + "claim_actor_uuid VARCHAR(36) NULL, "
+                        + "claim_actor_name VARCHAR(64) NULL, "
+                        + "claim_changed_at BIGINT NULL, "
+                        + "appeal_status VARCHAR(16) NOT NULL DEFAULT 'NONE', "
+                        + "appeal_deadline_at BIGINT NULL, "
+                        + "appeal_changed_at BIGINT NULL, "
+                        + "appeal_actor_uuid VARCHAR(36) NULL, "
+                        + "appeal_actor_name VARCHAR(64) NULL, "
+                        + "appeal_notes TEXT NULL, "
+                        + "next_review_at BIGINT NULL, "
+                        + "last_reviewed_at BIGINT NULL, "
+                        + "review_reason TEXT NULL, "
+                        + "evidence LONGTEXT NULL, "
                         + "created_at BIGINT NOT NULL, "
                         + "expires_at BIGINT NULL, "
                         + "status VARCHAR(16) NOT NULL, "
@@ -585,6 +681,9 @@ public final class SqlStorage implements ModerationStorage {
                 createMariaIndex(statement, "idx_" + casesTable + "_status", casesTable, "status");
                 createMariaIndex(statement, "idx_" + casesTable + "_actor_name", casesTable, "actor_name");
                 createMariaIndex(statement, "idx_" + casesTable + "_status_actor_name", casesTable, "status_actor_name");
+                createMariaIndex(statement, "idx_" + casesTable + "_server_profile", casesTable, "server_profile_id");
+                createMariaIndex(statement, "idx_" + casesTable + "_incident", casesTable, "incident_id");
+                createMariaIndex(statement, "idx_" + casesTable + "_appeal_status", casesTable, "appeal_status");
                 createMariaIndex(statement, "idx_" + profilesTable + "_name", profilesTable, "player_name");
                 createMariaIndex(statement, "idx_" + profilesTable + "_ip", profilesTable, "last_ip");
             }
@@ -596,6 +695,22 @@ public final class SqlStorage implements ModerationStorage {
                 ensureCaseColumn(connection, "points", "INTEGER NOT NULL DEFAULT 0");
                 ensureCaseColumn(connection, "visibility", "VARCHAR(16) NOT NULL DEFAULT 'INTERNAL'");
                 ensureCaseColumn(connection, "reference_case_id", "BIGINT NULL");
+                ensureCaseColumn(connection, "server_profile_id", "VARCHAR(64) NULL");
+                ensureCaseColumn(connection, "incident_id", "VARCHAR(64) NULL");
+                ensureCaseColumn(connection, "priority", "VARCHAR(16) NOT NULL DEFAULT 'NORMAL'");
+                ensureCaseColumn(connection, "claim_actor_uuid", "VARCHAR(36) NULL");
+                ensureCaseColumn(connection, "claim_actor_name", "VARCHAR(64) NULL");
+                ensureCaseColumn(connection, "claim_changed_at", "BIGINT NULL");
+                ensureCaseColumn(connection, "appeal_status", "VARCHAR(16) NOT NULL DEFAULT 'NONE'");
+                ensureCaseColumn(connection, "appeal_deadline_at", "BIGINT NULL");
+                ensureCaseColumn(connection, "appeal_changed_at", "BIGINT NULL");
+                ensureCaseColumn(connection, "appeal_actor_uuid", "VARCHAR(36) NULL");
+                ensureCaseColumn(connection, "appeal_actor_name", "VARCHAR(64) NULL");
+                ensureCaseColumn(connection, "appeal_notes", "TEXT NULL");
+                ensureCaseColumn(connection, "next_review_at", "BIGINT NULL");
+                ensureCaseColumn(connection, "last_reviewed_at", "BIGINT NULL");
+                ensureCaseColumn(connection, "review_reason", "TEXT NULL");
+                ensureCaseColumn(connection, "evidence", "TEXT NULL");
             } else {
                 ensureCaseColumn(connection, "category", "VARCHAR(64) NULL");
                 ensureCaseColumn(connection, "template_key", "VARCHAR(64) NULL");
@@ -603,6 +718,22 @@ public final class SqlStorage implements ModerationStorage {
                 ensureCaseColumn(connection, "points", "INT NOT NULL DEFAULT 0");
                 ensureCaseColumn(connection, "visibility", "VARCHAR(16) NOT NULL DEFAULT 'INTERNAL'");
                 ensureCaseColumn(connection, "reference_case_id", "BIGINT NULL");
+                ensureCaseColumn(connection, "server_profile_id", "VARCHAR(64) NULL");
+                ensureCaseColumn(connection, "incident_id", "VARCHAR(64) NULL");
+                ensureCaseColumn(connection, "priority", "VARCHAR(16) NOT NULL DEFAULT 'NORMAL'");
+                ensureCaseColumn(connection, "claim_actor_uuid", "VARCHAR(36) NULL");
+                ensureCaseColumn(connection, "claim_actor_name", "VARCHAR(64) NULL");
+                ensureCaseColumn(connection, "claim_changed_at", "BIGINT NULL");
+                ensureCaseColumn(connection, "appeal_status", "VARCHAR(16) NOT NULL DEFAULT 'NONE'");
+                ensureCaseColumn(connection, "appeal_deadline_at", "BIGINT NULL");
+                ensureCaseColumn(connection, "appeal_changed_at", "BIGINT NULL");
+                ensureCaseColumn(connection, "appeal_actor_uuid", "VARCHAR(36) NULL");
+                ensureCaseColumn(connection, "appeal_actor_name", "VARCHAR(64) NULL");
+                ensureCaseColumn(connection, "appeal_notes", "TEXT NULL");
+                ensureCaseColumn(connection, "next_review_at", "BIGINT NULL");
+                ensureCaseColumn(connection, "last_reviewed_at", "BIGINT NULL");
+                ensureCaseColumn(connection, "review_reason", "TEXT NULL");
+                ensureCaseColumn(connection, "evidence", "LONGTEXT NULL");
             }
         }
     }
@@ -690,6 +821,22 @@ public final class SqlStorage implements ModerationStorage {
                 resultSet.getInt("points"),
                 CaseVisibility.fromConfig(resultSet.getString("visibility")),
                 parseLong(resultSet, "reference_case_id"),
+                resultSet.getString("server_profile_id"),
+                resultSet.getString("incident_id"),
+                CasePriority.fromConfig(resultSet.getString("priority")),
+                parseUuid(resultSet.getString("claim_actor_uuid")),
+                resultSet.getString("claim_actor_name"),
+                parseLong(resultSet, "claim_changed_at"),
+                AppealStatus.fromConfig(resultSet.getString("appeal_status")),
+                parseLong(resultSet, "appeal_deadline_at"),
+                parseLong(resultSet, "appeal_changed_at"),
+                parseUuid(resultSet.getString("appeal_actor_uuid")),
+                resultSet.getString("appeal_actor_name"),
+                decodeComments(resultSet.getString("appeal_notes")),
+                parseLong(resultSet, "next_review_at"),
+                parseLong(resultSet, "last_reviewed_at"),
+                resultSet.getString("review_reason"),
+                decodeEvidence(resultSet.getString("evidence")),
                 resultSet.getLong("created_at"),
                 parseLong(resultSet, "expires_at"),
                 CaseStatus.valueOf(resultSet.getString("status")),
@@ -762,6 +909,14 @@ public final class SqlStorage implements ModerationStorage {
         return gson.toJson(tags == null ? List.of() : tags);
     }
 
+    private String encodeComments(List<CaseComment> comments) {
+        return gson.toJson(comments == null ? List.of() : comments);
+    }
+
+    private String encodeEvidence(List<CaseEvidence> evidence) {
+        return gson.toJson(evidence == null ? List.of() : evidence);
+    }
+
     private List<String> decodeTags(String raw) {
         if (raw == null || raw.isBlank()) {
             return List.of();
@@ -776,5 +931,125 @@ public final class SqlStorage implements ModerationStorage {
         } catch (Exception exception) {
             return List.of();
         }
+    }
+
+    private List<CaseComment> decodeComments(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return List.of();
+        }
+
+        try {
+            CaseComment[] values = gson.fromJson(raw, CaseComment[].class);
+            if (values == null || values.length == 0) {
+                return List.of();
+            }
+            return List.copyOf(Arrays.asList(values));
+        } catch (Exception exception) {
+            return List.of();
+        }
+    }
+
+    private List<CaseEvidence> decodeEvidence(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return List.of();
+        }
+
+        try {
+            CaseEvidence[] values = gson.fromJson(raw, CaseEvidence[].class);
+            if (values == null || values.length == 0) {
+                return List.of();
+            }
+            return List.copyOf(Arrays.asList(values));
+        } catch (Exception exception) {
+            return List.of();
+        }
+    }
+
+    private SearchQuery buildSearchQuery(CaseSearchFilter filter, boolean countOnly) {
+        StringBuilder sql = new StringBuilder(countOnly ? "SELECT COUNT(*) FROM " : "SELECT * FROM ")
+                .append(casesTable)
+                .append(" WHERE 1=1");
+        List<Object> params = new ArrayList<>();
+
+        if (filter == null) {
+            return new SearchQuery(sql.toString(), params);
+        }
+
+        if (filter.type() != null) {
+            sql.append(" AND type = ?");
+            params.add(filter.type().name());
+        }
+        if (filter.status() != null) {
+            sql.append(" AND status = ?");
+            params.add(filter.status().name());
+        }
+        if (filter.actorName() != null && !filter.actorName().isBlank()) {
+            sql.append(" AND LOWER(actor_name) LIKE LOWER(?)");
+            params.add('%' + filter.actorName() + '%');
+        }
+        if (filter.targetName() != null && !filter.targetName().isBlank()) {
+            sql.append(" AND LOWER(target_player_name) LIKE LOWER(?)");
+            params.add('%' + filter.targetName() + '%');
+        }
+        if (filter.tag() != null && !filter.tag().isBlank()) {
+            sql.append(" AND LOWER(tags) LIKE LOWER(?)");
+            params.add('%' + filter.tag() + '%');
+        }
+        if (filter.category() != null && !filter.category().isBlank()) {
+            sql.append(" AND LOWER(category) = LOWER(?)");
+            params.add(filter.category());
+        }
+        if (filter.serverProfileId() != null && !filter.serverProfileId().isBlank()) {
+            sql.append(" AND LOWER(server_profile_id) = LOWER(?)");
+            params.add(filter.serverProfileId());
+        }
+        if (filter.incidentId() != null && !filter.incidentId().isBlank()) {
+            sql.append(" AND LOWER(incident_id) = LOWER(?)");
+            params.add(filter.incidentId());
+        }
+        if (filter.createdAfter() != null) {
+            sql.append(" AND created_at >= ?");
+            params.add(filter.createdAfter());
+        }
+        if (filter.createdBefore() != null) {
+            sql.append(" AND created_at <= ?");
+            params.add(filter.createdBefore());
+        }
+        if (filter.appealStatus() != null && filter.appealStatus() != AppealStatus.NONE) {
+            sql.append(" AND appeal_status = ?");
+            params.add(filter.appealStatus().name());
+        }
+        if (filter.priority() != null && filter.priority() != CasePriority.NORMAL) {
+            sql.append(" AND priority = ?");
+            params.add(filter.priority().name());
+        }
+        if (filter.text() != null && !filter.text().isBlank()) {
+            sql.append(" AND (LOWER(reason) LIKE LOWER(?) OR LOWER(label) LIKE LOWER(?) OR LOWER(target_player_name) LIKE LOWER(?) OR LOWER(actor_name) LIKE LOWER(?) OR LOWER(target_ip) LIKE LOWER(?))");
+            String pattern = '%' + filter.text() + '%';
+            params.add(pattern);
+            params.add(pattern);
+            params.add(pattern);
+            params.add(pattern);
+            params.add(pattern);
+        }
+
+        return new SearchQuery(sql.toString(), params);
+    }
+
+    private void bindQuery(PreparedStatement statement, List<Object> params) throws SQLException {
+        for (int index = 0; index < params.size(); index++) {
+            Object value = params.get(index);
+            int parameterIndex = index + 1;
+            if (value instanceof Long longValue) {
+                statement.setLong(parameterIndex, longValue);
+            } else if (value instanceof Integer intValue) {
+                statement.setInt(parameterIndex, intValue);
+            } else {
+                statement.setString(parameterIndex, String.valueOf(value));
+            }
+        }
+    }
+
+    private record SearchQuery(String sql, List<Object> params) {
     }
 }

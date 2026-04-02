@@ -40,10 +40,12 @@ import dev.eministar.starbans.database.ModerationStorage;
 import dev.eministar.starbans.database.StorageFactory;
 import dev.eministar.starbans.database.StorageSettings;
 import dev.eministar.starbans.database.StorageType;
+import dev.eministar.starbans.discord.DiscordBotManager;
 import dev.eministar.starbans.discord.DiscordWebhookService;
 import dev.eministar.starbans.listener.ChatListener;
 import dev.eministar.starbans.listener.GuiListener;
 import dev.eministar.starbans.listener.LoginListener;
+import dev.eministar.starbans.listener.QuarantineListener;
 import dev.eministar.starbans.network.NetworkSyncService;
 import dev.eministar.starbans.network.SharedNetworkSnapshotPublisher;
 import dev.eministar.starbans.placeholder.StarBansPlaceholderExpansion;
@@ -53,9 +55,11 @@ import dev.eministar.starbans.service.AuditLogService;
 import dev.eministar.starbans.service.CaseExportService;
 import dev.eministar.starbans.service.FeedbackService;
 import dev.eministar.starbans.service.JoinAlertExemptionService;
+import dev.eministar.starbans.service.MigrationService;
 import dev.eministar.starbans.service.ModerationService;
 import dev.eministar.starbans.service.PlayerLookupService;
 import dev.eministar.starbans.service.PunishmentTemplateService;
+import dev.eministar.starbans.service.ReviewReminderService;
 import dev.eministar.starbans.service.ServerRuleService;
 import dev.eministar.starbans.service.SetupService;
 import dev.eministar.starbans.service.StaffAlertService;
@@ -83,6 +87,7 @@ public final class StarBans extends JavaPlugin {
     private ModerationService moderationService;
     private PlayerLookupService playerLookupService;
     private DiscordWebhookService discordWebhookService;
+    private DiscordBotManager discordBotManager;
     private StaffAlertService staffAlertService;
     private VpnCheckService vpnCheckService;
     private ServerRuleService serverRuleService;
@@ -94,6 +99,8 @@ public final class StarBans extends JavaPlugin {
     private FeedbackService feedbackService;
     private JoinAlertExemptionService joinAlertExemptionService;
     private AltDetectionService altDetectionService;
+    private MigrationService migrationService;
+    private ReviewReminderService reviewReminderService;
     private GuiInputService guiInputService;
     private NetworkSyncService networkSyncService;
     private SharedNetworkSnapshotPublisher sharedNetworkSnapshotPublisher;
@@ -142,6 +149,10 @@ public final class StarBans extends JavaPlugin {
             dynamicCommandRegistrar.unregisterAll();
         }
 
+        if (discordBotManager != null) {
+            discordBotManager.close();
+        }
+
         if (storage != null) {
             try {
                 storage.close();
@@ -157,6 +168,9 @@ public final class StarBans extends JavaPlugin {
         if (sharedNetworkSnapshotPublisher != null) {
             sharedNetworkSnapshotPublisher.close();
         }
+        if (reviewReminderService != null) {
+            reviewReminderService.close();
+        }
 
         LoggerUtil.success("StarBans has been disabled.");
     }
@@ -165,6 +179,12 @@ public final class StarBans extends JavaPlugin {
         synchronizeMainConfig();
         reloadConfig();
         installBundledResources();
+
+        if (discordBotManager == null) {
+            discordBotManager = new DiscordBotManager(this);
+        } else {
+            discordBotManager.close();
+        }
 
         try {
             validateVelocityBridgeStorage();
@@ -218,6 +238,11 @@ public final class StarBans extends JavaPlugin {
         feedbackService = new FeedbackService(this);
         joinAlertExemptionService = new JoinAlertExemptionService(this, serverRuleService);
         altDetectionService = new AltDetectionService(this, moderationService);
+        migrationService = new MigrationService(this);
+        if (reviewReminderService == null) {
+            reviewReminderService = new ReviewReminderService(this);
+        }
+        reviewReminderService.reload();
         if (networkSyncService != null) {
             networkSyncService.reload();
         }
@@ -243,6 +268,8 @@ public final class StarBans extends JavaPlugin {
         if (updateChecker != null) {
             updateChecker.reload();
         }
+
+        discordBotManager.reload();
 
         return true;
     }
@@ -315,6 +342,14 @@ public final class StarBans extends JavaPlugin {
         return altDetectionService;
     }
 
+    public MigrationService getMigrationService() {
+        return migrationService;
+    }
+
+    public ReviewReminderService getReviewReminderService() {
+        return reviewReminderService;
+    }
+
     public GuiInputService getGuiInputService() {
         return guiInputService;
     }
@@ -371,6 +406,7 @@ public final class StarBans extends JavaPlugin {
         bindCommand("sipblacklist");
         bindCommand("bancheck");
         bindCommand("banhistory");
+        bindCommand("report");
 
         if (dynamicCommandRegistrar == null) {
             dynamicCommandRegistrar = new DynamicCommandRegistrar(this);
@@ -391,6 +427,7 @@ public final class StarBans extends JavaPlugin {
     private void registerListeners() {
         getServer().getPluginManager().registerEvents(new LoginListener(this), this);
         getServer().getPluginManager().registerEvents(new ChatListener(this), this);
+        getServer().getPluginManager().registerEvents(new QuarantineListener(this), this);
         getServer().getPluginManager().registerEvents(new GuiListener(), this);
     }
 

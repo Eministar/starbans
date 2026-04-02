@@ -9,9 +9,19 @@ public enum CaseType {
     NOTE,
     ALT_FLAG,
     IP_BLACKLIST,
-    WATCHLIST;
+    WATCHLIST,
+    REPORT,
+    INCIDENT,
+    QUARANTINE,
+    REVIEW;
 
     public boolean supportsExpiry() {
-        return this == BAN || this == IP_BAN || this == MUTE || this == WARN || this == WATCHLIST;
+        return this == BAN
+                || this == IP_BAN
+                || this == MUTE
+                || this == WARN
+                || this == WATCHLIST
+                || this == QUARANTINE
+                || this == REVIEW;
     }
 }

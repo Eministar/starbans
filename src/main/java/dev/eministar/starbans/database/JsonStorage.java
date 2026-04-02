@@ -3,7 +3,10 @@ package dev.eministar.starbans.database;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import dev.eministar.starbans.StarBans;
+import dev.eministar.starbans.model.AppealStatus;
+import dev.eministar.starbans.model.CasePriority;
 import dev.eministar.starbans.model.CaseRecord;
+import dev.eministar.starbans.model.CaseSearchFilter;
 import dev.eministar.starbans.model.CaseStatus;
 import dev.eministar.starbans.model.CaseType;
 import dev.eministar.starbans.model.PlayerProfile;
@@ -20,6 +23,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 public final class JsonStorage implements ModerationStorage {
 
@@ -187,6 +191,15 @@ public final class JsonStorage implements ModerationStorage {
     }
 
     @Override
+    public synchronized List<CaseRecord> searchCases(CaseSearchFilter filter, int limit, int offset) {
+        return applyFilter(document.cases.stream(), filter)
+                .sorted(Comparator.comparingLong(CaseRecord::getCreatedAt).reversed())
+                .skip(offset)
+                .limit(limit)
+                .toList();
+    }
+
+    @Override
     public synchronized List<CaseRecord> getCasesByActor(String actorName, int limit, int offset) {
         String normalized = actorName == null ? "" : actorName.toLowerCase(Locale.ROOT);
         return document.cases.stream()
@@ -261,6 +274,11 @@ public final class JsonStorage implements ModerationStorage {
                 .filter(record -> record.getStatusActorName() != null)
                 .filter(record -> record.getStatusActorName().toLowerCase(Locale.ROOT).equals(normalized))
                 .count();
+    }
+
+    @Override
+    public synchronized int countCases(CaseSearchFilter filter) {
+        return (int) applyFilter(document.cases.stream(), filter).count();
     }
 
     @Override
@@ -356,6 +374,75 @@ public final class JsonStorage implements ModerationStorage {
 
     @Override
     public synchronized void close() {
+    }
+
+    private Stream<CaseRecord> applyFilter(Stream<CaseRecord> stream, CaseSearchFilter filter) {
+        if (filter == null) {
+            return stream;
+        }
+
+        Stream<CaseRecord> output = stream;
+        if (filter.type() != null) {
+            output = output.filter(record -> record.getType() == filter.type());
+        }
+        if (filter.status() != null) {
+            output = output.filter(record -> record.getStatus() == filter.status());
+        }
+        if (filter.actorName() != null && !filter.actorName().isBlank()) {
+            String normalized = filter.actorName().toLowerCase(Locale.ROOT);
+            output = output.filter(record -> record.getActorName() != null
+                    && record.getActorName().toLowerCase(Locale.ROOT).contains(normalized));
+        }
+        if (filter.targetName() != null && !filter.targetName().isBlank()) {
+            String normalized = filter.targetName().toLowerCase(Locale.ROOT);
+            output = output.filter(record -> record.getTargetPlayerName() != null
+                    && record.getTargetPlayerName().toLowerCase(Locale.ROOT).contains(normalized));
+        }
+        if (filter.tag() != null && !filter.tag().isBlank()) {
+            String normalized = filter.tag().toLowerCase(Locale.ROOT);
+            output = output.filter(record -> record.getTags().stream().anyMatch(tag -> tag.equalsIgnoreCase(normalized)));
+        }
+        if (filter.category() != null && !filter.category().isBlank()) {
+            String normalized = filter.category().toLowerCase(Locale.ROOT);
+            output = output.filter(record -> record.getCategory() != null
+                    && record.getCategory().toLowerCase(Locale.ROOT).equals(normalized));
+        }
+        if (filter.serverProfileId() != null && !filter.serverProfileId().isBlank()) {
+            String normalized = filter.serverProfileId().toLowerCase(Locale.ROOT);
+            output = output.filter(record -> record.getServerProfileId() != null
+                    && record.getServerProfileId().toLowerCase(Locale.ROOT).equals(normalized));
+        }
+        if (filter.incidentId() != null && !filter.incidentId().isBlank()) {
+            String normalized = filter.incidentId();
+            output = output.filter(record -> record.getIncidentId() != null
+                    && record.getIncidentId().equalsIgnoreCase(normalized));
+        }
+        if (filter.createdAfter() != null) {
+            output = output.filter(record -> record.getCreatedAt() >= filter.createdAfter());
+        }
+        if (filter.createdBefore() != null) {
+            output = output.filter(record -> record.getCreatedAt() <= filter.createdBefore());
+        }
+        if (filter.appealStatus() != null && filter.appealStatus() != AppealStatus.NONE) {
+            output = output.filter(record -> record.getAppealStatus() == filter.appealStatus());
+        }
+        if (filter.priority() != null && filter.priority() != CasePriority.NORMAL) {
+            output = output.filter(record -> record.getPriority() == filter.priority());
+        }
+        if (filter.text() != null && !filter.text().isBlank()) {
+            String normalized = filter.text().toLowerCase(Locale.ROOT);
+            output = output.filter(record ->
+                    containsIgnoreCase(record.getReason(), normalized)
+                            || containsIgnoreCase(record.getLabel(), normalized)
+                            || containsIgnoreCase(record.getTargetPlayerName(), normalized)
+                            || containsIgnoreCase(record.getActorName(), normalized)
+                            || containsIgnoreCase(record.getTargetIp(), normalized));
+        }
+        return output;
+    }
+
+    private boolean containsIgnoreCase(String input, String query) {
+        return input != null && input.toLowerCase(Locale.ROOT).contains(query);
     }
 
     private void save() throws IOException {

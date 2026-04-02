@@ -25,6 +25,22 @@ public final class CaseRecord {
     private int points;
     private CaseVisibility visibility;
     private Long referenceCaseId;
+    private String serverProfileId;
+    private String incidentId;
+    private CasePriority priority;
+    private UUID claimActorUniqueId;
+    private String claimActorName;
+    private Long claimChangedAt;
+    private AppealStatus appealStatus;
+    private Long appealDeadlineAt;
+    private Long appealChangedAt;
+    private UUID appealActorUniqueId;
+    private String appealActorName;
+    private List<CaseComment> appealNotes;
+    private Long nextReviewAt;
+    private Long lastReviewedAt;
+    private String reviewReason;
+    private List<CaseEvidence> evidence;
     private long createdAt;
     private Long expiresAt;
     private CaseStatus status;
@@ -74,6 +90,22 @@ public final class CaseRecord {
                 0,
                 CaseVisibility.INTERNAL,
                 null,
+                null,
+                null,
+                CasePriority.NORMAL,
+                null,
+                null,
+                null,
+                AppealStatus.NONE,
+                null,
+                null,
+                null,
+                null,
+                List.of(),
+                null,
+                null,
+                null,
+                List.of(),
                 createdAt,
                 expiresAt,
                 status,
@@ -102,6 +134,22 @@ public final class CaseRecord {
                       int points,
                       CaseVisibility visibility,
                       Long referenceCaseId,
+                      String serverProfileId,
+                      String incidentId,
+                      CasePriority priority,
+                      UUID claimActorUniqueId,
+                      String claimActorName,
+                      Long claimChangedAt,
+                      AppealStatus appealStatus,
+                      Long appealDeadlineAt,
+                      Long appealChangedAt,
+                      UUID appealActorUniqueId,
+                      String appealActorName,
+                      List<CaseComment> appealNotes,
+                      Long nextReviewAt,
+                      Long lastReviewedAt,
+                      String reviewReason,
+                      List<CaseEvidence> evidence,
                       long createdAt,
                       Long expiresAt,
                       CaseStatus status,
@@ -127,6 +175,22 @@ public final class CaseRecord {
         this.points = Math.max(0, points);
         this.visibility = visibility == null ? CaseVisibility.INTERNAL : visibility;
         this.referenceCaseId = referenceCaseId;
+        this.serverProfileId = normalizeText(serverProfileId);
+        this.incidentId = normalizeText(incidentId);
+        this.priority = priority == null ? CasePriority.NORMAL : priority;
+        this.claimActorUniqueId = claimActorUniqueId;
+        this.claimActorName = claimActorName;
+        this.claimChangedAt = claimChangedAt;
+        this.appealStatus = appealStatus == null ? AppealStatus.NONE : appealStatus;
+        this.appealDeadlineAt = appealDeadlineAt;
+        this.appealChangedAt = appealChangedAt;
+        this.appealActorUniqueId = appealActorUniqueId;
+        this.appealActorName = appealActorName;
+        this.appealNotes = normalizeComments(appealNotes);
+        this.nextReviewAt = nextReviewAt;
+        this.lastReviewedAt = lastReviewedAt;
+        this.reviewReason = reviewReason;
+        this.evidence = normalizeEvidence(evidence);
         this.createdAt = createdAt;
         this.expiresAt = expiresAt;
         this.status = status;
@@ -134,6 +198,76 @@ public final class CaseRecord {
         this.statusActorUniqueId = statusActorUniqueId;
         this.statusActorName = statusActorName;
         this.statusNote = statusNote;
+    }
+
+    public CaseRecord(long id,
+                      CaseType type,
+                      String label,
+                      UUID targetPlayerUniqueId,
+                      String targetPlayerName,
+                      String targetIp,
+                      UUID relatedPlayerUniqueId,
+                      String relatedPlayerName,
+                      UUID actorUniqueId,
+                      String actorName,
+                      String reason,
+                      String source,
+                      String category,
+                      String templateKey,
+                      List<String> tags,
+                      int points,
+                      CaseVisibility visibility,
+                      Long referenceCaseId,
+                      long createdAt,
+                      Long expiresAt,
+                      CaseStatus status,
+                      Long statusChangedAt,
+                      UUID statusActorUniqueId,
+                      String statusActorName,
+                      String statusNote) {
+        this(
+                id,
+                type,
+                label,
+                targetPlayerUniqueId,
+                targetPlayerName,
+                targetIp,
+                relatedPlayerUniqueId,
+                relatedPlayerName,
+                actorUniqueId,
+                actorName,
+                reason,
+                source,
+                category,
+                templateKey,
+                tags,
+                points,
+                visibility,
+                referenceCaseId,
+                null,
+                null,
+                CasePriority.NORMAL,
+                null,
+                null,
+                null,
+                AppealStatus.NONE,
+                null,
+                null,
+                null,
+                null,
+                List.of(),
+                null,
+                null,
+                null,
+                List.of(),
+                createdAt,
+                expiresAt,
+                status,
+                statusChangedAt,
+                statusActorUniqueId,
+                statusActorName,
+                statusNote
+        );
     }
 
     public static CaseRecord create(CaseType type,
@@ -145,7 +279,28 @@ public final class CaseRecord {
                                     String reason,
                                     String source,
                                     Long expiresAt) {
-        return create(type, label, targetPlayer, targetIp, relatedPlayer, actor, reason, source, expiresAt, null, null, List.of(), 0, CaseVisibility.INTERNAL, null);
+        return create(
+                type,
+                label,
+                targetPlayer,
+                targetIp,
+                relatedPlayer,
+                actor,
+                reason,
+                source,
+                expiresAt,
+                null,
+                null,
+                List.of(),
+                0,
+                CaseVisibility.INTERNAL,
+                null,
+                null,
+                null,
+                CasePriority.NORMAL,
+                null,
+                null
+        );
     }
 
     public static CaseRecord create(CaseType type,
@@ -163,6 +318,50 @@ public final class CaseRecord {
                                     int points,
                                     CaseVisibility visibility,
                                     Long referenceCaseId) {
+        return create(
+                type,
+                label,
+                targetPlayer,
+                targetIp,
+                relatedPlayer,
+                actor,
+                reason,
+                source,
+                expiresAt,
+                category,
+                templateKey,
+                tags,
+                points,
+                visibility,
+                referenceCaseId,
+                null,
+                null,
+                CasePriority.NORMAL,
+                null,
+                null
+        );
+    }
+
+    public static CaseRecord create(CaseType type,
+                                    String label,
+                                    PlayerIdentity targetPlayer,
+                                    String targetIp,
+                                    PlayerIdentity relatedPlayer,
+                                    CommandActor actor,
+                                    String reason,
+                                    String source,
+                                    Long expiresAt,
+                                    String category,
+                                    String templateKey,
+                                    List<String> tags,
+                                    int points,
+                                    CaseVisibility visibility,
+                                    Long referenceCaseId,
+                                    String serverProfileId,
+                                    String incidentId,
+                                    CasePriority priority,
+                                    Long nextReviewAt,
+                                    String reviewReason) {
         boolean kick = type == CaseType.KICK;
         return new CaseRecord(
                 0L,
@@ -183,6 +382,22 @@ public final class CaseRecord {
                 points,
                 visibility,
                 referenceCaseId,
+                serverProfileId,
+                incidentId,
+                priority,
+                null,
+                null,
+                null,
+                AppealStatus.NONE,
+                null,
+                null,
+                null,
+                null,
+                List.of(),
+                nextReviewAt,
+                null,
+                reviewReason,
+                List.of(),
                 System.currentTimeMillis(),
                 expiresAt,
                 kick ? CaseStatus.RESOLVED : CaseStatus.ACTIVE,
@@ -272,6 +487,70 @@ public final class CaseRecord {
         return referenceCaseId;
     }
 
+    public String getServerProfileId() {
+        return serverProfileId;
+    }
+
+    public String getIncidentId() {
+        return incidentId;
+    }
+
+    public CasePriority getPriority() {
+        return priority == null ? CasePriority.NORMAL : priority;
+    }
+
+    public UUID getClaimActorUniqueId() {
+        return claimActorUniqueId;
+    }
+
+    public String getClaimActorName() {
+        return claimActorName;
+    }
+
+    public Long getClaimChangedAt() {
+        return claimChangedAt;
+    }
+
+    public AppealStatus getAppealStatus() {
+        return appealStatus == null ? AppealStatus.NONE : appealStatus;
+    }
+
+    public Long getAppealDeadlineAt() {
+        return appealDeadlineAt;
+    }
+
+    public Long getAppealChangedAt() {
+        return appealChangedAt;
+    }
+
+    public UUID getAppealActorUniqueId() {
+        return appealActorUniqueId;
+    }
+
+    public String getAppealActorName() {
+        return appealActorName;
+    }
+
+    public List<CaseComment> getAppealNotes() {
+        return appealNotes == null ? List.of() : List.copyOf(appealNotes);
+    }
+
+    public Long getNextReviewAt() {
+        return nextReviewAt;
+    }
+
+    public Long getLastReviewedAt() {
+        return lastReviewedAt;
+    }
+
+    public String getReviewReason() {
+        return reviewReason;
+    }
+
+    public List<CaseEvidence> getEvidence() {
+        return evidence == null ? List.of() : List.copyOf(evidence);
+    }
+
     public long getCreatedAt() {
         return createdAt;
     }
@@ -339,6 +618,22 @@ public final class CaseRecord {
                 points,
                 getVisibility(),
                 referenceCaseId,
+                serverProfileId,
+                incidentId,
+                getPriority(),
+                claimActorUniqueId,
+                claimActorName,
+                claimChangedAt,
+                getAppealStatus(),
+                appealDeadlineAt,
+                appealChangedAt,
+                appealActorUniqueId,
+                appealActorName,
+                getAppealNotes(),
+                nextReviewAt,
+                lastReviewedAt,
+                reviewReason,
+                getEvidence(),
                 createdAt,
                 expiresAt,
                 status,
@@ -373,6 +668,22 @@ public final class CaseRecord {
                 points,
                 getVisibility(),
                 referenceCaseId,
+                serverProfileId,
+                incidentId,
+                getPriority(),
+                claimActorUniqueId,
+                claimActorName,
+                claimChangedAt,
+                getAppealStatus(),
+                appealDeadlineAt,
+                appealChangedAt,
+                appealActorUniqueId,
+                appealActorName,
+                getAppealNotes(),
+                nextReviewAt,
+                lastReviewedAt,
+                reviewReason,
+                getEvidence(),
                 createdAt,
                 expiresAt,
                 newStatus,
@@ -408,6 +719,83 @@ public final class CaseRecord {
                 newPoints,
                 newVisibility,
                 newReferenceCaseId,
+                serverProfileId,
+                incidentId,
+                getPriority(),
+                claimActorUniqueId,
+                claimActorName,
+                claimChangedAt,
+                getAppealStatus(),
+                appealDeadlineAt,
+                appealChangedAt,
+                appealActorUniqueId,
+                appealActorName,
+                getAppealNotes(),
+                nextReviewAt,
+                lastReviewedAt,
+                reviewReason,
+                getEvidence(),
+                createdAt,
+                expiresAt,
+                status,
+                statusChangedAt,
+                statusActorUniqueId,
+                statusActorName,
+                statusNote
+        );
+    }
+
+    public CaseRecord withWorkflow(String newServerProfileId,
+                                   String newIncidentId,
+                                   CasePriority newPriority,
+                                   UUID newClaimActorUniqueId,
+                                   String newClaimActorName,
+                                   Long newClaimChangedAt,
+                                   AppealStatus newAppealStatus,
+                                   Long newAppealDeadlineAt,
+                                   Long newAppealChangedAt,
+                                   UUID newAppealActorUniqueId,
+                                   String newAppealActorName,
+                                   List<CaseComment> newAppealNotes,
+                                   Long newNextReviewAt,
+                                   Long newLastReviewedAt,
+                                   String newReviewReason,
+                                   List<CaseEvidence> newEvidence) {
+        return new CaseRecord(
+                id,
+                type,
+                label,
+                targetPlayerUniqueId,
+                targetPlayerName,
+                targetIp,
+                relatedPlayerUniqueId,
+                relatedPlayerName,
+                actorUniqueId,
+                actorName,
+                reason,
+                source,
+                category,
+                templateKey,
+                getTags(),
+                points,
+                getVisibility(),
+                referenceCaseId,
+                newServerProfileId,
+                newIncidentId,
+                newPriority,
+                newClaimActorUniqueId,
+                newClaimActorName,
+                newClaimChangedAt,
+                newAppealStatus,
+                newAppealDeadlineAt,
+                newAppealChangedAt,
+                newAppealActorUniqueId,
+                newAppealActorName,
+                newAppealNotes,
+                newNextReviewAt,
+                newLastReviewedAt,
+                newReviewReason,
+                newEvidence,
                 createdAt,
                 expiresAt,
                 status,
@@ -435,5 +823,40 @@ public final class CaseRecord {
             }
         }
         return List.copyOf(output);
+    }
+
+    private static List<CaseComment> normalizeComments(List<CaseComment> input) {
+        if (input == null || input.isEmpty()) {
+            return List.of();
+        }
+
+        List<CaseComment> output = new ArrayList<>();
+        for (CaseComment entry : input) {
+            if (entry != null && entry.getMessage() != null && !entry.getMessage().isBlank()) {
+                output.add(entry);
+            }
+        }
+        return List.copyOf(output);
+    }
+
+    private static List<CaseEvidence> normalizeEvidence(List<CaseEvidence> input) {
+        if (input == null || input.isEmpty()) {
+            return List.of();
+        }
+
+        List<CaseEvidence> output = new ArrayList<>();
+        for (CaseEvidence entry : input) {
+            if (entry != null && entry.getValue() != null && !entry.getValue().isBlank()) {
+                output.add(entry);
+            }
+        }
+        return List.copyOf(output);
+    }
+
+    private static String normalizeText(String input) {
+        if (input == null || input.isBlank()) {
+            return null;
+        }
+        return input.trim();
     }
 }

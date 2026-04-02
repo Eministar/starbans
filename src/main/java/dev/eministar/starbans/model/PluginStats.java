@@ -5,5 +5,8 @@ public record PluginStats(int activeBans,
                           int activeMutes,
                           int activeWarns,
                           int activeWatchlists,
+                          int activeReports,
+                          int activeQuarantines,
+                          int activeReviews,
                           int totalCases) {
 }

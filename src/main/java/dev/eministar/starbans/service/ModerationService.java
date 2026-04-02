@@ -3,17 +3,24 @@ package dev.eministar.starbans.service;
 import dev.eministar.starbans.StarBans;
 import dev.eministar.starbans.database.ModerationStorage;
 import dev.eministar.starbans.discord.DiscordWebhookService;
+import dev.eministar.starbans.model.AppealStatus;
+import dev.eministar.starbans.model.CaseComment;
+import dev.eministar.starbans.model.CaseEvidence;
+import dev.eministar.starbans.model.CasePriority;
 import dev.eministar.starbans.model.CaseRecord;
+import dev.eministar.starbans.model.CaseSearchFilter;
 import dev.eministar.starbans.model.CaseStatus;
 import dev.eministar.starbans.model.CaseType;
 import dev.eministar.starbans.model.CaseVisibility;
 import dev.eministar.starbans.model.CommandActor;
+import dev.eministar.starbans.model.EvidenceType;
 import dev.eministar.starbans.model.ModerationActionResult;
 import dev.eministar.starbans.model.ModerationActionType;
 import dev.eministar.starbans.model.PlayerIdentity;
 import dev.eministar.starbans.model.PlayerProfile;
 import dev.eministar.starbans.model.PlayerSummary;
 import dev.eministar.starbans.model.PluginStats;
+import dev.eministar.starbans.model.RiskAssessment;
 import dev.eministar.starbans.utils.Lang;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -56,6 +63,10 @@ public final class ModerationService {
         return ensureNotExpired(storage.findActiveCaseForPlayer(playerUniqueId, CaseType.WATCHLIST));
     }
 
+    public Optional<CaseRecord> getActiveQuarantine(UUID playerUniqueId) throws Exception {
+        return ensureNotExpired(storage.findActiveCaseForPlayer(playerUniqueId, CaseType.QUARANTINE));
+    }
+
     public Optional<CaseRecord> getActiveIpBan(String ipAddress) throws Exception {
         return ensureNotExpired(storage.findActiveCaseForIp(IpUtil.normalize(ipAddress), CaseType.IP_BAN));
     }
@@ -70,18 +81,22 @@ public final class ModerationService {
         int warningPoints = activeWarnings.stream()
                 .mapToInt(CaseRecord::getPoints)
                 .sum();
+        RiskAssessment risk = calculateRiskAssessment(player.uniqueId());
         return new PlayerSummary(
                 player,
                 profile.map(PlayerProfile::getLastIp).orElse(null),
                 getActivePlayerBan(player.uniqueId()).orElse(null),
                 getActivePlayerMute(player.uniqueId()).orElse(null),
                 getActiveWatchlist(player.uniqueId()).orElse(null),
+                getActiveQuarantine(player.uniqueId()).orElse(null),
                 storage.findLatestCaseForPlayer(player.uniqueId()).orElse(null),
                 storage.countVisibleCasesForPlayer(player.uniqueId()),
                 storage.countCasesByTypeForPlayer(player.uniqueId(), CaseType.NOTE),
                 storage.getActiveAltFlags(player.uniqueId()).size(),
                 activeWarnings.size(),
-                warningPoints
+                warningPoints,
+                risk.score(),
+                risk.level()
         );
     }
 
@@ -102,6 +117,15 @@ public final class ModerationService {
     public List<CaseRecord> getRecentCases(int pageSize, int page) throws Exception {
         int offset = Math.max(0, page) * Math.max(1, pageSize);
         return storage.getRecentCases(Math.max(1, pageSize), offset);
+    }
+
+    public List<CaseRecord> searchCases(CaseSearchFilter filter, int pageSize, int page) throws Exception {
+        int offset = Math.max(0, page) * Math.max(1, pageSize);
+        return storage.searchCases(filter, Math.max(1, pageSize), offset);
+    }
+
+    public int countCases(CaseSearchFilter filter) throws Exception {
+        return storage.countCases(filter);
     }
 
     public List<CaseRecord> getCasesByActor(String actorName, int pageSize, int page) throws Exception {
@@ -129,6 +153,10 @@ public final class ModerationService {
 
     public List<CaseRecord> getActiveWarnings(UUID playerUniqueId) throws Exception {
         return getActivePlayerCases(playerUniqueId, CaseType.WARN);
+    }
+
+    public List<CaseRecord> getActiveReviews(UUID playerUniqueId) throws Exception {
+        return getActivePlayerCases(playerUniqueId, CaseType.REVIEW);
     }
 
     public int getWarningPoints(UUID playerUniqueId) throws Exception {
@@ -164,10 +192,401 @@ public final class ModerationService {
         return storage.searchProfilesByName(input, limit);
     }
 
+    public RiskAssessment calculateRiskAssessment(UUID playerUniqueId) throws Exception {
+        List<String> reasons = new ArrayList<>();
+        int score = 0;
+
+        int visibleCases = storage.countVisibleCasesForPlayer(playerUniqueId);
+        if (visibleCases >= 10) {
+            score += 30;
+            reasons.add("extensive-history");
+        } else if (visibleCases >= 5) {
+            score += 15;
+            reasons.add("repeat-history");
+        }
+
+        int warningPoints = getWarningPoints(playerUniqueId);
+        if (warningPoints >= 6) {
+            score += 25;
+            reasons.add("warning-points-high");
+        } else if (warningPoints >= 3) {
+            score += 12;
+            reasons.add("warning-points-medium");
+        }
+
+        if (getActiveWatchlist(playerUniqueId).isPresent()) {
+            score += 20;
+            reasons.add("watchlist");
+        }
+
+        if (getActiveQuarantine(playerUniqueId).isPresent()) {
+            score += 30;
+            reasons.add("quarantine");
+        }
+
+        int altCount = storage.getActiveAltFlags(playerUniqueId).size();
+        if (altCount > 0) {
+            score += Math.min(20, altCount * 5);
+            reasons.add("alt-links");
+        }
+
+        String level = score >= 60 ? "CRITICAL" : score >= 35 ? "HIGH" : score >= 15 ? "MEDIUM" : "LOW";
+        return new RiskAssessment(score, level, List.copyOf(reasons));
+    }
+
     public void trackPlayer(PlayerIdentity player, String ipAddress, long seenAt) throws Exception {
         String normalizedIp = IpUtil.normalize(ipAddress);
         PlayerProfile existing = storage.findPlayerProfile(player.uniqueId()).orElse(new PlayerProfile(player.uniqueId(), player.name(), normalizedIp, seenAt, seenAt));
         storage.upsertPlayerProfile(existing.withSeen(player.name(), normalizedIp, seenAt));
+    }
+
+    public ModerationActionResult reportPlayer(PlayerIdentity reporter,
+                                               PlayerIdentity target,
+                                               String reason,
+                                               CasePriority priority,
+                                               String source) throws Exception {
+        String effectiveReason = sanitize(reason, plugin.getConfig().getString("reports.default-reason", "Reported by player."));
+        CaseRecord stored = createAndStore(
+                CaseType.REPORT,
+                plugin.getConfig().getString("reports.default-label", "player-report"),
+                target,
+                null,
+                reporter,
+                CommandActor.system(),
+                effectiveReason,
+                source,
+                null,
+                plugin.getConfig().getString("reports.default-category", "player-report"),
+                null,
+                List.of("report", "player-submitted"),
+                0,
+                CaseVisibility.INTERNAL,
+                null,
+                null,
+                priority == null ? CasePriority.NORMAL : priority,
+                null,
+                null
+        );
+        sendWebhook("report-created", stored);
+        return new ModerationActionResult(ModerationActionType.CREATED, stored);
+    }
+
+    public ModerationActionResult claimCase(long caseId, CommandActor actor) throws Exception {
+        Optional<CaseRecord> existing = storage.findCaseById(caseId);
+        if (existing.isEmpty()) {
+            return new ModerationActionResult(ModerationActionType.NOT_FOUND, null);
+        }
+
+        CaseRecord updated = existing.get().withWorkflow(
+                existing.get().getServerProfileId(),
+                existing.get().getIncidentId(),
+                existing.get().getPriority(),
+                actor.uniqueId(),
+                actor.name(),
+                System.currentTimeMillis(),
+                existing.get().getAppealStatus(),
+                existing.get().getAppealDeadlineAt(),
+                existing.get().getAppealChangedAt(),
+                existing.get().getAppealActorUniqueId(),
+                existing.get().getAppealActorName(),
+                existing.get().getAppealNotes(),
+                existing.get().getNextReviewAt(),
+                existing.get().getLastReviewedAt(),
+                existing.get().getReviewReason(),
+                existing.get().getEvidence()
+        );
+        storage.updateCase(updated);
+        sendWebhook("case-claimed", updated);
+        return new ModerationActionResult(ModerationActionType.UPDATED, updated);
+    }
+
+    public ModerationActionResult setCasePriority(long caseId, CommandActor actor, CasePriority priority) throws Exception {
+        Optional<CaseRecord> existing = storage.findCaseById(caseId);
+        if (existing.isEmpty()) {
+            return new ModerationActionResult(ModerationActionType.NOT_FOUND, null);
+        }
+
+        CaseRecord updated = existing.get().withWorkflow(
+                existing.get().getServerProfileId(),
+                existing.get().getIncidentId(),
+                priority == null ? CasePriority.NORMAL : priority,
+                actor.uniqueId(),
+                actor.name(),
+                System.currentTimeMillis(),
+                existing.get().getAppealStatus(),
+                existing.get().getAppealDeadlineAt(),
+                existing.get().getAppealChangedAt(),
+                existing.get().getAppealActorUniqueId(),
+                existing.get().getAppealActorName(),
+                existing.get().getAppealNotes(),
+                existing.get().getNextReviewAt(),
+                existing.get().getLastReviewedAt(),
+                existing.get().getReviewReason(),
+                existing.get().getEvidence()
+        );
+        storage.updateCase(updated);
+        sendWebhook("case-priority-updated", updated);
+        return new ModerationActionResult(ModerationActionType.UPDATED, updated);
+    }
+
+    public ModerationActionResult createIncident(String incidentId,
+                                                 CommandActor actor,
+                                                 String title,
+                                                 String description,
+                                                 CasePriority priority,
+                                                 String source) throws Exception {
+        String effectiveIncidentId = sanitize(incidentId, "incident-" + System.currentTimeMillis()).toLowerCase();
+        String effectiveTitle = sanitize(title, "Incident");
+        String effectiveDescription = sanitize(description, "No description provided.");
+        CaseRecord stored = createAndStore(
+                CaseType.INCIDENT,
+                effectiveTitle,
+                null,
+                null,
+                null,
+                actor,
+                effectiveDescription,
+                source,
+                null,
+                plugin.getConfig().getString("incidents.default-category", "incident"),
+                null,
+                List.of("incident"),
+                0,
+                CaseVisibility.INTERNAL,
+                null,
+                effectiveIncidentId,
+                priority == null ? CasePriority.HIGH : priority,
+                null,
+                null
+        );
+        sendWebhook("incident-created", stored);
+        return new ModerationActionResult(ModerationActionType.CREATED, stored);
+    }
+
+    public ModerationActionResult linkCaseToIncident(long caseId, String incidentId, CommandActor actor) throws Exception {
+        Optional<CaseRecord> existing = storage.findCaseById(caseId);
+        if (existing.isEmpty()) {
+            return new ModerationActionResult(ModerationActionType.NOT_FOUND, null);
+        }
+
+        CaseRecord updated = existing.get().withWorkflow(
+                existing.get().getServerProfileId(),
+                sanitize(incidentId, null),
+                existing.get().getPriority(),
+                actor.uniqueId(),
+                actor.name(),
+                System.currentTimeMillis(),
+                existing.get().getAppealStatus(),
+                existing.get().getAppealDeadlineAt(),
+                existing.get().getAppealChangedAt(),
+                existing.get().getAppealActorUniqueId(),
+                existing.get().getAppealActorName(),
+                existing.get().getAppealNotes(),
+                existing.get().getNextReviewAt(),
+                existing.get().getLastReviewedAt(),
+                existing.get().getReviewReason(),
+                existing.get().getEvidence()
+        );
+        storage.updateCase(updated);
+        sendWebhook("incident-linked", updated);
+        return new ModerationActionResult(ModerationActionType.UPDATED, updated);
+    }
+
+    public ModerationActionResult addEvidence(long caseId,
+                                              CommandActor actor,
+                                              EvidenceType type,
+                                              String value,
+                                              String note) throws Exception {
+        Optional<CaseRecord> existing = storage.findCaseById(caseId);
+        if (existing.isEmpty()) {
+            return new ModerationActionResult(ModerationActionType.NOT_FOUND, null);
+        }
+
+        List<CaseEvidence> updatedEvidence = new ArrayList<>(existing.get().getEvidence());
+        updatedEvidence.add(CaseEvidence.create(
+                "ev-" + caseId + '-' + (updatedEvidence.size() + 1),
+                type == null ? EvidenceType.LINK : type,
+                sanitize(value, ""),
+                sanitize(note, ""),
+                actor
+        ));
+        CaseRecord updated = existing.get().withWorkflow(
+                existing.get().getServerProfileId(),
+                existing.get().getIncidentId(),
+                existing.get().getPriority(),
+                actor.uniqueId(),
+                actor.name(),
+                System.currentTimeMillis(),
+                existing.get().getAppealStatus(),
+                existing.get().getAppealDeadlineAt(),
+                existing.get().getAppealChangedAt(),
+                existing.get().getAppealActorUniqueId(),
+                existing.get().getAppealActorName(),
+                existing.get().getAppealNotes(),
+                existing.get().getNextReviewAt(),
+                existing.get().getLastReviewedAt(),
+                existing.get().getReviewReason(),
+                updatedEvidence
+        );
+        storage.updateCase(updated);
+        sendWebhook("evidence-added", updated);
+        return new ModerationActionResult(ModerationActionType.UPDATED, updated);
+    }
+
+    public ModerationActionResult openAppeal(long caseId, CommandActor actor, Long deadlineAt, String note) throws Exception {
+        return updateAppeal(caseId, actor, AppealStatus.OPEN, deadlineAt, note);
+    }
+
+    public ModerationActionResult updateAppeal(long caseId,
+                                               CommandActor actor,
+                                               AppealStatus appealStatus,
+                                               Long deadlineAt,
+                                               String note) throws Exception {
+        Optional<CaseRecord> existing = storage.findCaseById(caseId);
+        if (existing.isEmpty()) {
+            return new ModerationActionResult(ModerationActionType.NOT_FOUND, null);
+        }
+
+        List<CaseComment> appealNotes = new ArrayList<>(existing.get().getAppealNotes());
+        if (note != null && !note.isBlank()) {
+            appealNotes.add(CaseComment.create(actor, note.trim()));
+        }
+
+        CaseRecord updated = existing.get().withWorkflow(
+                existing.get().getServerProfileId(),
+                existing.get().getIncidentId(),
+                existing.get().getPriority(),
+                existing.get().getClaimActorUniqueId(),
+                existing.get().getClaimActorName(),
+                existing.get().getClaimChangedAt(),
+                appealStatus == null ? existing.get().getAppealStatus() : appealStatus,
+                deadlineAt == null ? existing.get().getAppealDeadlineAt() : deadlineAt,
+                System.currentTimeMillis(),
+                actor.uniqueId(),
+                actor.name(),
+                appealNotes,
+                existing.get().getNextReviewAt(),
+                existing.get().getLastReviewedAt(),
+                existing.get().getReviewReason(),
+                existing.get().getEvidence()
+        );
+        storage.updateCase(updated);
+        sendWebhook("appeal-updated", updated);
+        return new ModerationActionResult(ModerationActionType.UPDATED, updated);
+    }
+
+    public ModerationActionResult createReview(PlayerIdentity target,
+                                               CommandActor actor,
+                                               String reason,
+                                               Long reviewAt,
+                                               CasePriority priority,
+                                               String source) throws Exception {
+        String effectiveReason = sanitize(reason, "Manual review reminder");
+        CaseRecord stored = createAndStore(
+                CaseType.REVIEW,
+                plugin.getConfig().getString("reviews.default-label", "review"),
+                target,
+                null,
+                null,
+                actor,
+                effectiveReason,
+                source,
+                null,
+                plugin.getConfig().getString("reviews.default-category", "review"),
+                null,
+                List.of("review"),
+                0,
+                CaseVisibility.INTERNAL,
+                null,
+                null,
+                priority == null ? CasePriority.NORMAL : priority,
+                reviewAt,
+                effectiveReason
+        );
+        sendWebhook("review-created", stored);
+        return new ModerationActionResult(ModerationActionType.CREATED, stored);
+    }
+
+    public ModerationActionResult markReview(long caseId, CommandActor actor, String note, Long nextReviewAt) throws Exception {
+        Optional<CaseRecord> existing = storage.findCaseById(caseId);
+        if (existing.isEmpty()) {
+            return new ModerationActionResult(ModerationActionType.NOT_FOUND, null);
+        }
+
+        CaseRecord base = existing.get().withWorkflow(
+                existing.get().getServerProfileId(),
+                existing.get().getIncidentId(),
+                existing.get().getPriority(),
+                actor.uniqueId(),
+                actor.name(),
+                System.currentTimeMillis(),
+                existing.get().getAppealStatus(),
+                existing.get().getAppealDeadlineAt(),
+                existing.get().getAppealChangedAt(),
+                existing.get().getAppealActorUniqueId(),
+                existing.get().getAppealActorName(),
+                existing.get().getAppealNotes(),
+                nextReviewAt,
+                System.currentTimeMillis(),
+                sanitize(note, existing.get().getReviewReason()),
+                existing.get().getEvidence()
+        );
+        CaseRecord updated = storage.updateCase(base);
+        sendWebhook("review-updated", updated);
+        return new ModerationActionResult(ModerationActionType.UPDATED, updated);
+    }
+
+    public List<CaseRecord> getDueReviews(int pageSize, int page) throws Exception {
+        List<CaseRecord> reviews = searchCases(
+                new CaseSearchFilter(CaseType.REVIEW, CaseStatus.ACTIVE, null, null, null, null, null, null, null, null, null, null, null),
+                pageSize,
+                page
+        );
+        long now = System.currentTimeMillis();
+        return reviews.stream()
+                .filter(record -> record.getNextReviewAt() != null && record.getNextReviewAt() <= now)
+                .toList();
+    }
+
+    public ModerationActionResult quarantinePlayer(PlayerIdentity target,
+                                                   CommandActor actor,
+                                                   String reason,
+                                                   Long expiresAt,
+                                                   CasePriority priority,
+                                                   String source) throws Exception {
+        Optional<CaseRecord> active = getActiveQuarantine(target.uniqueId());
+        if (active.isPresent()) {
+            return new ModerationActionResult(ModerationActionType.ALREADY_ACTIVE, active.get());
+        }
+
+        String effectiveReason = sanitize(reason, "Player was placed in quarantine.");
+        CaseRecord stored = createAndStore(
+                CaseType.QUARANTINE,
+                plugin.getConfig().getString("quarantine.default-label", "quarantine"),
+                target,
+                null,
+                null,
+                actor,
+                effectiveReason,
+                source,
+                expiresAt,
+                plugin.getConfig().getString("quarantine.default-category", "security"),
+                null,
+                List.of("quarantine"),
+                0,
+                CaseVisibility.INTERNAL,
+                null,
+                null,
+                priority == null ? CasePriority.HIGH : priority,
+                null,
+                effectiveReason
+        );
+        sendWebhook("quarantine-add", stored);
+        return new ModerationActionResult(ModerationActionType.CREATED, stored);
+    }
+
+    public ModerationActionResult unquarantinePlayer(PlayerIdentity target, CommandActor actor, String note) throws Exception {
+        return resolveActivePlayerCase(target, actor, note, CaseType.QUARANTINE, "quarantine-remove");
     }
 
     public ModerationActionResult banPlayer(PlayerIdentity target,
@@ -540,6 +959,9 @@ public final class ModerationService {
                 storage.countActiveCases(CaseType.MUTE),
                 storage.countActiveCases(CaseType.WARN),
                 storage.countActiveCases(CaseType.WATCHLIST),
+                storage.countActiveCases(CaseType.REPORT),
+                storage.countActiveCases(CaseType.QUARANTINE),
+                storage.countActiveCases(CaseType.REVIEW),
                 storage.countAllCases()
         );
     }
@@ -656,7 +1078,7 @@ public final class ModerationService {
                                       String reason,
                                       String source,
                                       Long expiresAt) throws Exception {
-        return createAndStore(type, label, target, ipAddress, related, actor, reason, source, expiresAt, null, null, List.of(), 0, CaseVisibility.INTERNAL, null);
+        return createAndStore(type, label, target, ipAddress, related, actor, reason, source, expiresAt, null, null, List.of(), 0, CaseVisibility.INTERNAL, null, null, CasePriority.NORMAL, null, null);
     }
 
     private CaseRecord createAndStore(CaseType type,
@@ -674,6 +1096,28 @@ public final class ModerationService {
                                       int points,
                                       CaseVisibility visibility,
                                       Long referenceCaseId) throws Exception {
+        return createAndStore(type, label, target, ipAddress, related, actor, reason, source, expiresAt, category, templateKey, tags, points, visibility, referenceCaseId, null, CasePriority.NORMAL, null, null);
+    }
+
+    private CaseRecord createAndStore(CaseType type,
+                                      String label,
+                                      PlayerIdentity target,
+                                      String ipAddress,
+                                      PlayerIdentity related,
+                                      CommandActor actor,
+                                      String reason,
+                                      String source,
+                                      Long expiresAt,
+                                      String category,
+                                      String templateKey,
+                                      List<String> tags,
+                                      int points,
+                                      CaseVisibility visibility,
+                                      Long referenceCaseId,
+                                      String incidentId,
+                                      CasePriority priority,
+                                      Long nextReviewAt,
+                                      String reviewReason) throws Exception {
         ensureProfileExists(target);
         ensureProfileExists(related);
         List<String> effectiveTags = mergeTags(plugin.getServerRuleService().getDefaultTags(type.name()), tags);
@@ -692,7 +1136,12 @@ public final class ModerationService {
                 effectiveTags,
                 points,
                 visibility,
-                referenceCaseId
+                referenceCaseId,
+                plugin.getServerRuleService().getActiveProfileId(),
+                incidentId,
+                priority,
+                nextReviewAt,
+                reviewReason
         );
         return storage.createCase(record);
     }
@@ -759,6 +1208,19 @@ public final class ModerationService {
                 "reference_case_id", record.getReferenceCaseId() == null ? "" : String.valueOf(record.getReferenceCaseId()),
                 "server_profile", plugin.getServerRuleService().getActiveProfileId(),
                 "server_profile_name", plugin.getServerRuleService().getDisplayName(),
+                "case_server_profile", defaultString(record.getServerProfileId()),
+                "incident_id", defaultString(record.getIncidentId()),
+                "priority", record.getPriority().name(),
+                "claim_actor", defaultString(record.getClaimActorName()),
+                "claim_actor_uuid", uuidString(record.getClaimActorUniqueId()),
+                "claim_changed_at", record.getClaimChangedAt() == null ? lang.get("labels.none") : formatDate(record.getClaimChangedAt()),
+                "appeal_status", record.getAppealStatus().name(),
+                "appeal_deadline", record.getAppealDeadlineAt() == null ? lang.get("labels.none") : formatDate(record.getAppealDeadlineAt()),
+                "appeal_actor", defaultString(record.getAppealActorName()),
+                "appeal_note_count", record.getAppealNotes().size(),
+                "review_at", record.getNextReviewAt() == null ? lang.get("labels.none") : formatDate(record.getNextReviewAt()),
+                "review_reason", defaultString(record.getReviewReason()),
+                "evidence_count", record.getEvidence().size(),
                 "created_at", formatDate(record.getCreatedAt()),
                 "created_at_iso", toIsoTimestamp(record.getCreatedAt()),
                 "expires_at", formatExpiry(record),
