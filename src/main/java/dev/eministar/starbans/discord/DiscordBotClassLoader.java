@@ -6,14 +6,18 @@ import java.util.List;
 
 final class DiscordBotClassLoader extends URLClassLoader {
 
-    private static final List<String> CHILD_FIRST_PREFIXES = List.of(
-            "dev.eministar.starbans.discord.bot.",
-            "net.dv8tion.jda.",
-            "com.neovisionaries.ws.client.",
-            "okhttp3.",
-            "okio.",
-            "kotlin.",
-            "com.fasterxml.jackson."
+    private static final List<String> PARENT_FIRST_PREFIXES = List.of(
+            "java.",
+            "javax.",
+            "jdk.",
+            "sun.",
+            "com.sun.",
+            "org.bukkit.",
+            "org.spigotmc.",
+            "io.papermc.",
+            "net.minecraft.",
+            "org.slf4j.",
+            "dev.eministar.starbans."
     );
 
     DiscordBotClassLoader(URL[] urls, ClassLoader parent) {
@@ -22,25 +26,30 @@ final class DiscordBotClassLoader extends URLClassLoader {
 
     @Override
     protected synchronized Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-        if (shouldLoadChildFirst(name)) {
-            Class<?> loaded = findLoadedClass(name);
-            if (loaded == null) {
-                try {
-                    loaded = findClass(name);
-                } catch (ClassNotFoundException ignored) {
-                    loaded = super.loadClass(name, false);
-                }
-            }
-            if (resolve) {
-                resolveClass(loaded);
-            }
-            return loaded;
+        if (shouldLoadParentFirst(name)) {
+            return super.loadClass(name, resolve);
         }
-        return super.loadClass(name, resolve);
+
+        Class<?> loaded = findLoadedClass(name);
+        if (loaded == null) {
+            try {
+                loaded = findClass(name);
+            } catch (ClassNotFoundException ignored) {
+                loaded = super.loadClass(name, false);
+            }
+        }
+        if (resolve) {
+            resolveClass(loaded);
+        }
+        return loaded;
     }
 
-    private boolean shouldLoadChildFirst(String className) {
-        for (String prefix : CHILD_FIRST_PREFIXES) {
+    private boolean shouldLoadParentFirst(String className) {
+        if (className.startsWith("dev.eministar.starbans.discord.bot.")) {
+            return false;
+        }
+
+        for (String prefix : PARENT_FIRST_PREFIXES) {
             if (className.startsWith(prefix)) {
                 return true;
             }

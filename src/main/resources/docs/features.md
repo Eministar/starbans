@@ -51,6 +51,8 @@
 - optional Discord bot with slash commands for case lookup, reports, appeals and unban requests
 - bot runtime libraries are downloaded only when `discord-bot.enabled: true`
 - downloaded bot libraries are stored in `plugins/StarBans/libs`
+- the Discord runtime resolves the latest published JDA release and its matching runtime dependency tree automatically by default
+- `discord-bot.download.jda-version` can pin an exact JDA version when automatic updates are not wanted
 
 ## Data and Operations
 

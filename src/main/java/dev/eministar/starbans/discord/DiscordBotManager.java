@@ -6,36 +6,24 @@ import dev.eministar.starbans.utils.LoggerUtil;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Constructor;
-import java.net.HttpURLConnection;
-import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Properties;
+import java.util.Set;
+import java.util.stream.Stream;
 
 public final class DiscordBotManager implements AutoCloseable {
 
     private static final String RUNTIME_CLASS = "dev.eministar.starbans.discord.bot.RuntimeDiscordBot";
-    private static final List<LibraryArtifact> RUNTIME_LIBRARIES = List.of(
-            new LibraryArtifact("net.dv8tion", "JDA", "5.5.1"),
-            new LibraryArtifact("com.neovisionaries", "nv-websocket-client", "2.14"),
-            new LibraryArtifact("com.squareup.okhttp3", "okhttp", "4.12.0"),
-            new LibraryArtifact("com.squareup.okio", "okio", "3.6.0"),
-            new LibraryArtifact("com.squareup.okio", "okio-jvm", "3.6.0"),
-            new LibraryArtifact("org.jetbrains.kotlin", "kotlin-stdlib-jdk8", "1.8.21"),
-            new LibraryArtifact("org.jetbrains.kotlin", "kotlin-stdlib", "1.8.21"),
-            new LibraryArtifact("org.jetbrains.kotlin", "kotlin-stdlib-jdk7", "1.8.21"),
-            new LibraryArtifact("org.jetbrains.kotlin", "kotlin-stdlib-common", "1.9.10"),
-            new LibraryArtifact("com.fasterxml.jackson.core", "jackson-core", "2.18.3"),
-            new LibraryArtifact("com.fasterxml.jackson.core", "jackson-databind", "2.18.3"),
-            new LibraryArtifact("com.fasterxml.jackson.core", "jackson-annotations", "2.18.3")
-    );
+    private static final String RUNTIME_LOCK_FILE = "discord-runtime.lock";
 
     private final StarBans plugin;
 
-    private long generation;
     private DiscordBotBridge bridge;
     private DiscordBotClassLoader classLoader;
 
@@ -43,9 +31,7 @@ public final class DiscordBotManager implements AutoCloseable {
         this.plugin = plugin;
     }
 
-    public synchronized void reload() {
-        generation++;
-        long expectedGeneration = generation;
+    public synchronized void reload() throws Exception {
         closeActive();
 
         if (!plugin.getConfig().getBoolean("discord-bot.enabled", false)) {
@@ -58,10 +44,10 @@ public final class DiscordBotManager implements AutoCloseable {
             return;
         }
 
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> startAsync(expectedGeneration));
+        startBlocking();
     }
 
-    private void startAsync(long expectedGeneration) {
+    private void startBlocking() throws Exception {
         DiscordBotBridge startedBridge = null;
         DiscordBotClassLoader startedClassLoader = null;
         try {
@@ -79,15 +65,8 @@ public final class DiscordBotManager implements AutoCloseable {
             runtimeBridge.start();
             startedBridge = runtimeBridge;
 
-            synchronized (this) {
-                if (generation != expectedGeneration) {
-                    runtimeBridge.close();
-                    startedClassLoader.close();
-                    return;
-                }
-                bridge = runtimeBridge;
-                classLoader = startedClassLoader;
-            }
+            bridge = runtimeBridge;
+            classLoader = startedClassLoader;
         } catch (Exception exception) {
             if (startedBridge != null) {
                 try {
@@ -101,7 +80,7 @@ public final class DiscordBotManager implements AutoCloseable {
                 } catch (Exception ignored) {
                 }
             }
-            LoggerUtil.error("The optional Discord bot could not be started.", exception);
+            throw exception;
         }
     }
 
@@ -109,30 +88,216 @@ public final class DiscordBotManager implements AutoCloseable {
         Path librariesDirectory = resolveLibrariesDirectory();
         Files.createDirectories(librariesDirectory);
 
-        List<LibraryArtifact> missingArtifacts = new ArrayList<>();
-        for (LibraryArtifact artifact : RUNTIME_LIBRARIES) {
-            if (Files.notExists(artifact.localPath(librariesDirectory)) || Files.size(artifact.localPath(librariesDirectory)) <= 0L) {
-                missingArtifacts.add(artifact);
-            }
-        }
-
-        if (!missingArtifacts.isEmpty()) {
-            LoggerUtil.info("Downloading Discord bot libraries into " + librariesDirectory.toAbsolutePath() + ".");
-        }
-
         String repositoryUrl = normalizeRepositoryUrl(plugin.getConfig().getString("discord-bot.download.repository-url", "https://repo1.maven.org/maven2/"));
         int connectTimeout = Math.max(1000, plugin.getConfig().getInt("discord-bot.download.connect-timeout-ms", 10000));
         int readTimeout = Math.max(1000, plugin.getConfig().getInt("discord-bot.download.read-timeout-ms", 15000));
+        boolean autoUpdate = plugin.getConfig().getBoolean("discord-bot.download.auto-update", true);
+        boolean cleanupStaleLibraries = plugin.getConfig().getBoolean("discord-bot.download.cleanup-stale-libraries", true);
+        String configuredVersion = plugin.getConfig().getString("discord-bot.download.jda-version", "");
+        String versionSelector = determineVersionSelector(autoUpdate, configuredVersion);
 
-        for (LibraryArtifact artifact : missingArtifacts) {
-            downloadArtifact(artifact, librariesDirectory, repositoryUrl, connectTimeout, readTimeout);
+        DiscordRuntimeResolver resolver = new DiscordRuntimeResolver(plugin, repositoryUrl, connectTimeout, readTimeout);
+        Path runtimeLockFile = librariesDirectory.resolve(RUNTIME_LOCK_FILE);
+        DiscordRuntimeResolver.RuntimePlan cachedPlan = loadRuntimeLock(runtimeLockFile);
+        DiscordRuntimeResolver.RuntimePlan activePlan;
+        boolean usedCachedFallback = false;
+
+        try {
+            activePlan = resolver.resolve(versionSelector);
+        } catch (Exception exception) {
+            if (cachedPlan != null && planAvailable(cachedPlan, librariesDirectory)) {
+                LoggerUtil.warn("Discord runtime resolution failed. Falling back to the cached Discord runtime.");
+                LoggerUtil.warn("Cause: " + exception.getMessage());
+                activePlan = cachedPlan;
+                usedCachedFallback = true;
+            } else {
+                throw exception;
+            }
         }
 
-        List<Path> result = new ArrayList<>(RUNTIME_LIBRARIES.size());
-        for (LibraryArtifact artifact : RUNTIME_LIBRARIES) {
-            result.add(artifact.localPath(librariesDirectory));
+        try {
+            syncLibraries(resolver, activePlan, librariesDirectory, cleanupStaleLibraries);
+        } catch (Exception exception) {
+            if (!usedCachedFallback
+                    && cachedPlan != null
+                    && !activePlan.equals(cachedPlan)
+                    && planAvailable(cachedPlan, librariesDirectory)) {
+                LoggerUtil.warn("Discord runtime download failed for the newly resolved version. Falling back to the cached Discord runtime.");
+                LoggerUtil.warn("Cause: " + exception.getMessage());
+                activePlan = cachedPlan;
+                syncLibraries(resolver, activePlan, librariesDirectory, false);
+            } else {
+                throw exception;
+            }
+        }
+
+        saveRuntimeLock(runtimeLockFile, activePlan);
+        return buildLibraryPaths(activePlan, librariesDirectory);
+    }
+
+    private void syncLibraries(DiscordRuntimeResolver resolver,
+                               DiscordRuntimeResolver.RuntimePlan plan,
+                               Path librariesDirectory,
+                               boolean cleanupStaleLibraries) throws Exception {
+        List<DiscordRuntimeResolver.ResolvedArtifact> missingArtifacts = new ArrayList<>();
+        int cachedArtifacts = 0;
+        for (DiscordRuntimeResolver.ResolvedArtifact artifact : plan.artifacts()) {
+            Path localPath = artifact.localJarPath(librariesDirectory);
+            if (Files.notExists(localPath) || Files.size(localPath) <= 0L) {
+                missingArtifacts.add(artifact);
+            } else {
+                cachedArtifacts++;
+            }
+        }
+
+        LoggerUtil.info("Discord bot runtime target: JDA " + plan.rootVersion()
+                + " with " + plan.artifacts().size() + " libraries.");
+
+        if (missingArtifacts.isEmpty()) {
+            LoggerUtil.info("Discord bot libraries ready: " + cachedArtifacts + '/' + plan.artifacts().size()
+                    + " cached in " + librariesDirectory.toAbsolutePath() + '.');
+        } else {
+            LoggerUtil.info("Discord bot library bootstrap started in " + librariesDirectory.toAbsolutePath() + '.');
+            LoggerUtil.info("Discord bot libraries: " + cachedArtifacts + '/' + plan.artifacts().size()
+                    + " cached, " + missingArtifacts.size() + " missing.");
+            for (int index = 0; index < missingArtifacts.size(); index++) {
+                resolver.downloadJar(missingArtifacts.get(index), librariesDirectory, index + 1, missingArtifacts.size());
+            }
+            LoggerUtil.info("Discord bot libraries ready: " + plan.artifacts().size() + '/' + plan.artifacts().size()
+                    + " available in " + librariesDirectory.toAbsolutePath() + '.');
+        }
+
+        if (cleanupStaleLibraries) {
+            cleanupStaleLibraries(plan, librariesDirectory);
+        }
+    }
+
+    private void cleanupStaleLibraries(DiscordRuntimeResolver.RuntimePlan plan, Path librariesDirectory) throws Exception {
+        Set<Path> expectedFiles = new HashSet<>();
+        for (DiscordRuntimeResolver.ResolvedArtifact artifact : plan.artifacts()) {
+            expectedFiles.add(artifact.localJarPath(librariesDirectory).normalize());
+        }
+
+        int removedFiles = 0;
+        try (Stream<Path> stream = Files.walk(librariesDirectory)) {
+            List<Path> candidates = stream
+                    .filter(Files::isRegularFile)
+                    .filter(path -> {
+                        String name = path.getFileName().toString();
+                        return name.endsWith(".jar") || name.endsWith(".part");
+                    })
+                    .sorted(Comparator.reverseOrder())
+                    .toList();
+            for (Path candidate : candidates) {
+                if (expectedFiles.contains(candidate.normalize())) {
+                    continue;
+                }
+                Files.deleteIfExists(candidate);
+                removedFiles++;
+            }
+        }
+
+        removeEmptyDirectories(librariesDirectory);
+        if (removedFiles > 0) {
+            LoggerUtil.info("Discord bot cleanup removed " + removedFiles + " stale library file(s).");
+        }
+    }
+
+    private void removeEmptyDirectories(Path librariesDirectory) throws Exception {
+        try (Stream<Path> stream = Files.walk(librariesDirectory)) {
+            List<Path> directories = stream
+                    .filter(Files::isDirectory)
+                    .sorted(Comparator.reverseOrder())
+                    .toList();
+            for (Path directory : directories) {
+                if (directory.equals(librariesDirectory)) {
+                    continue;
+                }
+                try (Stream<Path> children = Files.list(directory)) {
+                    if (children.findAny().isEmpty()) {
+                        Files.deleteIfExists(directory);
+                    }
+                }
+            }
+        }
+    }
+
+    private List<Path> buildLibraryPaths(DiscordRuntimeResolver.RuntimePlan plan, Path librariesDirectory) {
+        List<Path> result = new ArrayList<>(plan.artifacts().size());
+        for (DiscordRuntimeResolver.ResolvedArtifact artifact : plan.artifacts()) {
+            result.add(artifact.localJarPath(librariesDirectory));
         }
         return result;
+    }
+
+    private boolean planAvailable(DiscordRuntimeResolver.RuntimePlan plan, Path librariesDirectory) {
+        for (DiscordRuntimeResolver.ResolvedArtifact artifact : plan.artifacts()) {
+            Path localPath = artifact.localJarPath(librariesDirectory);
+            try {
+                if (Files.notExists(localPath) || Files.size(localPath) <= 0L) {
+                    return false;
+                }
+            } catch (Exception exception) {
+                return false;
+            }
+        }
+        return !plan.artifacts().isEmpty();
+    }
+
+    private DiscordRuntimeResolver.RuntimePlan loadRuntimeLock(Path runtimeLockFile) {
+        if (Files.notExists(runtimeLockFile)) {
+            return null;
+        }
+
+        Properties properties = new Properties();
+        try (InputStream inputStream = Files.newInputStream(runtimeLockFile)) {
+            properties.load(inputStream);
+        } catch (Exception exception) {
+            LoggerUtil.warn("The Discord runtime lock file could not be read and will be ignored.");
+            return null;
+        }
+
+        int artifactCount;
+        try {
+            artifactCount = Integer.parseInt(properties.getProperty("artifact.count", "0"));
+        } catch (NumberFormatException exception) {
+            LoggerUtil.warn("The Discord runtime lock file is invalid and will be ignored.");
+            return null;
+        }
+
+        List<DiscordRuntimeResolver.ResolvedArtifact> artifacts = new ArrayList<>(artifactCount);
+        for (int index = 0; index < artifactCount; index++) {
+            String coordinates = properties.getProperty("artifact." + index, "");
+            if (coordinates == null || coordinates.isBlank()) {
+                continue;
+            }
+            try {
+                artifacts.add(DiscordRuntimeResolver.ResolvedArtifact.parse(coordinates));
+            } catch (IllegalArgumentException exception) {
+                LoggerUtil.warn("The Discord runtime lock file contains an invalid artifact entry and will be ignored.");
+                return null;
+            }
+        }
+
+        if (artifacts.isEmpty()) {
+            return null;
+        }
+
+        String rootVersion = properties.getProperty("root.version", artifacts.getFirst().version());
+        return new DiscordRuntimeResolver.RuntimePlan(rootVersion, List.copyOf(artifacts));
+    }
+
+    private void saveRuntimeLock(Path runtimeLockFile, DiscordRuntimeResolver.RuntimePlan plan) throws Exception {
+        Properties properties = new Properties();
+        properties.setProperty("root.version", plan.rootVersion());
+        properties.setProperty("artifact.count", Integer.toString(plan.artifacts().size()));
+        for (int index = 0; index < plan.artifacts().size(); index++) {
+            properties.setProperty("artifact." + index, plan.artifacts().get(index).coordinates());
+        }
+
+        try (OutputStream outputStream = Files.newOutputStream(runtimeLockFile)) {
+            properties.store(outputStream, "StarBans Discord runtime lock");
+        }
     }
 
     private URL[] buildRuntimeUrls(List<Path> libraries) throws Exception {
@@ -153,38 +318,19 @@ public final class DiscordBotManager implements AutoCloseable {
         return plugin.getDataFolder().toPath().resolve(path).normalize();
     }
 
-    private void downloadArtifact(LibraryArtifact artifact,
-                                  Path librariesDirectory,
-                                  String repositoryUrl,
-                                  int connectTimeout,
-                                  int readTimeout) throws Exception {
-        Path target = artifact.localPath(librariesDirectory);
-        Path temporary = target.resolveSibling(target.getFileName() + ".part");
-        HttpURLConnection connection = null;
-        try {
-            connection = (HttpURLConnection) URI.create(repositoryUrl + artifact.mavenPath()).toURL().openConnection();
-            connection.setRequestMethod("GET");
-            connection.setConnectTimeout(connectTimeout);
-            connection.setReadTimeout(readTimeout);
-            connection.setRequestProperty("User-Agent", "StarBans/" + plugin.getDescription().getVersion());
-
-            int statusCode = connection.getResponseCode();
-            if (statusCode < 200 || statusCode >= 300) {
-                throw new IllegalStateException("Failed to download " + artifact.fileName() + " (HTTP " + statusCode + ").");
-            }
-
-            try (InputStream inputStream = connection.getInputStream();
-                 OutputStream outputStream = Files.newOutputStream(temporary)) {
-                inputStream.transferTo(outputStream);
-            }
-
-            Files.move(temporary, target, StandardCopyOption.REPLACE_EXISTING);
-        } finally {
-            if (connection != null) {
-                connection.disconnect();
-            }
-            Files.deleteIfExists(temporary);
+    private String determineVersionSelector(boolean autoUpdate, String configuredVersion) {
+        String selector = configuredVersion == null ? "" : configuredVersion.trim();
+        if (selector.isBlank()) {
+            return autoUpdate ? "RELEASE" : DiscordRuntimeResolver.DEFAULT_JDA_VERSION;
         }
+        if (!autoUpdate && isDynamicSelector(selector)) {
+            return DiscordRuntimeResolver.DEFAULT_JDA_VERSION;
+        }
+        return selector;
+    }
+
+    private boolean isDynamicSelector(String selector) {
+        return "LATEST".equalsIgnoreCase(selector) || "RELEASE".equalsIgnoreCase(selector);
     }
 
     private String normalizeRepositoryUrl(String input) {
@@ -194,7 +340,6 @@ public final class DiscordBotManager implements AutoCloseable {
 
     @Override
     public synchronized void close() {
-        generation++;
         closeActive();
     }
 
@@ -215,21 +360,6 @@ public final class DiscordBotManager implements AutoCloseable {
                 LoggerUtil.error("The Discord bot classloader could not be closed cleanly.", exception);
             }
             classLoader = null;
-        }
-    }
-
-    private record LibraryArtifact(String groupId, String artifactId, String version) {
-
-        private String fileName() {
-            return artifactId + '-' + version + ".jar";
-        }
-
-        private String mavenPath() {
-            return groupId.replace('.', '/') + '/' + artifactId + '/' + version + '/' + fileName();
-        }
-
-        private Path localPath(Path librariesDirectory) {
-            return librariesDirectory.resolve(fileName());
         }
     }
 }

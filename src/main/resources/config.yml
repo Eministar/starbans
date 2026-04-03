@@ -470,10 +470,15 @@ search:
 #     The main plugin jar does not bundle the bot libraries.
 #     When enabled, StarBans downloads the required runtime jars
 #     into plugins/StarBans/libs and loads them dynamically.
+#     StarBans can also resolve the latest published JDA release
+#     and the matching runtime dependency tree automatically.
 # DE: Optionale Discord-Bot-Integration.
 #     Das Haupt-Plugin-Jar bündelt die Bot-Libraries nicht.
 #     Wenn aktiviert, lädt StarBans die benötigten Runtime-Jars
 #     nach plugins/StarBans/libs und lädt sie dynamisch.
+#     Der Plugin-Start wartet dabei, bis alle Discord-Libraries vollständig vorhanden sind.
+#     StarBans kann dabei auch automatisch das neueste veroeffentlichte
+#     JDA-Release und den dazu passenden Runtime-Dependency-Tree aufloesen.
 # ----------------------------------------------------------
 discord-bot:
   enabled: false
@@ -483,6 +488,9 @@ discord-bot:
   activity-text: 'the StarBans queue'
   libs-directory: libs
   download:
+    auto-update: true
+    jda-version: RELEASE
+    cleanup-stale-libraries: true
     repository-url: https://repo1.maven.org/maven2/
     connect-timeout-ms: 10000
     read-timeout-ms: 15000

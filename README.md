@@ -69,6 +69,8 @@ StarBans combines classic punishments with modern moderation workflows: reports,
 - Optional Discord bot with slash commands for case lookup, reports, appeals, and unban requests
 - Bot runtime libraries are downloaded only when `discord-bot.enabled: true`
 - Downloaded bot libraries are stored in `plugins/StarBans/libs/`
+- By default the Discord runtime resolves the latest published JDA release and the matching dependency tree automatically
+- `discord-bot.download.jda-version` can pin an exact version instead of `RELEASE`/`LATEST`
 
 ### 💾 Data and Operations
 

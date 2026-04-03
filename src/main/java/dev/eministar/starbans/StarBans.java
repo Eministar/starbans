@@ -269,7 +269,13 @@ public final class StarBans extends JavaPlugin {
             updateChecker.reload();
         }
 
-        discordBotManager.reload();
+        try {
+            discordBotManager.reload();
+        } catch (Exception exception) {
+            LoggerUtil.error("The optional Discord bot could not be initialized.", exception);
+            getServer().getPluginManager().disablePlugin(this);
+            return false;
+        }
 
         return true;
     }
