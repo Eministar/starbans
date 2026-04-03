@@ -388,6 +388,321 @@ screens:
     - '&7Details: &f{details}'
     - '&8&m----------------------------------------'
 
+discord:
+  common:
+    footer: 'StarBans • Discord-Workflow'
+    none: 'keine'
+  labels:
+    kind:
+      appeal: 'Appeal'
+      unban-request: 'Entbannungsanfrage'
+    origin:
+      discord: 'Discord'
+      ingame: 'Ingame'
+  commands:
+    case:
+      description: 'Zeigt einen StarBans-Case an'
+      options:
+        case-id: 'Die Case-ID, die du prüfen willst'
+    report:
+      description: 'Sendet einen Spieler-Report in die Moderations-Queue'
+      options:
+        player: 'Der Minecraft-Spielername'
+        reason: 'Was passiert ist und warum du reportest'
+        priority: 'Optionale Queue-Priorität'
+    appeal:
+      description: 'Eröffnet ein Appeal für einen vorhandenen Case'
+      options:
+        case-id: 'Die StarBans-Case-ID'
+        message: 'Deine Appeal-Nachricht'
+        deadline: 'Optionale Dauer wie 7d oder 12h'
+    unban-request:
+      description: 'Erstellt eine Entbannungsanfrage für einen aktiven Ban'
+      options:
+        player: 'Der gebannte Minecraft-Spieler'
+        reason: 'Warum dieser Ban geprüft werden sollte'
+  workflow:
+    note-prefix:
+      appeal: 'Discord-Appeal'
+      unban-request: 'Discord-Entbannungsanfrage'
+      evidence: 'Discord-Beweis'
+    notes:
+      accept: 'Per Discord-Workflow angenommen'
+      deny: 'Per Discord-Workflow abgelehnt'
+  panel:
+    buttons:
+      appeal: '⚖️ Appeal senden'
+      unban-request: '🔓 Entbannungsanfrage'
+  staff:
+    buttons:
+      claim: '🫴 Übernehmen'
+      accept: '✅ Annehmen'
+      deny: '❌ Ablehnen'
+  modals:
+    appeal:
+      title: '⚖️ Appeal-Anfrage'
+      player:
+        label: 'Minecraft-Name'
+        placeholder: 'Dein Ingame-Name'
+      case-id:
+        label: 'Case-ID'
+        placeholder: 'Optionale bekannte Case-ID'
+      reason:
+        label: 'Appeal-Nachricht'
+        placeholder: 'Erkläre klar, warum die Strafe geprüft werden soll.'
+      evidence:
+        label: 'Beweis / Link'
+        placeholder: 'Optionaler Clip, Screenshot oder Link'
+    unban-request:
+      title: '🔓 Entbannungsanfrage'
+      player:
+        label: 'Minecraft-Name'
+        placeholder: 'Dein Ingame-Name'
+      case-id:
+        label: 'Case-ID'
+        placeholder: 'Optionale bekannte Case-ID'
+      reason:
+        label: 'Anfrage-Nachricht'
+        placeholder: 'Erkläre, warum dieser Ban geprüft werden soll.'
+      evidence:
+        label: 'Beweis / Link'
+        placeholder: 'Optionaler Clip, Screenshot oder Link'
+  replies:
+    unknown-command:
+      title: '❓ Unbekannte Interaktion'
+      description:
+        - '```fix'
+        - 'StarBans konnte diese Interaktion nicht zuordnen.'
+        - '```'
+        - '• Slash-Commands neu laden'
+        - '• Aktion erneut versuchen'
+    request-failed:
+      title: '❌ Anfrage fehlgeschlagen'
+      description:
+        - '```fix'
+        - 'Die Anfrage ist serverseitig fehlgeschlagen.'
+        - '```'
+        - '• Serverkonsole prüfen'
+        - '• Nach Behebung erneut versuchen'
+    case-not-found:
+      title: '📭 Case nicht gefunden'
+      description:
+        - 'Es wurde kein Case mit der ID `{case_id}` gefunden.'
+        - ''
+        - '• ID prüfen'
+        - '• `/case` erneut ausführen'
+    player-unknown:
+      title: '👤 Unbekannter Spieler'
+      description:
+        - 'Der Spieler `{player}` ist StarBans nicht bekannt.'
+        - ''
+        - '• Schreibweise prüfen'
+        - '• Sicherstellen, dass der Spieler schon einmal da war'
+    report-created:
+      title: '🚨 Report gespeichert'
+      description:
+        - 'Ein neuer Report wurde als Case `#{case_id}` gespeichert.'
+        - ''
+        - '• Spieler: `{player}`'
+        - '• Queue-Eintrag erfolgreich erstellt'
+    appeal-opened:
+      title: '⚖️ Appeal eröffnet'
+      description:
+        - 'Ein Appeal wurde an Case `#{case_id}` angehängt.'
+        - ''
+        - '• Das Moderationsteam kann ihn jetzt prüfen'
+    no-active-ban:
+      title: '🔓 Kein aktiver Ban'
+      description:
+        - '`{player}` hat aktuell keinen aktiven Ban.'
+        - ''
+        - '• Es konnte keine Entbannungsanfrage erstellt werden'
+    unban-request-update-failed:
+      title: '❌ Entbannungsanfrage fehlgeschlagen'
+      description:
+        - 'Der aktive Ban-Case für `{player}` konnte nicht aktualisiert werden.'
+        - ''
+        - '• Case-Status prüfen'
+        - '• Erneut versuchen, sobald das Backend gesund ist'
+    unban-request-attached:
+      title: '🔓 Anfrage angehängt'
+      description:
+        - 'Eine Entbannungsanfrage wurde an Case `#{case_id}` angehängt.'
+        - ''
+        - '• Spieler: `{player}`'
+    no-staff-permission:
+      title: '⛔ Keine Team-Berechtigung'
+      description:
+        - 'Du darfst StarBans-Workflow-Anfragen nicht bearbeiten.'
+        - ''
+        - '• Frage einen Administrator nach Zugriff'
+    unknown-workflow-action:
+      title: '❓ Unbekannte Workflow-Aktion'
+      description:
+        - 'Dieser Workflow-Button wird nicht mehr erkannt.'
+        - ''
+        - '• Nachricht aktualisieren'
+        - '• Workflow-Panel bei Bedarf neu posten'
+    case-no-longer-active:
+      title: '⌛ Case nicht mehr aktiv'
+      description:
+        - 'Case `#{case_id}` ist nicht mehr aktiv.'
+        - ''
+        - '• Queue-Ansicht aktualisieren'
+    case-claimed:
+      title: '🫴 Case übernommen'
+      description:
+        - 'Case `#{case_id}` wurde von `{actor}` übernommen.'
+    appeal-accepted:
+      title: '✅ Appeal angenommen'
+      description:
+        - 'Case `#{case_id}` wurde im Workflow angenommen.'
+        - ''
+        - '• Teammitglied: `{actor}`'
+    appeal-denied:
+      title: '❌ Appeal abgelehnt'
+      description:
+        - 'Case `#{case_id}` wurde im Workflow abgelehnt.'
+        - ''
+        - '• Teammitglied: `{actor}`'
+    workflow-updated:
+      title: '🧾 Workflow aktualisiert'
+      description:
+        - 'Der Workflow-Status für Case `#{case_id}` wurde aktualisiert.'
+    workflow-action-failed:
+      title: '❌ Workflow-Aktion fehlgeschlagen'
+      description:
+        - 'Die Team-Workflow-Aktion konnte nicht abgeschlossen werden.'
+        - ''
+        - '• Serverkonsole prüfen'
+        - '• Nach Behebung erneut versuchen'
+    unban-target-missing:
+      title: '🔎 Kein passender Ban'
+      description:
+        - 'Für diese Anfrage konnte kein aktiver Ban gefunden werden.'
+        - ''
+        - '• Gültige Case-ID angeben'
+        - '• Oder einen gebannten Spielernamen nutzen'
+    appeal-target-missing:
+      title: '🔎 Kein passender Case'
+      description:
+        - 'Für dieses Appeal konnte kein aktiver strafbarer Case gefunden werden.'
+        - ''
+        - '• Gültige Case-ID angeben'
+        - '• Oder einen Spieler mit aktiver Strafe nutzen'
+    request-attach-failed:
+      title: '❌ Anfrage konnte nicht angehängt werden'
+      description:
+        - 'StarBans konnte diese Anfrage nicht an den Case hängen.'
+        - ''
+        - '• Case-Status prüfen'
+        - '• Anfrage erneut senden'
+    unban-request-submitted:
+      title: '🔓 Entbannungsanfrage gesendet'
+      description:
+        - 'Deine Entbannungsanfrage wurde auf Case `#{case_id}` gespeichert.'
+        - ''
+        - '• Das Moderationsteam wird sie prüfen'
+    appeal-submitted:
+      title: '⚖️ Appeal gesendet'
+      description:
+        - 'Dein Appeal wurde auf Case `#{case_id}` gespeichert.'
+        - ''
+        - '• Das Moderationsteam wird ihn prüfen'
+    workflow-submit-failed:
+      title: '❌ Übermittlung fehlgeschlagen'
+      description:
+        - 'Die Workflow-Übermittlung ist serverseitig fehlgeschlagen.'
+        - ''
+        - '• Konsole prüfen'
+        - '• Nach Behebung erneut versuchen'
+  embeds:
+    case-lookup:
+      title: '📁 Case `#{id}`'
+      description:
+        - '```yaml'
+        - 'typ: {type}'
+        - 'status: {status}'
+        - 'appeal: {appeal_status}'
+        - 'priorität: {priority}'
+        - '```'
+        - '• Spieler: `{player}`'
+        - '• Akteur: `{actor}`'
+        - '• Übernommen von: `{claim_actor}`'
+        - '• Läuft ab: `{expires_at}`'
+        - '• Beweise: `{evidence_count}`'
+        - ''
+        - '━━━━━━━━━━━━━━━━━━'
+        - '`Grund`'
+        - '{reason}'
+      footer: 'StarBans • Case-Lookup'
+    panel:
+      title: '✨ StarBans Appeal-Center'
+      description:
+        - 'Öffne direkt aus Discord einen sauberen Prüf-Workflow.'
+        - ''
+        - '━━━━━━━━━━━━━━━━━━'
+        - '• `⚖️ Appeal` für einen vorhandenen Straf-Case'
+        - '• `🔓 Entbannungsanfrage` für einen aktiven Ban'
+        - ''
+        - '`Tipp:` Wenn du deine Case-ID kennst, gib sie direkt mit an.'
+      footer: 'StarBans • Spieler-Anfragepanel'
+    staff-review:
+      title: '🧾 {workflow_kind} • Case `#{id}`'
+      description:
+        - '```yaml'
+        - 'spieler: {player}'
+        - 'anfragender: {workflow_requester}'
+        - 'quelle: {workflow_origin}'
+        - 'case_typ: {type}'
+        - 'case_status: {status}'
+        - 'appeal_status: {appeal_status}'
+        - 'priorität: {priority}'
+        - '```'
+        - '• Übernommen von: `{claim_actor}`'
+        - '• Bearbeitet von: `{appeal_actor}`'
+        - '• Erstellt: `{created_at}`'
+        - '• Workflow erstellt: `{workflow_created_at}`'
+        - '• Workflow aktualisiert: `{workflow_updated_at}`'
+        - '• Läuft ab: `{expires_at}`'
+        - '• Beweise: `{evidence_count}`'
+        - '• Vorfall: `{incident_id}`'
+        - ''
+        - '━━━━━━━━━━━━━━━━━━'
+        - '`Letzte Notiz`'
+        - '{appeal_latest_note}'
+        - ''
+        - '`Grund`'
+        - '{reason}'
+      footer: 'Quelle • {source}'
+    dm:
+      accepted:
+        title: '✅ Anfrage angenommen'
+        description:
+          - 'Dein `{workflow_kind}` für Case `#{id}` wurde angenommen.'
+          - ''
+          - '• Spieler: `{player}`'
+          - '• Case-Typ: `{type}`'
+          - '• Bearbeitet von: `{appeal_actor}`'
+          - '• Aktueller Status: `{status}`'
+          - ''
+          - '`Letzte Notiz`'
+          - '{appeal_latest_note}'
+        footer: 'StarBans • Entscheidungsmitteilung'
+      denied:
+        title: '❌ Anfrage abgelehnt'
+        description:
+          - 'Dein `{workflow_kind}` für Case `#{id}` wurde abgelehnt.'
+          - ''
+          - '• Spieler: `{player}`'
+          - '• Case-Typ: `{type}`'
+          - '• Bearbeitet von: `{appeal_actor}`'
+          - '• Aktueller Status: `{status}`'
+          - ''
+          - '`Letzte Notiz`'
+          - '{appeal_latest_note}'
+        footer: 'StarBans • Entscheidungsmitteilung'
+
 gui:
   main-menu:
     title: '&8StarBans &7| &fHauptmenü'
@@ -403,8 +718,18 @@ gui:
     title: '&8StarBans &7| &fVerknüpft: {player} &8(&f{page}&7/&f{max_page}&8)'
   activity:
     title: '&8StarBans &7| &fLetzte Aktivität &8(&f{page}&7/&f{max_page}&8)'
+  workflow-hub:
+    title: '&8StarBans &7| &fWorkflow-Center'
+  appeal-queue:
+    title: '&8StarBans &7| &fAppeal-Queue &8(&f{page}&7/&f{max_page}&8)'
+  unban-request-queue:
+    title: '&8StarBans &7| &fEntbannungsanfragen &8(&f{page}&7/&f{max_page}&8)'
   report-queue:
     title: '&8StarBans &7| &fReport-Queue &8(&f{page}&7/&f{max_page}&8)'
+  review-queue:
+    title: '&8StarBans &7| &fReview-Queue &8(&f{page}&7/&f{max_page}&8)'
+  quarantine-queue:
+    title: '&8StarBans &7| &fQuarantäne-Queue &8(&f{page}&7/&f{max_page}&8)'
   case-details:
     title: '&8StarBans &7| &fCase #{id}'
 
@@ -413,24 +738,43 @@ gui-items:
     browser:
       name: '&#FFB84D&lSpieler-Browser'
       lore:
+        - '&8&m------------------------'
         - '&8Bekannte Spieler: &f{known_players}'
         - '&8Gespeicherte Cases: &f{case_count}'
-        - '&7Öffnet den vollständigen Spieler-Browser.'
+        - ''
+        - '&6Übersicht'
+        - '&8- &7Durchsuche alle erfassten Spielerprofile.'
+        - '&8&m------------------------'
     activity:
       name: '&b&lLetzte Aktivität'
       lore:
-        - '&8Gesamte Cases: &f{case_count}'
-        - '&7Öffnet das globale Case- / Team-Log.'
+        - '&8&m------------------------'
+        - '&8Protokollierte Cases: &f{case_count}'
+        - ''
+        - '&6Übersicht'
+        - '&8- &7Prüfe die letzten Moderationsaktionen.'
+        - '&8- &7Behalte die Staff-Aktivität im Blick.'
+        - '&8&m------------------------'
     queue:
-      name: '&c&lReport-Queue'
+      name: '&c&lWorkflow-Center'
       lore:
+        - '&8&m------------------------'
         - '&8Offene Reports: &f{report_count}'
+        - '&8Offene Appeals: &f{appeal_count}'
+        - '&8Entbannungsanfragen: &f{unban_request_count}'
         - '&8Quarantänen: &f{quarantine_count}'
         - '&8Fällige Reviews: &f{review_count}'
-        - '&7Öffnet die aktive Staff-Workflow-Queue.'
+        - '&8Discord-Anfragen: &f{discord_count}'
+        - '&8Ingame-Anfragen: &f{ingame_count}'
+        - ''
+        - '&6Enthält'
+        - '&8- &7Reports, Appeals, Reviews und Quarantäne.'
+        - '&8- &7Zusammengeführte Bearbeitung aus Discord und Ingame.'
+        - '&8&m------------------------'
     stats:
       name: '&e&lÜbersicht'
       lore:
+        - '&8&m------------------------'
         - '&8Bekannte Spieler: &f{known_players}'
         - '&8Aktive Bans: &f{ban_count}'
         - '&8Aktive IP-Bans: &f{ip_ban_count}'
@@ -441,15 +785,91 @@ gui-items:
         - '&8Quarantänen: &f{quarantine_count}'
         - '&8Fällige Reviews: &f{review_count}'
         - '&8Alle Cases: &f{case_count}'
+        - '&8&m------------------------'
     close:
       name: '&cSchließen'
       lore:
-        - '&7Schließt diese GUI.'
+        - '&8&m------------------------'
+        - '&8- &7Schließt diese GUI.'
+        - '&8&m------------------------'
+
+  workflow-hub:
+    appeals:
+      name: '&6&lAppeals'
+      lore:
+        - '&8&m------------------------'
+        - '&8Offene Anfragen: &f{request_count}'
+        - ''
+        - '&6Queue'
+        - '&8- &7Öffnet alle aktiven Appeal-Workflows.'
+        - '&8&m------------------------'
+    unban-requests:
+      name: '&a&lEntbannungsanfragen'
+      lore:
+        - '&8&m------------------------'
+        - '&8Offene Anfragen: &f{request_count}'
+        - ''
+        - '&6Queue'
+        - '&8- &7Öffnet alle aktiven Entbannungs-Workflows.'
+        - '&8&m------------------------'
+    overview:
+      name: '&#FFB84D&lWorkflow-Übersicht'
+      lore:
+        - '&8&m------------------------'
+        - '&8Offene Anfragen: &f{workflow_count}'
+        - '&8Appeals: &f{appeal_count}'
+        - '&8Entbannungsanfragen: &f{unban_request_count}'
+        - '&8Discord: &f{discord_count}'
+        - '&8Ingame: &f{ingame_count}'
+        - ''
+        - '&6Abdeckung'
+        - '&8- &7Alle Request-Quellen landen hier.'
+        - '&8&m------------------------'
+    reports:
+      name: '&c&lReports'
+      lore:
+        - '&8&m------------------------'
+        - '&8Aktive Reports: &f{report_count}'
+        - ''
+        - '&6Queue'
+        - '&8- &7Öffnet die aktive Report-Queue.'
+        - '&8&m------------------------'
+    reviews:
+      name: '&b&lReviews'
+      lore:
+        - '&8&m------------------------'
+        - '&8Fällige Reviews: &f{review_count}'
+        - ''
+        - '&6Queue'
+        - '&8- &7Öffnet geplante Review-Cases.'
+        - '&8&m------------------------'
+    quarantines:
+      name: '&4&lQuarantänen'
+      lore:
+        - '&8&m------------------------'
+        - '&8Aktive Quarantänen: &f{quarantine_count}'
+        - ''
+        - '&6Queue'
+        - '&8- &7Öffnet quarantänisierte Spieler und Cases.'
+        - '&8&m------------------------'
+    back:
+      name: '&eHauptmenü'
+      lore:
+        - '&8&m------------------------'
+        - '&8- &7Zurück zur StarBans-Haupt-GUI.'
+        - '&8&m------------------------'
+    close:
+      name: '&cSchließen'
+      lore:
+        - '&8&m------------------------'
+        - '&8- &7Schließt diese GUI.'
+        - '&8&m------------------------'
 
   player-browser:
     player-head:
       name: '&#FFB84D&l{player}'
       lore:
+        - '&8&m------------------------'
         - '&8Status: &f{online_status}'
         - '&8Zustand: &f{status}'
         - '&8Cases: &f{case_count}'
@@ -458,29 +878,41 @@ gui-items:
         - '&8Warns: &f{warn_count} &8| &8Punkte: &f{warning_points}'
         - '&8Letzte IP: &f{last_ip}'
         - '&8Zuletzt gesehen: &f{last_seen}'
-        - '&7Klicke, um das Moderationsmenü zu öffnen.'
+        - ''
+        - '&6Aktion'
+        - '&8- &7Klicke, um das Moderationsmenü zu öffnen.'
+        - '&8&m------------------------'
     navigation:
       home:
         name: '&eHauptmenü'
         lore:
-          - '&7Zurück zur StarBans-Haupt-GUI.'
+          - '&8&m------------------------'
+          - '&8- &7Zurück zur StarBans-Haupt-GUI.'
+          - '&8&m------------------------'
       previous:
         name: '&eVorherige Seite'
         lore:
-          - '&7Öffnet die vorherige Spielerseite.'
+          - '&8&m------------------------'
+          - '&8- &7Öffnet die vorherige Spielerseite.'
+          - '&8&m------------------------'
       next:
         name: '&eNächste Seite'
         lore:
-          - '&7Öffnet die nächste Spielerseite.'
+          - '&8&m------------------------'
+          - '&8- &7Öffnet die nächste Spielerseite.'
+          - '&8&m------------------------'
       close:
         name: '&cSchließen'
         lore:
-          - '&7Schließt diese GUI.'
+          - '&8&m------------------------'
+          - '&8- &7Schließt diese GUI.'
+          - '&8&m------------------------'
 
   action-menu:
     header:
       name: '&#FFB84D&l{player}'
       lore:
+        - '&8&m------------------------'
         - '&8Status: &f{online_status}'
         - '&8Letzte IP: &f{last_ip}'
         - '&8Zuerst gesehen: &f{first_seen}'
@@ -491,99 +923,148 @@ gui-items:
         - '&8Notizen: &f{note_count}'
         - '&8Alt-Markierungen: &f{alt_count}'
         - '&8Letzter Case: &f{last_case_type}'
+        - '&8&m------------------------'
     permanent-ban:
       name: '&c&lPermanenter Ban'
       lore:
-        - '&7Bannt diesen Spieler sofort permanent.'
+        - '&8&m------------------------'
+        - '&8- &7Bannt diesen Spieler sofort permanent.'
+        - '&8&m------------------------'
     unban:
       name: '&a&lEntbannen'
       lore:
-        - '&7Entfernt den aktiven Ban dieses Spielers.'
+        - '&8&m------------------------'
+        - '&8- &7Entfernt den aktiven Ban dieses Spielers.'
+        - '&8&m------------------------'
     permanent-mute:
       name: '&6&lPermanenter Mute'
       lore:
-        - '&7Schaltet diesen Spieler permanent stumm.'
+        - '&8&m------------------------'
+        - '&8- &7Schaltet diesen Spieler permanent stumm.'
+        - '&8&m------------------------'
     unmute:
       name: '&e&lEntmuten'
       lore:
-        - '&7Entfernt den aktiven Mute dieses Spielers.'
+        - '&8&m------------------------'
+        - '&8- &7Entfernt den aktiven Mute dieses Spielers.'
+        - '&8&m------------------------'
     history:
       name: '&b&lCase-Verlauf'
       lore:
-        - '&7Öffnet den vollständigen Moderationsverlauf.'
+        - '&8&m------------------------'
+        - '&8- &7Öffnet den vollständigen Moderationsverlauf.'
+        - '&8&m------------------------'
     notes:
       name: '&b&lTeam-Notizen'
       lore:
-        - '&7Öffnet alle Notizen dieses Spielers.'
+        - '&8&m------------------------'
+        - '&8- &7Öffnet alle Notizen dieses Spielers.'
+        - '&8&m------------------------'
     add-note:
       name: '&e&lNotiz hinzufügen'
       lore:
-        - '&7Startet die Chat-Eingabe für eine Team-Notiz.'
-        - '&8Schreibe deine Notiz in den Chat oder'
-        - '&8schreibe cancel zum Abbrechen.'
+        - '&8&m------------------------'
+        - '&8- &7Startet die Chat-Eingabe für eine Team-Notiz.'
+        - ''
+        - '&6Eingabe'
+        - '&8- &7Schreibe deine Notiz in den Chat.'
+        - '&8- &7Schreibe &fcancel &7zum Abbrechen.'
+        - '&8&m------------------------'
     related:
       name: '&d&lVerknüpfte Accounts'
       lore:
-        - '&7Öffnet gleiche IPs / verknüpfte Accounts.'
+        - '&8&m------------------------'
+        - '&8- &7Öffnet gleiche IPs und verknüpfte Accounts.'
+        - '&8&m------------------------'
     back:
       name: '&eZurück'
       lore:
-        - '&7Zurück zum Spieler-Browser.'
+        - '&8&m------------------------'
+        - '&8- &7Zurück zum Spieler-Browser.'
+        - '&8&m------------------------'
     close:
       name: '&cSchließen'
       lore:
-        - '&7Schließt die GUI.'
+        - '&8&m------------------------'
+        - '&8- &7Schließt die GUI.'
+        - '&8&m------------------------'
     temp-ban-presets:
       one-hour:
         name: '&e&l1-Stunden-Ban'
         lore:
-          - '&7Preset für Spam / Chatmissbrauch.'
+          - '&8&m------------------------'
+          - '&8- &7Preset für Spam und Chatmissbrauch.'
+          - '&8&m------------------------'
       one-day:
         name: '&6&l1-Tages-Ban'
         lore:
-          - '&7Preset für Toxizität / Beleidigungen.'
+          - '&8&m------------------------'
+          - '&8- &7Preset für Toxizität und Beleidigungen.'
+          - '&8&m------------------------'
       seven-days:
         name: '&c&l7-Tage-Ban'
         lore:
-          - '&7Preset für wiederholtes Griefing / Exploits.'
+          - '&8&m------------------------'
+          - '&8- &7Preset für wiederholtes Griefing und Exploits.'
+          - '&8&m------------------------'
     temp-mute-presets:
       thirty-minutes:
         name: '&e&l30-Minuten-Mute'
         lore:
-          - '&7Preset für leichten Spam.'
+          - '&8&m------------------------'
+          - '&8- &7Preset für leichten Spam.'
+          - '&8&m------------------------'
       two-hours:
         name: '&6&l2-Stunden-Mute'
         lore:
-          - '&7Preset für Flaming / Toxizität.'
+          - '&8&m------------------------'
+          - '&8- &7Preset für Flaming und Toxizität.'
+          - '&8&m------------------------'
       one-day:
         name: '&c&l1-Tages-Mute'
         lore:
-          - '&7Preset für wiederholten Chatmissbrauch.'
+          - '&8&m------------------------'
+          - '&8- &7Preset für wiederholten Chatmissbrauch.'
+          - '&8&m------------------------'
 
   history:
     header:
       name: '&#FFB84D&l{player}'
       lore:
+        - '&8&m------------------------'
         - '&8Gesamte Cases: &f{case_count}'
+        - ''
+        - '&6Übersicht'
+        - '&8- &7Prüfe den vollständigen Moderationsverlauf.'
+        - '&8&m------------------------'
     previous:
       name: '&eVorherige Seite'
       lore:
-        - '&7Öffnet die vorherige Case-Seite.'
+        - '&8&m------------------------'
+        - '&8- &7Öffnet die vorherige Case-Seite.'
+        - '&8&m------------------------'
     next:
       name: '&eNächste Seite'
       lore:
-        - '&7Öffnet die nächste Case-Seite.'
+        - '&8&m------------------------'
+        - '&8- &7Öffnet die nächste Case-Seite.'
+        - '&8&m------------------------'
     back:
       name: '&eZurück'
       lore:
-        - '&7Zurück zum Aktionsmenü.'
+        - '&8&m------------------------'
+        - '&8- &7Zurück zum Aktionsmenü.'
+        - '&8&m------------------------'
     close:
       name: '&cSchließen'
       lore:
-        - '&7Schließt die GUI.'
+        - '&8&m------------------------'
+        - '&8- &7Schließt die GUI.'
+        - '&8&m------------------------'
     entry-default:
       name: '&fCase &8#&f{id}'
       lore:
+        - '&8&m------------------------'
         - '&8Typ: &f{type}'
         - '&8Ziel: &f{player}'
         - '&8Grund: &f{reason}'
@@ -592,126 +1073,187 @@ gui-items:
         - '&8Erstellt: &f{created_at}'
         - '&8Status: &f{status}'
         - '&8Status von: &f{status_actor}'
-        - '&7Klicke für volle Details.'
+        - ''
+        - '&6Aktion'
+        - '&8- &7Klicke für volle Details.'
+        - '&8&m------------------------'
     entry-ban:
       name: '&c&lBan &8#&f{id}'
       lore:
+        - '&8&m------------------------'
         - '&8Spieler: &f{player}'
         - '&8Grund: &f{reason}'
         - '&8Akteur: &f{actor}'
         - '&8Läuft ab: &f{expires_at}'
         - '&8Status: &f{status}'
-        - '&7Klicke für volle Details.'
+        - ''
+        - '&6Aktion'
+        - '&8- &7Klicke für volle Details.'
+        - '&8&m------------------------'
     entry-ip-ban:
       name: '&4&lIP-Ban &8#&f{id}'
       lore:
+        - '&8&m------------------------'
         - '&8Spieler: &f{player}'
         - '&8IP: &f{ip}'
         - '&8Grund: &f{reason}'
         - '&8Läuft ab: &f{expires_at}'
         - '&8Akteur: &f{actor}'
-        - '&7Klicke für volle Details.'
+        - ''
+        - '&6Aktion'
+        - '&8- &7Klicke für volle Details.'
+        - '&8&m------------------------'
     entry-mute:
       name: '&6&lMute &8#&f{id}'
       lore:
+        - '&8&m------------------------'
         - '&8Spieler: &f{player}'
         - '&8Grund: &f{reason}'
         - '&8Akteur: &f{actor}'
         - '&8Läuft ab: &f{expires_at}'
         - '&8Status: &f{status}'
-        - '&7Klicke für volle Details.'
+        - ''
+        - '&6Aktion'
+        - '&8- &7Klicke für volle Details.'
+        - '&8&m------------------------'
     entry-kick:
       name: '&f&lKick &8#&f{id}'
       lore:
+        - '&8&m------------------------'
         - '&8Spieler: &f{player}'
         - '&8Grund: &f{reason}'
         - '&8Akteur: &f{actor}'
         - '&8Erstellt: &f{created_at}'
-        - '&7Klicke für volle Details.'
+        - ''
+        - '&6Aktion'
+        - '&8- &7Klicke für volle Details.'
+        - '&8&m------------------------'
     entry-note:
       name: '&b&lNotiz &8#&f{id}'
       lore:
+        - '&8&m------------------------'
         - '&8Spieler: &f{player}'
         - '&8Label: &f{label}'
         - '&8Text: &f{reason}'
         - '&8Akteur: &f{actor}'
         - '&8Erstellt: &f{created_at}'
-        - '&7Klicke für volle Details.'
+        - ''
+        - '&6Aktion'
+        - '&8- &7Klicke für volle Details.'
+        - '&8&m------------------------'
     entry-alt-flag:
       name: '&d&lAlt-Markierung &8#&f{id}'
       lore:
+        - '&8&m------------------------'
         - '&8Label: &f{label}'
         - '&8Spieler: &f{player}'
         - '&8Verknüpft: &f{related_player}'
         - '&8Text: &f{reason}'
         - '&8Akteur: &f{actor}'
-        - '&7Klicke für volle Details.'
+        - ''
+        - '&6Aktion'
+        - '&8- &7Klicke für volle Details.'
+        - '&8&m------------------------'
     entry-ip-blacklist:
       name: '&4&lIP-Blacklist &8#&f{id}'
       lore:
+        - '&8&m------------------------'
         - '&8IP: &f{ip}'
         - '&8Grund: &f{reason}'
         - '&8Akteur: &f{actor}'
         - '&8Status: &f{status}'
-        - '&7Klicke für volle Details.'
+        - ''
+        - '&6Aktion'
+        - '&8- &7Klicke für volle Details.'
+        - '&8&m------------------------'
 
   notes:
     header:
       name: '&#FFB84D&lNotizen für {player}'
       lore:
+        - '&8&m------------------------'
         - '&8Gesamte Notizen: &f{note_count}'
+        - ''
+        - '&6Übersicht'
+        - '&8- &7Prüfe jede gespeicherte Notiz dieses Spielers.'
+        - '&8&m------------------------'
     previous:
       name: '&eVorherige Seite'
       lore:
-        - '&7Öffnet die vorherige Notiz-Seite.'
+        - '&8&m------------------------'
+        - '&8- &7Öffnet die vorherige Notiz-Seite.'
+        - '&8&m------------------------'
     next:
       name: '&eNächste Seite'
       lore:
-        - '&7Öffnet die nächste Notiz-Seite.'
+        - '&8&m------------------------'
+        - '&8- &7Öffnet die nächste Notiz-Seite.'
+        - '&8&m------------------------'
     back:
       name: '&eZurück'
       lore:
-        - '&7Zurück zum Spielermenü.'
+        - '&8&m------------------------'
+        - '&8- &7Zurück zum Spielermenü.'
+        - '&8&m------------------------'
     close:
       name: '&cSchließen'
       lore:
-        - '&7Schließt die GUI.'
+        - '&8&m------------------------'
+        - '&8- &7Schließt die GUI.'
+        - '&8&m------------------------'
     entry:
       name: '&b&lNotiz &8#&f{id}'
       lore:
+        - '&8&m------------------------'
         - '&8Label: &f{label}'
         - '&8Text: &f{reason}'
         - '&8Akteur: &f{actor}'
         - '&8Erstellt: &f{created_at}'
-        - '&7Klicke, um volle Details zu öffnen.'
+        - ''
+        - '&6Aktion'
+        - '&8- &7Klicke, um volle Details zu öffnen.'
+        - '&8&m------------------------'
 
   related:
     header:
       name: '&#FFB84D&lVerknüpfte Profile'
       lore:
+        - '&8&m------------------------'
         - '&8Spieler: &f{player}'
         - '&8Einträge: &f{related_count}'
-        - '&7Linksklick: Profil öffnen'
-        - '&7Rechtsklick: Alt-Markierung erstellen'
+        - ''
+        - '&6Aktionen'
+        - '&8- &7Linksklick: Profil öffnen'
+        - '&8- &7Rechtsklick: Alt-Markierung erstellen'
+        - '&8&m------------------------'
     previous:
       name: '&eVorherige Seite'
       lore:
-        - '&7Öffnet die vorherige Profil-Seite.'
+        - '&8&m------------------------'
+        - '&8- &7Öffnet die vorherige Profil-Seite.'
+        - '&8&m------------------------'
     next:
       name: '&eNächste Seite'
       lore:
-        - '&7Öffnet die nächste Profil-Seite.'
+        - '&8&m------------------------'
+        - '&8- &7Öffnet die nächste Profil-Seite.'
+        - '&8&m------------------------'
     back:
       name: '&eZurück'
       lore:
-        - '&7Zurück zum Spielermenü.'
+        - '&8&m------------------------'
+        - '&8- &7Zurück zum Spielermenü.'
+        - '&8&m------------------------'
     close:
       name: '&cSchließen'
       lore:
-        - '&7Schließt die GUI.'
+        - '&8&m------------------------'
+        - '&8- &7Schließt die GUI.'
+        - '&8&m------------------------'
     entry:
       name: '&d&l{player}'
       lore:
+        - '&8&m------------------------'
         - '&8Status: &f{online_status}'
         - '&8Zustand: &f{status}'
         - '&8Cases: &f{case_count}'
@@ -719,75 +1261,324 @@ gui-items:
         - '&8Alt-Markierungen: &f{alt_count}'
         - '&8Letzte IP: &f{last_ip}'
         - '&8Zuletzt gesehen: &f{last_seen}'
-        - '&7Linksklick: Moderationsmenü öffnen'
-        - '&7Rechtsklick: Alt-Markierung erstellen'
+        - ''
+        - '&6Aktionen'
+        - '&8- &7Linksklick: Moderationsmenü öffnen'
+        - '&8- &7Rechtsklick: Alt-Markierung erstellen'
+        - '&8&m------------------------'
 
   activity:
     header:
       name: '&#FFB84D&lLetzte Aktivität'
       lore:
+        - '&8&m------------------------'
         - '&8Gespeicherte Cases: &f{case_count}'
-        - '&7Öffnet und prüft jede protokollierte Aktion.'
+        - ''
+        - '&6Übersicht'
+        - '&8- &7Öffnet und prüft jede protokollierte Aktion.'
+        - '&8&m------------------------'
     previous:
       name: '&eVorherige Seite'
       lore:
-        - '&7Öffnet die vorherige Aktivitäts-Seite.'
+        - '&8&m------------------------'
+        - '&8- &7Öffnet die vorherige Aktivitäts-Seite.'
+        - '&8&m------------------------'
     next:
       name: '&eNächste Seite'
       lore:
-        - '&7Öffnet die nächste Aktivitäts-Seite.'
+        - '&8&m------------------------'
+        - '&8- &7Öffnet die nächste Aktivitäts-Seite.'
+        - '&8&m------------------------'
     back:
       name: '&eHauptmenü'
       lore:
-        - '&7Zurück zur StarBans-Haupt-GUI.'
+        - '&8&m------------------------'
+        - '&8- &7Zurück zur StarBans-Haupt-GUI.'
+        - '&8&m------------------------'
     close:
       name: '&cSchließen'
       lore:
-        - '&7Schließt die GUI.'
+        - '&8&m------------------------'
+        - '&8- &7Schließt die GUI.'
+        - '&8&m------------------------'
 
   report-queue:
     header:
       name: '&#FFB84D&lReport-Queue'
       lore:
+        - '&8&m------------------------'
         - '&8Offene Reports: &f{report_count}'
         - '&8Übernommen: &f{claimed_count}'
         - '&8Kritisch: &f{critical_count}'
-        - '&7Rechtsklick: Report übernehmen'
-        - '&7Shift-Rechtsklick: Priorität wechseln'
-        - '&7Shift-Linksklick: Zielprofil öffnen'
+        - ''
+        - '&6Aktionen'
+        - '&8- &7Rechtsklick: Report übernehmen'
+        - '&8- &7Shift-Rechtsklick: Priorität wechseln'
+        - '&8- &7Shift-Linksklick: Zielprofil öffnen'
+        - '&8&m------------------------'
     previous:
       name: '&eVorherige Seite'
       lore:
-        - '&7Öffnet die vorherige Queue-Seite.'
+        - '&8&m------------------------'
+        - '&8- &7Öffnet die vorherige Queue-Seite.'
+        - '&8&m------------------------'
     next:
       name: '&eNächste Seite'
       lore:
-        - '&7Öffnet die nächste Queue-Seite.'
+        - '&8&m------------------------'
+        - '&8- &7Öffnet die nächste Queue-Seite.'
+        - '&8&m------------------------'
     back:
-      name: '&eHauptmenü'
+      name: '&eWorkflow-Center'
       lore:
-        - '&7Zurück zur StarBans-Haupt-GUI.'
+        - '&8&m------------------------'
+        - '&8- &7Zurück zum Workflow-Center.'
+        - '&8&m------------------------'
     close:
       name: '&cSchließen'
       lore:
-        - '&7Schließt diese GUI.'
+        - '&8&m------------------------'
+        - '&8- &7Schließt diese GUI.'
+        - '&8&m------------------------'
     entry:
       name: '&c&lReport &8#&f{id}'
       lore:
+        - '&8&m------------------------'
         - '&8Spieler: &f{player}'
         - '&8Reporter: &f{related_player}'
         - '&8Priorität: &f{priority}'
         - '&8Übernommen von: &f{claim_actor}'
         - '&8Erstellt: &f{created_at}'
         - '&8Grund: &f{reason}'
-        - '&7Linksklick: Case-Details öffnen'
-        - '&7Rechtsklick: Report übernehmen'
-        - '&7Shift-Rechtsklick: Priorität ändern'
+        - ''
+        - '&6Aktionen'
+        - '&8- &7Linksklick: Case-Details öffnen'
+        - '&8- &7Rechtsklick: Report übernehmen'
+        - '&8- &7Shift-Rechtsklick: Priorität ändern'
+        - '&8&m------------------------'
+
+  appeal-queue:
+    header:
+      name: '&#FFB84D&lAppeal-Queue'
+      lore:
+        - '&8&m------------------------'
+        - '&8Offene Anfragen: &f{request_count}'
+        - '&8Discord: &f{discord_count}'
+        - '&8Ingame: &f{ingame_count}'
+        - ''
+        - '&6Aktionen'
+        - '&8- &7Rechtsklick: Anfrage übernehmen'
+        - '&8- &7Shift-Linksklick: Zielprofil öffnen'
+        - '&8&m------------------------'
+    previous:
+      name: '&eVorherige Seite'
+      lore:
+        - '&8&m------------------------'
+        - '&8- &7Öffnet die vorherige Queue-Seite.'
+        - '&8&m------------------------'
+    next:
+      name: '&eNächste Seite'
+      lore:
+        - '&8&m------------------------'
+        - '&8- &7Öffnet die nächste Queue-Seite.'
+        - '&8&m------------------------'
+    back:
+      name: '&eWorkflow-Center'
+      lore:
+        - '&8&m------------------------'
+        - '&8- &7Zurück zum Workflow-Center.'
+        - '&8&m------------------------'
+    close:
+      name: '&cSchließen'
+      lore:
+        - '&8&m------------------------'
+        - '&8- &7Schließt diese GUI.'
+        - '&8&m------------------------'
+    entry:
+      name: '&6&lAppeal &8#&f{id}'
+      lore:
+        - '&8&m------------------------'
+        - '&8Spieler: &f{player}'
+        - '&8Anfragender: &f{workflow_requester}'
+        - '&8Quelle: &f{workflow_origin}'
+        - '&8Priorität: &f{priority}'
+        - '&8Übernommen von: &f{claim_actor}'
+        - '&8Aktualisiert: &f{workflow_updated_at}'
+        - '&8Grund: &f{reason}'
+        - ''
+        - '&6Aktionen'
+        - '&8- &7Linksklick: Case-Details öffnen'
+        - '&8- &7Rechtsklick: Anfrage übernehmen'
+        - '&8- &7Shift-Linksklick: Zielprofil öffnen'
+        - '&8&m------------------------'
+
+  unban-request-queue:
+    header:
+      name: '&#FFB84D&lEntbannungsanfragen'
+      lore:
+        - '&8&m------------------------'
+        - '&8Offene Anfragen: &f{request_count}'
+        - '&8Discord: &f{discord_count}'
+        - '&8Ingame: &f{ingame_count}'
+        - ''
+        - '&6Aktionen'
+        - '&8- &7Rechtsklick: Anfrage übernehmen'
+        - '&8- &7Shift-Linksklick: Zielprofil öffnen'
+        - '&8&m------------------------'
+    previous:
+      name: '&eVorherige Seite'
+      lore:
+        - '&8&m------------------------'
+        - '&8- &7Öffnet die vorherige Queue-Seite.'
+        - '&8&m------------------------'
+    next:
+      name: '&eNächste Seite'
+      lore:
+        - '&8&m------------------------'
+        - '&8- &7Öffnet die nächste Queue-Seite.'
+        - '&8&m------------------------'
+    back:
+      name: '&eWorkflow-Center'
+      lore:
+        - '&8&m------------------------'
+        - '&8- &7Zurück zum Workflow-Center.'
+        - '&8&m------------------------'
+    close:
+      name: '&cSchließen'
+      lore:
+        - '&8&m------------------------'
+        - '&8- &7Schließt diese GUI.'
+        - '&8&m------------------------'
+    entry:
+      name: '&a&lEntbannungsanfrage &8#&f{id}'
+      lore:
+        - '&8&m------------------------'
+        - '&8Spieler: &f{player}'
+        - '&8Anfragender: &f{workflow_requester}'
+        - '&8Quelle: &f{workflow_origin}'
+        - '&8Priorität: &f{priority}'
+        - '&8Übernommen von: &f{claim_actor}'
+        - '&8Aktualisiert: &f{workflow_updated_at}'
+        - '&8Grund: &f{reason}'
+        - ''
+        - '&6Aktionen'
+        - '&8- &7Linksklick: Case-Details öffnen'
+        - '&8- &7Rechtsklick: Anfrage übernehmen'
+        - '&8- &7Shift-Linksklick: Zielprofil öffnen'
+        - '&8&m------------------------'
+
+  review-queue:
+    header:
+      name: '&#FFB84D&lReview-Queue'
+      lore:
+        - '&8&m------------------------'
+        - '&8Fällige Reviews: &f{review_count}'
+        - '&8Übernommen: &f{claimed_count}'
+        - '&8Kritisch: &f{critical_count}'
+        - ''
+        - '&6Aktionen'
+        - '&8- &7Rechtsklick: Case übernehmen'
+        - '&8- &7Shift-Rechtsklick: Priorität wechseln'
+        - '&8&m------------------------'
+    previous:
+      name: '&eVorherige Seite'
+      lore:
+        - '&8&m------------------------'
+        - '&8- &7Öffnet die vorherige Queue-Seite.'
+        - '&8&m------------------------'
+    next:
+      name: '&eNächste Seite'
+      lore:
+        - '&8&m------------------------'
+        - '&8- &7Öffnet die nächste Queue-Seite.'
+        - '&8&m------------------------'
+    back:
+      name: '&eWorkflow-Center'
+      lore:
+        - '&8&m------------------------'
+        - '&8- &7Zurück zum Workflow-Center.'
+        - '&8&m------------------------'
+    close:
+      name: '&cSchließen'
+      lore:
+        - '&8&m------------------------'
+        - '&8- &7Schließt diese GUI.'
+        - '&8&m------------------------'
+    entry:
+      name: '&b&lReview &8#&f{id}'
+      lore:
+        - '&8&m------------------------'
+        - '&8Spieler: &f{player}'
+        - '&8Priorität: &f{priority}'
+        - '&8Übernommen von: &f{claim_actor}'
+        - '&8Review am: &f{review_at}'
+        - '&8Review-Grund: &f{review_reason}'
+        - '&8Grund: &f{reason}'
+        - ''
+        - '&6Aktionen'
+        - '&8- &7Linksklick: Case-Details öffnen'
+        - '&8- &7Rechtsklick: Case übernehmen'
+        - '&8- &7Shift-Rechtsklick: Priorität ändern'
+        - '&8&m------------------------'
+
+  quarantine-queue:
+    header:
+      name: '&#FFB84D&lQuarantäne-Queue'
+      lore:
+        - '&8&m------------------------'
+        - '&8Aktive Quarantänen: &f{quarantine_count}'
+        - '&8Übernommen: &f{claimed_count}'
+        - '&8Kritisch: &f{critical_count}'
+        - ''
+        - '&6Aktionen'
+        - '&8- &7Rechtsklick: Case übernehmen'
+        - '&8- &7Shift-Rechtsklick: Priorität wechseln'
+        - '&8&m------------------------'
+    previous:
+      name: '&eVorherige Seite'
+      lore:
+        - '&8&m------------------------'
+        - '&8- &7Öffnet die vorherige Queue-Seite.'
+        - '&8&m------------------------'
+    next:
+      name: '&eNächste Seite'
+      lore:
+        - '&8&m------------------------'
+        - '&8- &7Öffnet die nächste Queue-Seite.'
+        - '&8&m------------------------'
+    back:
+      name: '&eWorkflow-Center'
+      lore:
+        - '&8&m------------------------'
+        - '&8- &7Zurück zum Workflow-Center.'
+        - '&8&m------------------------'
+    close:
+      name: '&cSchließen'
+      lore:
+        - '&8&m------------------------'
+        - '&8- &7Schließt diese GUI.'
+        - '&8&m------------------------'
+    entry:
+      name: '&4&lQuarantäne &8#&f{id}'
+      lore:
+        - '&8&m------------------------'
+        - '&8Spieler: &f{player}'
+        - '&8Priorität: &f{priority}'
+        - '&8Übernommen von: &f{claim_actor}'
+        - '&8Verbleibend: &f{remaining}'
+        - '&8Grund: &f{reason}'
+        - ''
+        - '&6Aktionen'
+        - '&8- &7Linksklick: Case-Details öffnen'
+        - '&8- &7Rechtsklick: Case übernehmen'
+        - '&8- &7Shift-Rechtsklick: Priorität ändern'
+        - '&8&m------------------------'
 
   case-details:
     header:
       name: '&#FFB84D&lCase #{id}'
       lore:
+        - '&8&m------------------------'
         - '&8Typ: &f{type}'
         - '&8Spieler: &f{player}'
         - '&8Verknüpft: &f{related_player}'
@@ -801,9 +1592,11 @@ gui-items:
         - '&8Erstellt: &f{created_at}'
         - '&8Läuft ab: &f{expires_at}'
         - '&8Beweise: &f{evidence_count}'
+        - '&8&m------------------------'
     status:
       name: '&e&lStatus'
       lore:
+        - '&8&m------------------------'
         - '&8Status: &f{status}'
         - '&8Status von: &f{status_actor}'
         - '&8Geändert am: &f{status_changed_at}'
@@ -811,26 +1604,61 @@ gui-items:
         - '&8Übernommen von: &f{claim_actor}'
         - '&8Übernommen am: &f{claim_changed_at}'
         - '&8Appeal: &f{appeal_status}'
+        - '&8Workflow: &f{workflow_kind}'
+        - '&8Quelle: &f{workflow_origin}'
+        - '&8Anfragender: &f{workflow_requester}'
+        - '&8Workflow erstellt: &f{workflow_created_at}'
+        - '&8Workflow aktualisiert: &f{workflow_updated_at}'
         - '&8Appeal-Frist: &f{appeal_deadline}'
         - '&8Appeal-Notizen: &f{appeal_note_count}'
+        - '&8Letzte Notiz: &f{appeal_latest_note}'
         - '&8Review am: &f{review_at}'
         - '&8Review-Grund: &f{review_reason}'
+        - '&8&m------------------------'
     target:
       name: '&b&lZiel öffnen'
       lore:
+        - '&8&m------------------------'
         - '&8Spieler: &f{player}'
-        - '&7Öffnet das Moderationsprofil des Ziels.'
+        - ''
+        - '&6Aktion'
+        - '&8- &7Öffnet das Moderationsprofil des Ziels.'
+        - '&8&m------------------------'
+    claim:
+      name: '&e&lCase übernehmen'
+      lore:
+        - '&8&m------------------------'
+        - '&8- &7Weist diesen Case dir selbst zu.'
+        - '&8&m------------------------'
+    accept:
+      name: '&a&lAppeal annehmen'
+      lore:
+        - '&8&m------------------------'
+        - '&8- &7Nimmt diesen Appeal oder diese Entbannungsanfrage an.'
+        - '&8&m------------------------'
+    deny:
+      name: '&c&lAppeal ablehnen'
+      lore:
+        - '&8&m------------------------'
+        - '&8- &7Lehnt diesen Appeal oder diese Entbannungsanfrage ab.'
+        - '&8&m------------------------'
     resolve:
       name: '&a&lCase auflösen'
       lore:
-        - '&7Löst diesen Case direkt aus der GUI auf.'
+        - '&8&m------------------------'
+        - '&8- &7Löst diesen Case direkt aus der GUI auf.'
+        - '&8&m------------------------'
     back:
       name: '&eZurück'
       lore:
-        - '&7Zurück zur vorherigen GUI.'
+        - '&8&m------------------------'
+        - '&8- &7Zurück zur vorherigen GUI.'
+        - '&8&m------------------------'
     close:
       name: '&cSchließen'
       lore:
-        - '&7Schließt die GUI.'
+        - '&8&m------------------------'
+        - '&8- &7Schließt die GUI.'
+        - '&8&m------------------------'
 
 

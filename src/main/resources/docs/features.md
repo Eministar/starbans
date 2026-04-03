@@ -17,6 +17,8 @@
 - player report intake via `/report`
 - staff report queue with claim and priority workflow
 - appeal states with deadlines and internal notes
+- unified workflow center for appeals, unban requests, reports, reviews and quarantines
+- Discord and in-game requests merge into the same workflow queues
 - evidence attachments for links, images, videos and text references
 - incident grouping and case linking
 - review cases with automatic reminders
@@ -28,11 +30,12 @@
 ## GUI and Staff UX
 
 - main moderation GUI
+- workflow center GUI with dedicated queues for appeals, unban requests, reports, reviews and quarantines
 - player browser
 - profile/action menu
 - case history screens
-- report queue GUI
-- single-case detail view with workflow metadata
+- queue GUIs with claim and priority shortcuts
+- single-case detail view with workflow metadata plus claim / accept / deny buttons
 - related-account browser
 - recent activity log
 
@@ -49,6 +52,7 @@
 
 - rich webhook logging via external `discord-webhooks.yml`
 - optional Discord bot with slash commands for case lookup, reports, appeals and unban requests
+- Discord appeal / unban panels, modal intake, staff buttons and decision DMs
 - bot runtime libraries are downloaded only when `discord-bot.enabled: true`
 - downloaded bot libraries are stored in `plugins/StarBans/libs`
 - the Discord runtime resolves the latest published JDA release and its matching runtime dependency tree automatically by default

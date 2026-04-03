@@ -41,6 +41,7 @@ import dev.eministar.starbans.database.StorageFactory;
 import dev.eministar.starbans.database.StorageSettings;
 import dev.eministar.starbans.database.StorageType;
 import dev.eministar.starbans.discord.DiscordBotManager;
+import dev.eministar.starbans.discord.DiscordWorkflowStateStore;
 import dev.eministar.starbans.discord.DiscordWebhookService;
 import dev.eministar.starbans.listener.ChatListener;
 import dev.eministar.starbans.listener.GuiListener;
@@ -88,6 +89,7 @@ public final class StarBans extends JavaPlugin {
     private PlayerLookupService playerLookupService;
     private DiscordWebhookService discordWebhookService;
     private DiscordBotManager discordBotManager;
+    private DiscordWorkflowStateStore discordWorkflowStateStore;
     private StaffAlertService staffAlertService;
     private VpnCheckService vpnCheckService;
     private ServerRuleService serverRuleService;
@@ -206,6 +208,12 @@ public final class StarBans extends JavaPlugin {
             discordWebhookConfig.reload();
         }
 
+        if (discordWorkflowStateStore == null) {
+            discordWorkflowStateStore = new DiscordWorkflowStateStore(this);
+        } else {
+            discordWorkflowStateStore.reload();
+        }
+
         if (storage != null) {
             try {
                 storage.close();
@@ -302,6 +310,14 @@ public final class StarBans extends JavaPlugin {
 
     public DiscordWebhookService getDiscordWebhookService() {
         return discordWebhookService;
+    }
+
+    public DiscordBotManager getDiscordBotManager() {
+        return discordBotManager;
+    }
+
+    public DiscordWorkflowStateStore getDiscordWorkflowStateStore() {
+        return discordWorkflowStateStore;
     }
 
     public StaffAlertService getStaffAlertService() {

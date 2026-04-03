@@ -2,6 +2,9 @@ package dev.eministar.starbans.service;
 
 import dev.eministar.starbans.StarBans;
 import dev.eministar.starbans.database.ModerationStorage;
+import dev.eministar.starbans.discord.DiscordWorkflowOrigin;
+import dev.eministar.starbans.discord.DiscordWorkflowRequest;
+import dev.eministar.starbans.discord.DiscordWorkflowRequestKind;
 import dev.eministar.starbans.discord.DiscordWebhookService;
 import dev.eministar.starbans.model.AppealStatus;
 import dev.eministar.starbans.model.CaseComment;
@@ -28,6 +31,7 @@ import org.bukkit.entity.Player;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
@@ -126,6 +130,34 @@ public final class ModerationService {
 
     public int countCases(CaseSearchFilter filter) throws Exception {
         return storage.countCases(filter);
+    }
+
+    public int countOpenAppeals() throws Exception {
+        return storage.countCases(new CaseSearchFilter(null, null, null, null, null, null, null, null, null, null, AppealStatus.OPEN, null, null));
+    }
+
+    public List<CaseRecord> getOpenAppeals(int pageSize, int page) throws Exception {
+        return searchCases(
+                new CaseSearchFilter(null, null, null, null, null, null, null, null, null, null, AppealStatus.OPEN, null, null),
+                pageSize,
+                page
+        );
+    }
+
+    public List<CaseRecord> getCasesByIds(Collection<Long> caseIds) throws Exception {
+        if (caseIds == null || caseIds.isEmpty()) {
+            return List.of();
+        }
+
+        List<CaseRecord> result = new ArrayList<>();
+        for (Long caseId : caseIds) {
+            if (caseId == null || caseId <= 0L) {
+                continue;
+            }
+            storage.findCaseById(caseId).ifPresent(result::add);
+        }
+        result.sort(Comparator.comparingLong(CaseRecord::getCreatedAt).reversed());
+        return List.copyOf(result);
     }
 
     public List<CaseRecord> getCasesByActor(String actorName, int pageSize, int page) throws Exception {
@@ -297,6 +329,7 @@ public final class ModerationService {
         );
         storage.updateCase(updated);
         sendWebhook("case-claimed", updated);
+        syncWorkflowCase(updated);
         return new ModerationActionResult(ModerationActionType.UPDATED, updated);
     }
 
@@ -326,6 +359,7 @@ public final class ModerationService {
         );
         storage.updateCase(updated);
         sendWebhook("case-priority-updated", updated);
+        syncWorkflowCase(updated);
         return new ModerationActionResult(ModerationActionType.UPDATED, updated);
     }
 
@@ -389,6 +423,7 @@ public final class ModerationService {
         );
         storage.updateCase(updated);
         sendWebhook("incident-linked", updated);
+        syncWorkflowCase(updated);
         return new ModerationActionResult(ModerationActionType.UPDATED, updated);
     }
 
@@ -430,11 +465,61 @@ public final class ModerationService {
         );
         storage.updateCase(updated);
         sendWebhook("evidence-added", updated);
+        syncWorkflowCase(updated);
         return new ModerationActionResult(ModerationActionType.UPDATED, updated);
     }
 
     public ModerationActionResult openAppeal(long caseId, CommandActor actor, Long deadlineAt, String note) throws Exception {
-        return updateAppeal(caseId, actor, AppealStatus.OPEN, deadlineAt, note);
+        ModerationActionResult result = updateAppeal(caseId, actor, AppealStatus.OPEN, deadlineAt, note);
+        if (result.caseRecord() != null) {
+            ensureWorkflowRequest(result.caseRecord(), DiscordWorkflowRequestKind.APPEAL, DiscordWorkflowOrigin.INGAME, null, null, null);
+            syncWorkflowCase(result.caseRecord());
+        }
+        return result;
+    }
+
+    public ModerationActionResult openWorkflowRequest(long caseId,
+                                                      CommandActor actor,
+                                                      Long deadlineAt,
+                                                      String note,
+                                                      DiscordWorkflowRequestKind kind,
+                                                      DiscordWorkflowOrigin origin,
+                                                      String requesterDiscordUserId,
+                                                      String requesterDisplayName,
+                                                      String guildId) throws Exception {
+        ModerationActionResult result = updateAppeal(caseId, actor, AppealStatus.OPEN, deadlineAt, note);
+        if (result.caseRecord() == null) {
+            return result;
+        }
+
+        ensureWorkflowRequest(
+                result.caseRecord(),
+                kind == null ? DiscordWorkflowRequestKind.APPEAL : kind,
+                origin == null ? DiscordWorkflowOrigin.DISCORD : origin,
+                requesterDiscordUserId,
+                requesterDisplayName,
+                guildId
+        );
+        syncWorkflowCase(result.caseRecord());
+        return result;
+    }
+
+    public ModerationActionResult acceptAppeal(long caseId, CommandActor actor, String note) throws Exception {
+        ModerationActionResult updatedAppeal = updateAppeal(caseId, actor, AppealStatus.ACCEPTED, null, note);
+        if (updatedAppeal.caseRecord() == null) {
+            return updatedAppeal;
+        }
+
+        if (!shouldAutoResolveAcceptedAppeal(updatedAppeal.caseRecord())) {
+            return updatedAppeal;
+        }
+
+        ModerationActionResult resolved = resolveCase(caseId, actor, note);
+        return resolved.caseRecord() == null ? updatedAppeal : resolved;
+    }
+
+    public ModerationActionResult denyAppeal(long caseId, CommandActor actor, String note) throws Exception {
+        return updateAppeal(caseId, actor, AppealStatus.DENIED, null, note);
     }
 
     public ModerationActionResult updateAppeal(long caseId,
@@ -472,6 +557,7 @@ public final class ModerationService {
         );
         storage.updateCase(updated);
         sendWebhook("appeal-updated", updated);
+        syncWorkflowCase(updated);
         return new ModerationActionResult(ModerationActionType.UPDATED, updated);
     }
 
@@ -533,6 +619,7 @@ public final class ModerationService {
         );
         CaseRecord updated = storage.updateCase(base);
         sendWebhook("review-updated", updated);
+        syncWorkflowCase(updated);
         return new ModerationActionResult(ModerationActionType.UPDATED, updated);
     }
 
@@ -694,6 +781,7 @@ public final class ModerationService {
         CaseRecord updated = storage.updateCaseStatus(active.get().getId(), CaseStatus.RESOLVED, System.currentTimeMillis(), actor.uniqueId(), actor.name(), effectiveNote);
         sendWebhook("unipban", updated);
         notifyResolvedCase(updated);
+        syncWorkflowCase(updated);
         return new ModerationActionResult(ModerationActionType.REMOVED, updated);
     }
 
@@ -722,6 +810,7 @@ public final class ModerationService {
         CaseRecord updated = storage.updateCaseStatus(active.get().getId(), CaseStatus.RESOLVED, System.currentTimeMillis(), actor.uniqueId(), actor.name(), effectiveNote);
         sendWebhook("ipunblacklist", updated);
         notifyResolvedCase(updated);
+        syncWorkflowCase(updated);
         return new ModerationActionResult(ModerationActionType.REMOVED, updated);
     }
 
@@ -869,6 +958,7 @@ public final class ModerationService {
         CaseRecord updated = storage.updateCaseStatus(caseId, CaseStatus.RESOLVED, System.currentTimeMillis(), actor.uniqueId(), actor.name(), effectiveNote);
         sendWebhook("resolve", updated);
         notifyResolvedCase(updated);
+        syncWorkflowCase(updated);
         return new ModerationActionResult(ModerationActionType.REMOVED, updated);
     }
 
@@ -885,6 +975,7 @@ public final class ModerationService {
         CaseRecord reopened = storage.updateCaseStatus(caseId, CaseStatus.ACTIVE, System.currentTimeMillis(), actor.uniqueId(), actor.name(), effectiveNote);
         sendWebhook("reopen", reopened);
         notifyCreatedCase(reopened);
+        syncWorkflowCase(reopened);
         return new ModerationActionResult(ModerationActionType.REOPENED, reopened);
     }
 
@@ -901,6 +992,7 @@ public final class ModerationService {
         CaseRecord updated = storage.updateCaseStatus(caseId, CaseStatus.RESOLVED, System.currentTimeMillis(), actor.uniqueId(), actor.name(), effectiveNote);
         sendWebhook("undo", updated);
         notifyResolvedCase(updated);
+        syncWorkflowCase(updated);
         return new ModerationActionResult(ModerationActionType.REMOVED, updated);
     }
 
@@ -929,6 +1021,7 @@ public final class ModerationService {
         );
         storage.updateCase(updated);
         sendWebhook("case-updated", updated);
+        syncWorkflowCase(updated);
         return new ModerationActionResult(ModerationActionType.UPDATED, updated);
     }
 
@@ -1021,6 +1114,73 @@ public final class ModerationService {
         return lang.get("labels.case-type-" + type.name().toLowerCase().replace('_', '-'));
     }
 
+    private void ensureWorkflowRequest(CaseRecord record,
+                                       DiscordWorkflowRequestKind kind,
+                                       DiscordWorkflowOrigin origin,
+                                       String requesterDiscordUserId,
+                                       String requesterDisplayName,
+                                       String guildId) {
+        DiscordWorkflowRequest existing = plugin.getDiscordWorkflowStateStore().getRequest(record.getId()).orElse(null);
+        DiscordWorkflowRequestKind effectiveKind = existing != null
+                && existing.kind() == DiscordWorkflowRequestKind.UNBAN_REQUEST
+                && kind == DiscordWorkflowRequestKind.APPEAL
+                ? existing.kind()
+                : kind;
+        DiscordWorkflowOrigin effectiveOrigin = origin == null
+                ? existing == null ? DiscordWorkflowOrigin.INGAME : existing.origin()
+                : origin;
+        String effectiveRequesterId = normalizeWorkflowText(requesterDiscordUserId, existing == null ? null : existing.requesterDiscordUserId());
+        String effectiveRequesterName = normalizeWorkflowText(requesterDisplayName, existing == null ? null : existing.requesterDisplayName());
+        String effectiveGuildId = normalizeWorkflowText(guildId, existing == null ? null : existing.guildId());
+        String staffChannelId = existing == null ? null : existing.staffChannelId();
+        String staffMessageId = existing == null ? null : existing.staffMessageId();
+        long createdAt = existing == null ? System.currentTimeMillis() : existing.createdAt();
+
+        plugin.getDiscordWorkflowStateStore().upsertRequest(new DiscordWorkflowRequest(
+                record.getId(),
+                effectiveKind == null ? DiscordWorkflowRequestKind.APPEAL : effectiveKind,
+                effectiveOrigin,
+                effectiveRequesterId,
+                effectiveRequesterName,
+                effectiveGuildId,
+                staffChannelId,
+                staffMessageId,
+                createdAt,
+                System.currentTimeMillis(),
+                null
+        ));
+    }
+
+    private String normalizeWorkflowText(String preferred, String fallback) {
+        if (preferred != null && !preferred.isBlank()) {
+            return preferred.trim();
+        }
+        if (fallback != null && !fallback.isBlank()) {
+            return fallback.trim();
+        }
+        return null;
+    }
+
+    private boolean shouldAutoResolveAcceptedAppeal(CaseRecord record) {
+        if (record == null || record.getStatus() != CaseStatus.ACTIVE) {
+            return false;
+        }
+        if (!plugin.getConfig().getBoolean("discord-bot.appeals.auto-unban-on-accept", true)) {
+            return false;
+        }
+        return switch (record.getType()) {
+            case BAN, IP_BAN, MUTE, IP_BLACKLIST, WATCHLIST, QUARANTINE -> true;
+            default -> false;
+        };
+    }
+
+    private void syncWorkflowCase(CaseRecord record) {
+        if (record == null || plugin.getDiscordBotManager() == null) {
+            return;
+        }
+        plugin.getDiscordBotManager().syncWorkflowCase(record.getId());
+    }
+
     private ModerationActionResult resolveActivePlayerCase(PlayerIdentity target,
                                                            CommandActor actor,
                                                            String note,
@@ -1035,6 +1195,7 @@ public final class ModerationService {
         CaseRecord updated = storage.updateCaseStatus(active.get().getId(), CaseStatus.RESOLVED, System.currentTimeMillis(), actor.uniqueId(), actor.name(), effectiveNote);
         sendWebhook(webhookKey, updated);
         notifyResolvedCase(updated);
+        syncWorkflowCase(updated);
         return new ModerationActionResult(ModerationActionType.REMOVED, updated);
     }
 
@@ -1057,6 +1218,7 @@ public final class ModerationService {
                 defaultText("expired-note", "punishments.defaults.expired-note", "Case duration elapsed.")
         );
         sendWebhook("expired", expired);
+        syncWorkflowCase(expired);
         return Optional.empty();
     }
 
@@ -1185,6 +1347,7 @@ public final class ModerationService {
     }
 
     public Object[] recordReplacements(CaseRecord record) {
+        DiscordWorkflowRequest workflowRequest = resolveWorkflowRequest(record);
         return new Object[]{
                 "id", record.getId(),
                 "case_id", record.getId(),
@@ -1218,6 +1381,18 @@ public final class ModerationService {
                 "appeal_deadline", record.getAppealDeadlineAt() == null ? lang.get("labels.none") : formatDate(record.getAppealDeadlineAt()),
                 "appeal_actor", defaultString(record.getAppealActorName()),
                 "appeal_note_count", record.getAppealNotes().size(),
+                "workflow_kind", formatWorkflowKind(workflowRequest),
+                "workflow_kind_key", workflowRequest == null ? "" : workflowRequest.kind().name(),
+                "workflow_origin", workflowRequest == null ? lang.get("labels.none") : workflowRequest.origin().name(),
+                "workflow_origin_key", workflowRequest == null ? "" : workflowRequest.origin().name(),
+                "workflow_requester", workflowRequest == null ? lang.get("labels.none") : defaultString(workflowRequest.requesterDisplayName()),
+                "workflow_discord_user_id", workflowRequest == null ? "" : sanitize(workflowRequest.requesterDiscordUserId(), ""),
+                "workflow_guild_id", workflowRequest == null ? "" : sanitize(workflowRequest.guildId(), ""),
+                "workflow_staff_channel_id", workflowRequest == null ? "" : sanitize(workflowRequest.staffChannelId(), ""),
+                "workflow_staff_message_id", workflowRequest == null ? "" : sanitize(workflowRequest.staffMessageId(), ""),
+                "workflow_created_at", workflowRequest == null ? lang.get("labels.none") : formatDate(workflowRequest.createdAt()),
+                "workflow_updated_at", workflowRequest == null ? lang.get("labels.none") : formatDate(workflowRequest.updatedAt()),
+                "appeal_latest_note", latestAppealNote(record),
                 "review_at", record.getNextReviewAt() == null ? lang.get("labels.none") : formatDate(record.getNextReviewAt()),
                 "review_reason", defaultString(record.getReviewReason()),
                 "evidence_count", record.getEvidence().size(),
@@ -1237,6 +1412,48 @@ public final class ModerationService {
                 "temporary", String.valueOf(record.isTemporary()),
                 "status_note", defaultString(record.getStatusNote())
         };
+    }
+
+    private String formatWorkflowKind(DiscordWorkflowRequest workflowRequest) {
+        if (workflowRequest == null) {
+            return lang.get("labels.none");
+        }
+        return switch (workflowRequest.kind()) {
+            case APPEAL -> "Appeal";
+            case UNBAN_REQUEST -> "Unban Request";
+        };
+    }
+
+    private String latestAppealNote(CaseRecord record) {
+        if (record.getAppealNotes().isEmpty()) {
+            return lang.get("labels.none");
+        }
+        return defaultString(record.getAppealNotes().getLast().getMessage());
+    }
+
+    private DiscordWorkflowRequest resolveWorkflowRequest(CaseRecord record) {
+        DiscordWorkflowRequest stored = plugin.getDiscordWorkflowStateStore().getRequest(record.getId()).orElse(null);
+        if (stored != null || record.getAppealStatus() != AppealStatus.OPEN) {
+            return stored;
+        }
+
+        String requester = record.getAppealActorName() != null && !record.getAppealActorName().isBlank()
+                ? record.getAppealActorName()
+                : record.getActorName();
+        long updatedAt = record.getAppealChangedAt() == null ? record.getCreatedAt() : record.getAppealChangedAt();
+        return new DiscordWorkflowRequest(
+                record.getId(),
+                DiscordWorkflowRequestKind.APPEAL,
+                DiscordWorkflowOrigin.INGAME,
+                null,
+                requester,
+                null,
+                null,
+                null,
+                record.getCreatedAt(),
+                updatedAt,
+                null
+        );
     }
 
     private String defaultString(String input) {

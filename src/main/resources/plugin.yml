@@ -207,11 +207,17 @@ permissions:
   starbans.gui.activity:
     description: View the global activity GUI
     default: op
+  starbans.gui.workflow:
+    description: Open the workflow center and queue GUIs
+    default: op
   starbans.gui.history:
     description: View case history GUIs
     default: op
   starbans.gui.case.view:
     description: View single case details in the GUI
+    default: op
+  starbans.gui.case.workflow:
+    description: Claim and review workflow cases from the GUI
     default: op
   starbans.gui.case.resolve:
     description: Resolve cases from the GUI

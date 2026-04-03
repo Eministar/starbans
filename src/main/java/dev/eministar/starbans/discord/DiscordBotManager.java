@@ -47,6 +47,17 @@ public final class DiscordBotManager implements AutoCloseable {
         startBlocking();
     }
 
+    public synchronized void syncWorkflowCase(long caseId) {
+        if (bridge == null) {
+            return;
+        }
+        try {
+            bridge.syncWorkflowCase(caseId);
+        } catch (Exception exception) {
+            LoggerUtil.error("A Discord workflow case could not be synchronized.", exception);
+        }
+    }
+
     private void startBlocking() throws Exception {
         DiscordBotBridge startedBridge = null;
         DiscordBotClassLoader startedClassLoader = null;

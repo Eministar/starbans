@@ -35,6 +35,8 @@ StarBans combines classic punishments with modern moderation workflows: reports,
 - Player report intake via `/report`
 - Staff report queue with claim and priority workflow
 - Appeal states with deadlines and internal notes
+- Unified workflow center for appeals, unban requests, reports, reviews, and quarantines
+- Discord and in-game requests merge into the same workflow queues
 - Evidence attachments for links, images, videos, and text references
 - Incident grouping and case linking
 - Review cases with automatic reminders
@@ -46,11 +48,12 @@ StarBans combines classic punishments with modern moderation workflows: reports,
 ### 🧭 GUI and Staff UX
 
 - Main moderation GUI
+- Workflow center GUI with dedicated queues for appeals, unban requests, reports, reviews, and quarantines
 - Player browser
 - Profile/action menu
 - Case history screens
-- Report queue GUI
-- Single-case detail view with workflow metadata
+- Queue GUIs with claim and priority shortcuts
+- Single-case detail view with workflow metadata plus claim / accept / deny buttons
 - Related-account browser
 - Recent activity log
 
@@ -67,6 +70,7 @@ StarBans combines classic punishments with modern moderation workflows: reports,
 
 - Rich webhook logging via external `discord-webhooks.yml`
 - Optional Discord bot with slash commands for case lookup, reports, appeals, and unban requests
+- Discord appeal / unban panels, modal intake, staff buttons, and decision DMs
 - Bot runtime libraries are downloaded only when `discord-bot.enabled: true`
 - Downloaded bot libraries are stored in `plugins/StarBans/libs/`
 - By default the Discord runtime resolves the latest published JDA release and the matching dependency tree automatically

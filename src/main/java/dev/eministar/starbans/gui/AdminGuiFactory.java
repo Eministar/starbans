@@ -1,6 +1,10 @@
 package dev.eministar.starbans.gui;
 
 import dev.eministar.starbans.StarBans;
+import dev.eministar.starbans.discord.DiscordWorkflowOrigin;
+import dev.eministar.starbans.discord.DiscordWorkflowRequest;
+import dev.eministar.starbans.discord.DiscordWorkflowRequestKind;
+import dev.eministar.starbans.model.AppealStatus;
 import dev.eministar.starbans.model.CasePriority;
 import dev.eministar.starbans.model.CaseRecord;
 import dev.eministar.starbans.model.CaseSearchFilter;
@@ -24,6 +28,7 @@ import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -45,6 +50,7 @@ public final class AdminGuiFactory {
 
             PluginStats stats = plugin.getModerationService().getStats();
             int knownPlayers = plugin.getModerationService().countKnownProfiles();
+            WorkflowSummary workflowSummary = collectWorkflowSummary(plugin);
 
             int browserSlot = plugin.getConfig().getInt("gui.main-menu.slots.browser", 11);
             placeStaticItem(plugin, gui, browserSlot, "gui.main-menu.browser", "known_players", knownPlayers, "case_count", stats.totalCases());
@@ -62,9 +68,14 @@ public final class AdminGuiFactory {
                     "gui.main-menu.queue",
                     "report_count", stats.activeReports(),
                     "quarantine_count", stats.activeQuarantines(),
-                    "review_count", stats.activeReviews()
+                    "review_count", stats.activeReviews(),
+                    "appeal_count", workflowSummary.appealCount(),
+                    "unban_request_count", workflowSummary.unbanRequestCount(),
+                    "discord_count", workflowSummary.discordCount(),
+                    "ingame_count", workflowSummary.ingameCount(),
+                    "workflow_count", workflowSummary.totalRequestCount()
             );
-            gui.setAction(queueSlot, event -> openReportQueue(plugin, viewer, 0));
+            gui.setAction(queueSlot, event -> openWorkflowHub(plugin, viewer));
 
             placeStaticItem(
                     plugin,
@@ -534,6 +545,7 @@ public final class AdminGuiFactory {
             }
 
             CaseRecord record = recordOptional.get();
+            DiscordWorkflowRequest workflowRequest = plugin.getDiscordWorkflowStateStore().getRequest(record.getId()).orElse(null);
             InteractiveGui gui = new InteractiveGui(
                     normalizeSize(plugin.getConfig().getInt("gui.case-details.size", 27)),
                     plugin.getLang().get("gui.case-details.title", "id", record.getId())
@@ -570,8 +582,35 @@ public final class AdminGuiFactory {
                 gui.setAction(targetSlot, event -> openActionMenu(plugin, viewer, new PlayerIdentity(record.getTargetPlayerUniqueId(), record.getTargetPlayerName()), 0));
             }
 
+            if (record.getStatus() == CaseStatus.ACTIVE || record.getAppealStatus() == AppealStatus.OPEN) {
+                placeActionItem(plugin, gui, plugin.getConfig().getInt("gui.case-details.slots.claim", 12), "gui.case-details.claim", event -> {
+                    if (!ensurePermission(plugin, viewer, "starbans.command.queue", "starbans.gui.case.workflow")) {
+                        return;
+                    }
+                    handleClaimAction(plugin, viewer, record.getId());
+                    openCaseDetails(plugin, viewer, record.getId(), backAction);
+                });
+            }
+
+            if (workflowRequest != null && record.getAppealStatus() == AppealStatus.OPEN) {
+                placeActionItem(plugin, gui, plugin.getConfig().getInt("gui.case-details.slots.accept", 13), "gui.case-details.accept", event -> {
+                    if (!ensurePermission(plugin, viewer, "starbans.command.appeal", "starbans.gui.case.workflow")) {
+                        return;
+                    }
+                    handleAppealDecisionAction(plugin, viewer, record.getId(), true);
+                    openCaseDetails(plugin, viewer, record.getId(), backAction);
+                });
+                placeActionItem(plugin, gui, plugin.getConfig().getInt("gui.case-details.slots.deny", 14), "gui.case-details.deny", event -> {
+                    if (!ensurePermission(plugin, viewer, "starbans.command.appeal", "starbans.gui.case.workflow")) {
+                        return;
+                    }
+                    handleAppealDecisionAction(plugin, viewer, record.getId(), false);
+                    openCaseDetails(plugin, viewer, record.getId(), backAction);
+                });
+            }
+
             if (record.getStatus().name().equalsIgnoreCase("ACTIVE")) {
-                placeActionItem(plugin, gui, plugin.getConfig().getInt("gui.case-details.slots.resolve", 13), "gui.case-details.resolve", event -> {
+                placeActionItem(plugin, gui, plugin.getConfig().getInt("gui.case-details.slots.resolve", 16), "gui.case-details.resolve", event -> {
                     if (!ensurePermission(plugin, viewer, "starbans.command.resolve", "starbans.gui.case.resolve")) {
                         return;
                     }
@@ -610,70 +649,171 @@ public final class AdminGuiFactory {
         }
     }
 
-    public static void openReportQueue(StarBans plugin, Player viewer, int requestedPage) {
-        if (!ensurePermission(plugin, viewer, "starbans.command.queue")) {
+    public static void openWorkflowHub(StarBans plugin, Player viewer) {
+        if (!ensurePermission(plugin, viewer, "starbans.command.queue", "starbans.gui.workflow")) {
             return;
         }
 
-        List<Integer> entrySlots = plugin.getConfig().getIntegerList("gui.report-queue.entry-slots");
+        try {
+            PluginStats stats = plugin.getModerationService().getStats();
+            WorkflowSummary workflowSummary = collectWorkflowSummary(plugin);
+
+            InteractiveGui gui = new InteractiveGui(
+                    normalizeSize(plugin.getConfig().getInt("gui.workflow-hub.size", 27)),
+                    plugin.getLang().get("gui.workflow-hub.title")
+            );
+            fillWithFiller(plugin, gui);
+
+            placeStaticItem(
+                    plugin,
+                    gui,
+                    plugin.getConfig().getInt("gui.workflow-hub.slots.appeals", 10),
+                    "gui.workflow-hub.appeals",
+                    "request_count", workflowSummary.appealCount(),
+                    "workflow_count", workflowSummary.appealCount()
+            );
+            gui.setAction(plugin.getConfig().getInt("gui.workflow-hub.slots.appeals", 10), event -> openAppealQueue(plugin, viewer, 0));
+
+            placeStaticItem(
+                    plugin,
+                    gui,
+                    plugin.getConfig().getInt("gui.workflow-hub.slots.unban-requests", 11),
+                    "gui.workflow-hub.unban-requests",
+                    "request_count", workflowSummary.unbanRequestCount(),
+                    "workflow_count", workflowSummary.unbanRequestCount()
+            );
+            gui.setAction(plugin.getConfig().getInt("gui.workflow-hub.slots.unban-requests", 11), event -> openUnbanRequestQueue(plugin, viewer, 0));
+
+            placeStaticItem(
+                    plugin,
+                    gui,
+                    plugin.getConfig().getInt("gui.workflow-hub.slots.overview", 13),
+                    "gui.workflow-hub.overview",
+                    "workflow_count", workflowSummary.totalRequestCount(),
+                    "appeal_count", workflowSummary.appealCount(),
+                    "unban_request_count", workflowSummary.unbanRequestCount(),
+                    "discord_count", workflowSummary.discordCount(),
+                    "ingame_count", workflowSummary.ingameCount()
+            );
+
+            placeStaticItem(
+                    plugin,
+                    gui,
+                    plugin.getConfig().getInt("gui.workflow-hub.slots.reports", 15),
+                    "gui.workflow-hub.reports",
+                    "report_count", stats.activeReports()
+            );
+            gui.setAction(plugin.getConfig().getInt("gui.workflow-hub.slots.reports", 15), event -> openReportQueue(plugin, viewer, 0));
+
+            placeStaticItem(
+                    plugin,
+                    gui,
+                    plugin.getConfig().getInt("gui.workflow-hub.slots.reviews", 16),
+                    "gui.workflow-hub.reviews",
+                    "review_count", stats.activeReviews()
+            );
+            gui.setAction(plugin.getConfig().getInt("gui.workflow-hub.slots.reviews", 16), event -> openReviewQueue(plugin, viewer, 0));
+
+            placeStaticItem(
+                    plugin,
+                    gui,
+                    plugin.getConfig().getInt("gui.workflow-hub.slots.quarantines", 17),
+                    "gui.workflow-hub.quarantines",
+                    "quarantine_count", stats.activeQuarantines()
+            );
+            gui.setAction(plugin.getConfig().getInt("gui.workflow-hub.slots.quarantines", 17), event -> openQuarantineQueue(plugin, viewer, 0));
+
+            placeActionItem(plugin, gui, plugin.getConfig().getInt("gui.workflow-hub.slots.back", 18), "gui.workflow-hub.back", event -> openMainMenu(plugin, viewer));
+            placeActionItem(plugin, gui, plugin.getConfig().getInt("gui.workflow-hub.slots.close", 22), "gui.workflow-hub.close", event -> viewer.closeInventory());
+            viewer.openInventory(gui.getInventory());
+            SoundUtil.play(plugin, viewer, "gui.open");
+        } catch (Exception exception) {
+            LoggerUtil.error("The workflow hub GUI could not be opened.", exception);
+            viewer.sendMessage(plugin.getLang().prefixed("messages.internal-error"));
+            SoundUtil.play(plugin, viewer, "gui.error");
+        }
+    }
+
+    public static void openAppealQueue(StarBans plugin, Player viewer, int requestedPage) {
+        openWorkflowRequestQueue(plugin, viewer, requestedPage, DiscordWorkflowRequestKind.APPEAL, "gui.appeal-queue");
+    }
+
+    public static void openUnbanRequestQueue(StarBans plugin, Player viewer, int requestedPage) {
+        openWorkflowRequestQueue(plugin, viewer, requestedPage, DiscordWorkflowRequestKind.UNBAN_REQUEST, "gui.unban-request-queue");
+    }
+
+    public static void openReportQueue(StarBans plugin, Player viewer, int requestedPage) {
+        openActiveCaseQueue(plugin, viewer, requestedPage, CaseType.REPORT, "gui.report-queue");
+    }
+
+    public static void openReviewQueue(StarBans plugin, Player viewer, int requestedPage) {
+        openActiveCaseQueue(plugin, viewer, requestedPage, CaseType.REVIEW, "gui.review-queue");
+    }
+
+    public static void openQuarantineQueue(StarBans plugin, Player viewer, int requestedPage) {
+        openActiveCaseQueue(plugin, viewer, requestedPage, CaseType.QUARANTINE, "gui.quarantine-queue");
+    }
+
+    private static void openWorkflowRequestQueue(StarBans plugin,
+                                                 Player viewer,
+                                                 int requestedPage,
+                                                 DiscordWorkflowRequestKind kind,
+                                                 String configPath) {
+        if (!ensurePermission(plugin, viewer, "starbans.command.queue", "starbans.gui.workflow")) {
+            return;
+        }
+
+        List<Integer> entrySlots = plugin.getConfig().getIntegerList(configPath + ".entry-slots");
         if (entrySlots.isEmpty()) {
             viewer.sendMessage(plugin.getLang().prefixed("messages.gui-misconfigured"));
             return;
         }
 
         try {
-            CaseSearchFilter filter = new CaseSearchFilter(
-                    CaseType.REPORT,
-                    CaseStatus.ACTIVE,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null
-            );
-            int totalEntries = plugin.getModerationService().countCases(filter);
+            List<WorkflowCaseEntry> entries = getOpenWorkflowEntries(plugin, kind);
+            int totalEntries = entries.size();
             int maxPage = Math.max(1, (int) Math.ceil(totalEntries / (double) entrySlots.size()));
             int page = clampPage(requestedPage, maxPage);
-            List<CaseRecord> reports = plugin.getModerationService().searchCases(filter, entrySlots.size(), page);
-            long claimedCount = reports.stream().filter(report -> report.getClaimActorName() != null && !report.getClaimActorName().isBlank()).count();
-            long criticalCount = reports.stream().filter(report -> report.getPriority() == CasePriority.CRITICAL).count();
+            int fromIndex = page * entrySlots.size();
+            int toIndex = Math.min(entries.size(), fromIndex + entrySlots.size());
+            List<WorkflowCaseEntry> pageEntries = entries.subList(Math.min(fromIndex, entries.size()), Math.min(toIndex, entries.size()));
+            long discordCount = entries.stream().filter(entry -> entry.request().origin() == DiscordWorkflowOrigin.DISCORD).count();
+            long ingameCount = entries.size() - discordCount;
 
             InteractiveGui gui = new InteractiveGui(
-                    normalizeSize(plugin.getConfig().getInt("gui.report-queue.size", 54)),
-                    plugin.getLang().get("gui.report-queue.title", "page", page + 1, "max_page", maxPage)
+                    normalizeSize(plugin.getConfig().getInt(configPath + ".size", 54)),
+                    plugin.getLang().get(configPath + ".title", "page", page + 1, "max_page", maxPage)
             );
             fillWithFiller(plugin, gui);
             gui.getInventory().setItem(
-                    plugin.getConfig().getInt("gui.report-queue.slots.header", 4),
+                    plugin.getConfig().getInt(configPath + ".slots.header", 4),
                     GuiItemFactory.create(
                             plugin,
-                            plugin.getConfig().getConfigurationSection("gui.report-queue.header"),
+                            plugin.getConfig().getConfigurationSection(configPath + ".header"),
                             null,
-                            "report_count", totalEntries,
-                            "claimed_count", claimedCount,
-                            "critical_count", criticalCount
+                            "request_count", totalEntries,
+                            "discord_count", discordCount,
+                            "ingame_count", ingameCount
                     )
             );
 
-            for (int index = 0; index < reports.size() && index < entrySlots.size(); index++) {
-                CaseRecord report = reports.get(index);
+            for (int index = 0; index < pageEntries.size() && index < entrySlots.size(); index++) {
+                WorkflowCaseEntry entry = pageEntries.get(index);
                 int slot = entrySlots.get(index);
                 gui.getInventory().setItem(
                         slot,
                         GuiItemFactory.create(
                                 plugin,
-                                plugin.getConfig().getConfigurationSection("gui.report-queue.entry"),
-                                report.getTargetPlayerUniqueId() == null ? null : Bukkit.getOfflinePlayer(report.getTargetPlayerUniqueId()),
-                                plugin.getModerationService().recordReplacements(report)
+                                plugin.getConfig().getConfigurationSection(configPath + ".entry"),
+                                entry.record().getTargetPlayerUniqueId() == null ? null : Bukkit.getOfflinePlayer(entry.record().getTargetPlayerUniqueId()),
+                                mergeReplacements(
+                                        plugin.getModerationService().recordReplacements(entry.record()),
+                                        "request_created_at", plugin.getModerationService().formatDate(entry.request().createdAt()),
+                                        "request_updated_at", plugin.getModerationService().formatDate(entry.request().updatedAt())
+                                )
                         )
                 );
-                gui.setAction(slot, event -> handleReportQueueClick(plugin, viewer, report, page, event.getClick()));
+                gui.setAction(slot, event -> handleWorkflowRequestClick(plugin, viewer, entry, page, kind, event.getClick()));
             }
 
             setNavigation(
@@ -681,16 +821,95 @@ public final class AdminGuiFactory {
                     gui,
                     page,
                     maxPage,
-                    "gui.report-queue.previous",
-                    "gui.report-queue.next",
-                    requested -> openReportQueue(plugin, viewer, requested)
+                    configPath + ".previous",
+                    configPath + ".next",
+                    requested -> reopenWorkflowQueue(plugin, viewer, requested, kind)
             );
-            placeActionItem(plugin, gui, plugin.getConfig().getInt("gui.report-queue.slots.back", 45), "gui.report-queue.back", event -> openMainMenu(plugin, viewer));
-            placeActionItem(plugin, gui, plugin.getConfig().getInt("gui.report-queue.slots.close", 49), "gui.report-queue.close", event -> viewer.closeInventory());
+            placeActionItem(plugin, gui, plugin.getConfig().getInt(configPath + ".slots.back", 45), configPath + ".back", event -> openWorkflowHub(plugin, viewer));
+            placeActionItem(plugin, gui, plugin.getConfig().getInt(configPath + ".slots.close", 49), configPath + ".close", event -> viewer.closeInventory());
             viewer.openInventory(gui.getInventory());
             SoundUtil.play(plugin, viewer, requestedPage == page ? "gui.open" : "gui.navigate");
         } catch (Exception exception) {
-            LoggerUtil.error("The report queue GUI could not be opened.", exception);
+            LoggerUtil.error("The workflow request queue GUI could not be opened.", exception);
+            viewer.sendMessage(plugin.getLang().prefixed("messages.internal-error"));
+            SoundUtil.play(plugin, viewer, "gui.error");
+        }
+    }
+
+    private static void openActiveCaseQueue(StarBans plugin,
+                                            Player viewer,
+                                            int requestedPage,
+                                            CaseType type,
+                                            String configPath) {
+        if (!ensurePermission(plugin, viewer, "starbans.command.queue", "starbans.gui.workflow")) {
+            return;
+        }
+
+        List<Integer> entrySlots = plugin.getConfig().getIntegerList(configPath + ".entry-slots");
+        if (entrySlots.isEmpty()) {
+            viewer.sendMessage(plugin.getLang().prefixed("messages.gui-misconfigured"));
+            return;
+        }
+
+        try {
+            CaseSearchFilter filter = activeQueueFilter(type);
+            int totalEntries = plugin.getModerationService().countCases(filter);
+            int maxPage = Math.max(1, (int) Math.ceil(totalEntries / (double) entrySlots.size()));
+            int page = clampPage(requestedPage, maxPage);
+            List<CaseRecord> cases = plugin.getModerationService().searchCases(filter, entrySlots.size(), page);
+            long claimedCount = cases.stream().filter(caseRecord -> caseRecord.getClaimActorName() != null && !caseRecord.getClaimActorName().isBlank()).count();
+            long criticalCount = cases.stream().filter(caseRecord -> caseRecord.getPriority() == CasePriority.CRITICAL).count();
+
+            InteractiveGui gui = new InteractiveGui(
+                    normalizeSize(plugin.getConfig().getInt(configPath + ".size", 54)),
+                    plugin.getLang().get(configPath + ".title", "page", page + 1, "max_page", maxPage)
+            );
+            fillWithFiller(plugin, gui);
+            gui.getInventory().setItem(
+                    plugin.getConfig().getInt(configPath + ".slots.header", 4),
+                    GuiItemFactory.create(
+                            plugin,
+                            plugin.getConfig().getConfigurationSection(configPath + ".header"),
+                            null,
+                            "entry_count", totalEntries,
+                            "report_count", type == CaseType.REPORT ? totalEntries : 0,
+                            "review_count", type == CaseType.REVIEW ? totalEntries : 0,
+                            "quarantine_count", type == CaseType.QUARANTINE ? totalEntries : 0,
+                            "claimed_count", claimedCount,
+                            "critical_count", criticalCount
+                    )
+            );
+
+            for (int index = 0; index < cases.size() && index < entrySlots.size(); index++) {
+                CaseRecord record = cases.get(index);
+                int slot = entrySlots.get(index);
+                gui.getInventory().setItem(
+                        slot,
+                        GuiItemFactory.create(
+                                plugin,
+                                plugin.getConfig().getConfigurationSection(configPath + ".entry"),
+                                record.getTargetPlayerUniqueId() == null ? null : Bukkit.getOfflinePlayer(record.getTargetPlayerUniqueId()),
+                                plugin.getModerationService().recordReplacements(record)
+                        )
+                );
+                gui.setAction(slot, event -> handleActiveQueueClick(plugin, viewer, record, page, type, event.getClick()));
+            }
+
+            setNavigation(
+                    plugin,
+                    gui,
+                    page,
+                    maxPage,
+                    configPath + ".previous",
+                    configPath + ".next",
+                    requested -> reopenActiveQueue(plugin, viewer, requested, type)
+            );
+            placeActionItem(plugin, gui, plugin.getConfig().getInt(configPath + ".slots.back", 45), configPath + ".back", event -> openWorkflowHub(plugin, viewer));
+            placeActionItem(plugin, gui, plugin.getConfig().getInt(configPath + ".slots.close", 49), configPath + ".close", event -> viewer.closeInventory());
+            viewer.openInventory(gui.getInventory());
+            SoundUtil.play(plugin, viewer, requestedPage == page ? "gui.open" : "gui.navigate");
+        } catch (Exception exception) {
+            LoggerUtil.error("The active queue GUI could not be opened.", exception);
             viewer.sendMessage(plugin.getLang().prefixed("messages.internal-error"));
             SoundUtil.play(plugin, viewer, "gui.error");
         }
@@ -736,67 +955,237 @@ public final class AdminGuiFactory {
         openActionMenu(plugin, viewer, related, returnPage);
     }
 
-    private static void handleReportQueueClick(StarBans plugin,
+    private static void handleWorkflowRequestClick(StarBans plugin,
+                                                   Player viewer,
+                                                   WorkflowCaseEntry entry,
+                                                   int page,
+                                                   DiscordWorkflowRequestKind kind,
+                                                   ClickType clickType) {
+        if (clickType == ClickType.RIGHT) {
+            handleClaimAction(plugin, viewer, entry.record().getId());
+            reopenWorkflowQueue(plugin, viewer, page, kind);
+            return;
+        }
+
+        if (clickType == ClickType.SHIFT_LEFT
+                && entry.record().getTargetPlayerUniqueId() != null
+                && entry.record().getTargetPlayerName() != null) {
+            openActionMenu(plugin, viewer, new PlayerIdentity(entry.record().getTargetPlayerUniqueId(), entry.record().getTargetPlayerName()), 0);
+            return;
+        }
+
+        openCaseDetails(plugin, viewer, entry.record().getId(), () -> reopenWorkflowQueue(plugin, viewer, page, kind));
+    }
+
+    private static void handleActiveQueueClick(StarBans plugin,
                                                Player viewer,
-                                               CaseRecord report,
+                                               CaseRecord record,
                                                int page,
+                                               CaseType type,
                                                ClickType clickType) {
         if (clickType == ClickType.SHIFT_RIGHT) {
-            try {
-                ModerationActionResult result = plugin.getModerationService().setCasePriority(
-                        report.getId(),
-                        CommandActor.fromSender(viewer),
-                        nextPriority(report.getPriority())
-                );
-                if (result.type() == ModerationActionType.NOT_FOUND || result.caseRecord() == null) {
-                    viewer.sendMessage(plugin.getLang().prefixed("messages.case-not-found", "id", report.getId()));
-                    SoundUtil.play(plugin, viewer, "gui.error");
-                } else {
-                    viewer.sendMessage(plugin.getLang().prefixed(
-                            "messages.queue-priority-success",
-                            "id", report.getId(),
-                            "priority", result.caseRecord().getPriority().name()
-                    ));
-                    SoundUtil.play(plugin, viewer, "gui.success");
-                }
-            } catch (Exception exception) {
-                LoggerUtil.error("The queue priority action failed.", exception);
-                viewer.sendMessage(plugin.getLang().prefixed("messages.internal-error"));
-                SoundUtil.play(plugin, viewer, "gui.error");
-            }
-            openReportQueue(plugin, viewer, page);
+            handlePriorityAction(plugin, viewer, record);
+            reopenActiveQueue(plugin, viewer, page, type);
             return;
         }
 
         if (clickType == ClickType.RIGHT) {
-            try {
-                ModerationActionResult result = plugin.getModerationService().claimCase(report.getId(), CommandActor.fromSender(viewer));
-                if (result.type() == ModerationActionType.NOT_FOUND || result.caseRecord() == null) {
-                    viewer.sendMessage(plugin.getLang().prefixed("messages.case-not-found", "id", report.getId()));
-                    SoundUtil.play(plugin, viewer, "gui.error");
-                } else {
-                    viewer.sendMessage(plugin.getLang().prefixed(
-                            "messages.queue-claim-success",
-                            "id", report.getId(),
-                            "actor", viewer.getName()
-                    ));
-                    SoundUtil.play(plugin, viewer, "gui.success");
-                }
-            } catch (Exception exception) {
-                LoggerUtil.error("The queue claim action failed.", exception);
-                viewer.sendMessage(plugin.getLang().prefixed("messages.internal-error"));
+            handleClaimAction(plugin, viewer, record.getId());
+            reopenActiveQueue(plugin, viewer, page, type);
+            return;
+        }
+
+        if (clickType == ClickType.SHIFT_LEFT && record.getTargetPlayerUniqueId() != null && record.getTargetPlayerName() != null) {
+            openActionMenu(plugin, viewer, new PlayerIdentity(record.getTargetPlayerUniqueId(), record.getTargetPlayerName()), 0);
+            return;
+        }
+
+        openCaseDetails(plugin, viewer, record.getId(), () -> reopenActiveQueue(plugin, viewer, page, type));
+    }
+
+    private static void handleClaimAction(StarBans plugin, Player viewer, long caseId) {
+        try {
+            ModerationActionResult result = plugin.getModerationService().claimCase(caseId, CommandActor.fromSender(viewer));
+            if (result.type() == ModerationActionType.NOT_FOUND || result.caseRecord() == null) {
+                viewer.sendMessage(plugin.getLang().prefixed("messages.case-not-found", "id", caseId));
                 SoundUtil.play(plugin, viewer, "gui.error");
+                return;
             }
-            openReportQueue(plugin, viewer, page);
+
+            viewer.sendMessage(plugin.getLang().prefixed(
+                    "messages.queue-claim-success",
+                    "id", caseId,
+                    "actor", viewer.getName()
+            ));
+            SoundUtil.play(plugin, viewer, "gui.success");
+        } catch (Exception exception) {
+            LoggerUtil.error("The queue claim action failed.", exception);
+            viewer.sendMessage(plugin.getLang().prefixed("messages.internal-error"));
+            SoundUtil.play(plugin, viewer, "gui.error");
+        }
+    }
+
+    private static void handlePriorityAction(StarBans plugin, Player viewer, CaseRecord record) {
+        try {
+            ModerationActionResult result = plugin.getModerationService().setCasePriority(
+                    record.getId(),
+                    CommandActor.fromSender(viewer),
+                    nextPriority(record.getPriority())
+            );
+            if (result.type() == ModerationActionType.NOT_FOUND || result.caseRecord() == null) {
+                viewer.sendMessage(plugin.getLang().prefixed("messages.case-not-found", "id", record.getId()));
+                SoundUtil.play(plugin, viewer, "gui.error");
+                return;
+            }
+
+            viewer.sendMessage(plugin.getLang().prefixed(
+                    "messages.queue-priority-success",
+                    "id", record.getId(),
+                    "priority", result.caseRecord().getPriority().name()
+            ));
+            SoundUtil.play(plugin, viewer, "gui.success");
+        } catch (Exception exception) {
+            LoggerUtil.error("The queue priority action failed.", exception);
+            viewer.sendMessage(plugin.getLang().prefixed("messages.internal-error"));
+            SoundUtil.play(plugin, viewer, "gui.error");
+        }
+    }
+
+    private static void handleAppealDecisionAction(StarBans plugin, Player viewer, long caseId, boolean accept) {
+        try {
+            ModerationActionResult result = accept
+                    ? plugin.getModerationService().acceptAppeal(caseId, CommandActor.fromSender(viewer), "Accepted via GUI workflow")
+                    : plugin.getModerationService().denyAppeal(caseId, CommandActor.fromSender(viewer), "Denied via GUI workflow");
+            if (result.type() == ModerationActionType.NOT_FOUND || result.caseRecord() == null) {
+                viewer.sendMessage(plugin.getLang().prefixed("messages.case-not-found", "id", caseId));
+                SoundUtil.play(plugin, viewer, "gui.error");
+                return;
+            }
+
+            viewer.sendMessage(plugin.getLang().prefixed(
+                    "messages.appeal-update-success",
+                    "id", caseId,
+                    "status", result.caseRecord().getAppealStatus().name()
+            ));
+            SoundUtil.play(plugin, viewer, "gui.success");
+        } catch (Exception exception) {
+            LoggerUtil.error("The GUI appeal workflow action failed.", exception);
+            viewer.sendMessage(plugin.getLang().prefixed("messages.internal-error"));
+            SoundUtil.play(plugin, viewer, "gui.error");
+        }
+    }
+
+    private static void reopenWorkflowQueue(StarBans plugin, Player viewer, int page, DiscordWorkflowRequestKind kind) {
+        if (kind == DiscordWorkflowRequestKind.UNBAN_REQUEST) {
+            openUnbanRequestQueue(plugin, viewer, page);
             return;
         }
+        openAppealQueue(plugin, viewer, page);
+    }
 
-        if (clickType == ClickType.SHIFT_LEFT && report.getTargetPlayerUniqueId() != null && report.getTargetPlayerName() != null) {
-            openActionMenu(plugin, viewer, new PlayerIdentity(report.getTargetPlayerUniqueId(), report.getTargetPlayerName()), 0);
-            return;
+    private static void reopenActiveQueue(StarBans plugin, Player viewer, int page, CaseType type) {
+        switch (type) {
+            case REPORT -> openReportQueue(plugin, viewer, page);
+            case REVIEW -> openReviewQueue(plugin, viewer, page);
+            case QUARANTINE -> openQuarantineQueue(plugin, viewer, page);
+            default -> openWorkflowHub(plugin, viewer);
+        }
+    }
+
+    private static CaseSearchFilter activeQueueFilter(CaseType type) {
+        return new CaseSearchFilter(
+                type,
+                CaseStatus.ACTIVE,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+    }
+
+    private static WorkflowSummary collectWorkflowSummary(StarBans plugin) throws Exception {
+        List<WorkflowCaseEntry> entries = getOpenWorkflowEntries(plugin, null);
+        int appealCount = 0;
+        int unbanRequestCount = 0;
+        int discordCount = 0;
+        int ingameCount = 0;
+
+        for (WorkflowCaseEntry entry : entries) {
+            if (entry.request().kind() == DiscordWorkflowRequestKind.UNBAN_REQUEST) {
+                unbanRequestCount++;
+            } else {
+                appealCount++;
+            }
+            if (entry.request().origin() == DiscordWorkflowOrigin.DISCORD) {
+                discordCount++;
+            } else {
+                ingameCount++;
+            }
         }
 
-        openCaseDetails(plugin, viewer, report.getId(), () -> openReportQueue(plugin, viewer, page));
+        return new WorkflowSummary(entries.size(), appealCount, unbanRequestCount, discordCount, ingameCount);
+    }
+
+    private static List<WorkflowCaseEntry> getOpenWorkflowEntries(StarBans plugin, DiscordWorkflowRequestKind kind) throws Exception {
+        List<WorkflowCaseEntry> entries = new ArrayList<>();
+        List<Long> seenCaseIds = new ArrayList<>();
+        for (DiscordWorkflowRequest request : plugin.getDiscordWorkflowStateStore().getRequests()) {
+            if (kind != null && request.kind() != kind) {
+                continue;
+            }
+
+            Optional<CaseRecord> recordOptional = plugin.getModerationService().getCase(request.caseId());
+            if (recordOptional.isEmpty() || recordOptional.get().getAppealStatus() != AppealStatus.OPEN) {
+                continue;
+            }
+            seenCaseIds.add(recordOptional.get().getId());
+            entries.add(new WorkflowCaseEntry(recordOptional.get(), request));
+        }
+
+        if (kind == null || kind == DiscordWorkflowRequestKind.APPEAL) {
+            int totalAppeals = Math.max(1, plugin.getModerationService().countOpenAppeals());
+            for (CaseRecord record : plugin.getModerationService().getOpenAppeals(totalAppeals, 0)) {
+                if (seenCaseIds.contains(record.getId())) {
+                    continue;
+                }
+                entries.add(new WorkflowCaseEntry(record, fallbackAppealRequest(record)));
+            }
+        }
+        return entries;
+    }
+
+    private static Object[] mergeReplacements(Object[] base, Object... extras) {
+        Object[] merged = new Object[base.length + extras.length];
+        System.arraycopy(base, 0, merged, 0, base.length);
+        System.arraycopy(extras, 0, merged, base.length, extras.length);
+        return merged;
+    }
+
+    private static DiscordWorkflowRequest fallbackAppealRequest(CaseRecord record) {
+        String requester = record.getAppealActorName() != null && !record.getAppealActorName().isBlank()
+                ? record.getAppealActorName()
+                : record.getActorName();
+        long updatedAt = record.getAppealChangedAt() == null ? record.getCreatedAt() : record.getAppealChangedAt();
+        return new DiscordWorkflowRequest(
+                record.getId(),
+                DiscordWorkflowRequestKind.APPEAL,
+                DiscordWorkflowOrigin.INGAME,
+                null,
+                requester,
+                null,
+                null,
+                null,
+                record.getCreatedAt(),
+                updatedAt,
+                null
+        );
     }
 
     private static void attachTimedPresets(StarBans plugin, InteractiveGui gui, Player viewer, PlayerIdentity target, int returnPage, String path, boolean banPreset) {
@@ -988,6 +1377,16 @@ public final class AdminGuiFactory {
             case HIGH -> CasePriority.CRITICAL;
             case CRITICAL -> CasePriority.LOW;
         };
+    }
+
+    private record WorkflowCaseEntry(CaseRecord record, DiscordWorkflowRequest request) {
+    }
+
+    private record WorkflowSummary(int totalRequestCount,
+                                   int appealCount,
+                                   int unbanRequestCount,
+                                   int discordCount,
+                                   int ingameCount) {
     }
 }
 

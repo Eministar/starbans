@@ -55,8 +55,10 @@
 - `starbans.gui.browser`: browse known player profiles
 - `starbans.gui.profile`: open player moderation profiles
 - `starbans.gui.activity`: open the global activity log
+- `starbans.gui.workflow`: open the workflow center and workflow queue GUIs
 - `starbans.gui.history`: open history screens
 - `starbans.gui.case.view`: open case details
+- `starbans.gui.case.workflow`: claim and review workflow cases from the GUI
 - `starbans.gui.case.resolve`: resolve a case from GUI actions
 - `starbans.gui.notes.view`: open note GUIs
 - `starbans.gui.notes.create`: create notes from GUI prompt flow
