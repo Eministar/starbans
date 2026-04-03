@@ -1,15 +1,10 @@
 package dev.eministar.starbans.utils;
 
+import dev.eministar.starbans.config.BundledYamlConfigSynchronizer;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,15 +26,15 @@ public final class Lang {
             configuredFile = "lang-en.yml";
         }
 
-        file = new File(plugin.getDataFolder(), configuredFile);
-        ensureLanguageFileExists(configuredFile);
+        String bundledResource = resolveBundledLanguageResource(configuredFile);
+        BundledYamlConfigSynchronizer.SyncResult syncResult =
+                BundledYamlConfigSynchronizer.synchronize(plugin, configuredFile, bundledResource);
 
-        configuration = YamlConfiguration.loadConfiguration(file);
-        FileConfiguration defaults = loadDefaults(configuredFile);
-        if (defaults != null) {
-            configuration.setDefaults(defaults);
-            configuration.options().copyDefaults(true);
-            save();
+        file = syncResult.file();
+        configuration = syncResult.configuration();
+        String syncMessage = BundledYamlConfigSynchronizer.describe(configuredFile, syncResult);
+        if (syncMessage != null) {
+            LoggerUtil.info(syncMessage);
         }
 
         lastModified = file.exists() ? file.lastModified() : 0L;
@@ -113,47 +108,20 @@ public final class Lang {
         return ColorUtil.color(lines, replacements);
     }
 
-    private void ensureLanguageFileExists(String configuredFile) {
-        if (file.exists()) {
-            return;
+    private String resolveBundledLanguageResource(String configuredFile) {
+        if (plugin.getResource(configuredFile) != null) {
+            return configuredFile;
         }
 
-        try {
-            Files.createDirectories(file.toPath().getParent());
-            InputStream resource = findBundledLanguageResource(configuredFile);
-            if (resource == null) {
-                resource = findBundledLanguageResource("lang-en.yml");
+        if ("lang.de.yml".equalsIgnoreCase(configuredFile) || "lang-de.yml".equalsIgnoreCase(configuredFile)) {
+            if (plugin.getResource("lang-de.yml") != null) {
+                return "lang-de.yml";
             }
-
-            if (resource == null) {
-                Files.createFile(file.toPath());
-                return;
+            if (plugin.getResource("lang.de.yml") != null) {
+                return "lang.de.yml";
             }
-
-            InputStream source = resource;
-            try (source) {
-                Files.copy(source, file.toPath());
-            }
-        } catch (IOException exception) {
-            LoggerUtil.error("The language file '" + configuredFile + "' could not be created.", exception);
         }
-    }
-
-    private FileConfiguration loadDefaults(String configuredFile) {
-        InputStream resource = findBundledLanguageResource(configuredFile);
-        if (resource == null && !"lang-en.yml".equalsIgnoreCase(configuredFile)) {
-            resource = findBundledLanguageResource("lang-en.yml");
-        }
-        if (resource == null) {
-            return null;
-        }
-
-        try (InputStreamReader reader = new InputStreamReader(resource, StandardCharsets.UTF_8)) {
-            return YamlConfiguration.loadConfiguration(reader);
-        } catch (IOException exception) {
-            LoggerUtil.error("The language defaults could not be loaded.", exception);
-            return null;
-        }
+        return "lang-en.yml";
     }
 
     private void ensureFresh() {
@@ -164,29 +132,6 @@ public final class Lang {
         long currentLastModified = file.lastModified();
         if (currentLastModified != 0L && currentLastModified != lastModified) {
             reload();
-        }
-    }
-
-    private InputStream findBundledLanguageResource(String configuredFile) {
-        InputStream resource = plugin.getResource(configuredFile);
-        if (resource != null) {
-            return resource;
-        }
-
-        if ("lang.de.yml".equalsIgnoreCase(configuredFile)) {
-            return plugin.getResource("lang-de.yml");
-        }
-        if ("lang-de.yml".equalsIgnoreCase(configuredFile)) {
-            return plugin.getResource("lang.de.yml");
-        }
-        return null;
-    }
-
-    private void save() {
-        try {
-            configuration.save(file);
-        } catch (IOException exception) {
-            LoggerUtil.error("The language file could not be saved.", exception);
         }
     }
 }

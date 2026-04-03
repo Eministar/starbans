@@ -43,18 +43,29 @@ public final class BundledYamlConfigSynchronizer {
     }
 
     public static SyncResult synchronize(JavaPlugin plugin, String resourcePath) {
-        return synchronize(plugin, resourcePath, (configuration, created) -> false);
+        return synchronize(plugin, resourcePath, resourcePath, (configuration, created) -> false);
+    }
+
+    public static SyncResult synchronize(JavaPlugin plugin, String targetPath, String defaultsResourcePath) {
+        return synchronize(plugin, targetPath, defaultsResourcePath, (configuration, created) -> false);
     }
 
     public static SyncResult synchronize(JavaPlugin plugin, String resourcePath, ConfigMutator mutator) {
-        File file = new File(plugin.getDataFolder(), resourcePath);
-        boolean created = ensureFileExists(plugin, resourcePath, file);
+        return synchronize(plugin, resourcePath, resourcePath, mutator);
+    }
+
+    public static SyncResult synchronize(JavaPlugin plugin,
+                                         String targetPath,
+                                         String defaultsResourcePath,
+                                         ConfigMutator mutator) {
+        File file = new File(plugin.getDataFolder(), targetPath);
+        boolean created = ensureFileExists(plugin, defaultsResourcePath, file);
 
         YamlConfiguration configuration = YamlConfiguration.loadConfiguration(file);
         boolean customChangesApplied = mutator != null && mutator.apply(configuration, created);
 
         String previousVersion = normalizeVersion(configuration.getString(VERSION_PATH));
-        YamlConfiguration defaults = loadDefaults(plugin, resourcePath);
+        YamlConfiguration defaults = loadDefaults(plugin, defaultsResourcePath);
         int addedKeys = defaults == null ? 0 : mergeMissingValues(configuration, defaults, true);
         String targetVersion = normalizeVersion(Version.get());
         if ((targetVersion == null || targetVersion.isBlank()) && defaults != null) {
@@ -64,7 +75,7 @@ public final class BundledYamlConfigSynchronizer {
         boolean versionChanged = syncVersion(configuration, previousVersion, targetVersion);
         boolean changed = customChangesApplied || addedKeys > 0 || versionChanged;
         if (changed) {
-            save(configuration, file, resourcePath);
+            save(configuration, file, targetPath);
         }
 
         return new SyncResult(

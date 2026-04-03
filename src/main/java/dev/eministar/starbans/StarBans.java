@@ -176,7 +176,7 @@ public final class StarBans extends JavaPlugin {
     }
 
     public boolean reloadPluginState() {
-        synchronizeMainConfig();
+        synchronizeBundledConfigurations();
         reloadConfig();
         installBundledResources();
 
@@ -375,10 +375,16 @@ public final class StarBans extends JavaPlugin {
         }
     }
 
-    private void synchronizeMainConfig() {
+    private void synchronizeBundledConfigurations() {
+        synchronizeBundledConfiguration("config.yml");
+        synchronizeBundledConfiguration("lang-en.yml");
+        synchronizeBundledConfiguration("lang-de.yml");
+    }
+
+    private void synchronizeBundledConfiguration(String path) {
         BundledYamlConfigSynchronizer.SyncResult syncResult =
-                BundledYamlConfigSynchronizer.synchronize(this, "config.yml");
-        String syncMessage = BundledYamlConfigSynchronizer.describe("config.yml", syncResult);
+                BundledYamlConfigSynchronizer.synchronize(this, path);
+        String syncMessage = BundledYamlConfigSynchronizer.describe(path, syncResult);
         if (syncMessage != null) {
             LoggerUtil.info(syncMessage);
         }
