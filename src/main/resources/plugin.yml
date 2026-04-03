@@ -4,7 +4,7 @@ main: dev.eministar.starbans.StarBans
 api-version: '1.21'
 description: Premium moderation, punishment and case management for Spigot/Paper servers.
 authors: [ Eministar ]
-website: https://star-dev.xyz
+website: https://hub.star-dev.xyz/starbans
 softdepend: [ PlaceholderAPI ]
 commands:
   starbans:

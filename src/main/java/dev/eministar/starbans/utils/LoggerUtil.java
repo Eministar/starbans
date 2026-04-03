@@ -53,6 +53,8 @@ public final class LoggerUtil {
             return;
         }
 
+        plugin.getLogger().log(Level.SEVERE, ChatColor.stripColor(ColorUtil.color(message)), throwable);
+
         File logsFolder = new File(plugin.getDataFolder(), "logs");
         if (!logsFolder.exists() && !logsFolder.mkdirs()) {
             plugin.getLogger().log(Level.SEVERE, "The StarBans logs directory could not be created.", throwable);

@@ -893,6 +893,20 @@ public final class SqlStorage implements ModerationStorage {
     }
 
     private boolean hasColumn(Connection connection, String tableName, String columnName) throws SQLException {
+        if (settings.type() == StorageType.SQLITE) {
+            String sql = "PRAGMA table_info('" + tableName.replace("'", "''") + "')";
+            try (Statement statement = connection.createStatement();
+                 ResultSet resultSet = statement.executeQuery(sql)) {
+                while (resultSet.next()) {
+                    String existing = resultSet.getString("name");
+                    if (existing != null && existing.equalsIgnoreCase(columnName)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
         DatabaseMetaData metaData = connection.getMetaData();
         try (ResultSet resultSet = metaData.getColumns(connection.getCatalog(), null, tableName, columnName)) {
             if (resultSet.next()) {
