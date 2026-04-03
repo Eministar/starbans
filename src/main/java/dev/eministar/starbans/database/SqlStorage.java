@@ -609,18 +609,6 @@ public final class SqlStorage implements ModerationStorage {
                         + "first_seen BIGINT NOT NULL, "
                         + "last_seen BIGINT NOT NULL)"
                 );
-                statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_" + casesTable + "_target_uuid ON " + casesTable + " (target_player_uuid)");
-                statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_" + casesTable + "_related_uuid ON " + casesTable + " (related_player_uuid)");
-                statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_" + casesTable + "_target_ip ON " + casesTable + " (target_ip)");
-                statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_" + casesTable + "_type ON " + casesTable + " (type)");
-                statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_" + casesTable + "_status ON " + casesTable + " (status)");
-                statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_" + casesTable + "_actor_name ON " + casesTable + " (actor_name)");
-                statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_" + casesTable + "_status_actor_name ON " + casesTable + " (status_actor_name)");
-                statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_" + casesTable + "_server_profile ON " + casesTable + " (server_profile_id)");
-                statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_" + casesTable + "_incident ON " + casesTable + " (incident_id)");
-                statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_" + casesTable + "_appeal_status ON " + casesTable + " (appeal_status)");
-                statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_" + profilesTable + "_name ON " + profilesTable + " (player_name)");
-                statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_" + profilesTable + "_ip ON " + profilesTable + " (last_ip)");
             } else {
                 statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + casesTable + " ("
                         + "id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, "
@@ -674,18 +662,6 @@ public final class SqlStorage implements ModerationStorage {
                         + "last_seen BIGINT NOT NULL"
                         + ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
                 );
-                createMariaIndex(statement, "idx_" + casesTable + "_target_uuid", casesTable, "target_player_uuid");
-                createMariaIndex(statement, "idx_" + casesTable + "_related_uuid", casesTable, "related_player_uuid");
-                createMariaIndex(statement, "idx_" + casesTable + "_target_ip", casesTable, "target_ip");
-                createMariaIndex(statement, "idx_" + casesTable + "_type", casesTable, "type");
-                createMariaIndex(statement, "idx_" + casesTable + "_status", casesTable, "status");
-                createMariaIndex(statement, "idx_" + casesTable + "_actor_name", casesTable, "actor_name");
-                createMariaIndex(statement, "idx_" + casesTable + "_status_actor_name", casesTable, "status_actor_name");
-                createMariaIndex(statement, "idx_" + casesTable + "_server_profile", casesTable, "server_profile_id");
-                createMariaIndex(statement, "idx_" + casesTable + "_incident", casesTable, "incident_id");
-                createMariaIndex(statement, "idx_" + casesTable + "_appeal_status", casesTable, "appeal_status");
-                createMariaIndex(statement, "idx_" + profilesTable + "_name", profilesTable, "player_name");
-                createMariaIndex(statement, "idx_" + profilesTable + "_ip", profilesTable, "last_ip");
             }
 
             if (settings.type() == StorageType.SQLITE) {
@@ -734,6 +710,34 @@ public final class SqlStorage implements ModerationStorage {
                 ensureCaseColumn(connection, "last_reviewed_at", "BIGINT NULL");
                 ensureCaseColumn(connection, "review_reason", "TEXT NULL");
                 ensureCaseColumn(connection, "evidence", "LONGTEXT NULL");
+            }
+
+            if (settings.type() == StorageType.SQLITE) {
+                statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_" + casesTable + "_target_uuid ON " + casesTable + " (target_player_uuid)");
+                statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_" + casesTable + "_related_uuid ON " + casesTable + " (related_player_uuid)");
+                statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_" + casesTable + "_target_ip ON " + casesTable + " (target_ip)");
+                statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_" + casesTable + "_type ON " + casesTable + " (type)");
+                statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_" + casesTable + "_status ON " + casesTable + " (status)");
+                statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_" + casesTable + "_actor_name ON " + casesTable + " (actor_name)");
+                statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_" + casesTable + "_status_actor_name ON " + casesTable + " (status_actor_name)");
+                statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_" + casesTable + "_server_profile ON " + casesTable + " (server_profile_id)");
+                statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_" + casesTable + "_incident ON " + casesTable + " (incident_id)");
+                statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_" + casesTable + "_appeal_status ON " + casesTable + " (appeal_status)");
+                statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_" + profilesTable + "_name ON " + profilesTable + " (player_name)");
+                statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_" + profilesTable + "_ip ON " + profilesTable + " (last_ip)");
+            } else {
+                createMariaIndex(statement, "idx_" + casesTable + "_target_uuid", casesTable, "target_player_uuid");
+                createMariaIndex(statement, "idx_" + casesTable + "_related_uuid", casesTable, "related_player_uuid");
+                createMariaIndex(statement, "idx_" + casesTable + "_target_ip", casesTable, "target_ip");
+                createMariaIndex(statement, "idx_" + casesTable + "_type", casesTable, "type");
+                createMariaIndex(statement, "idx_" + casesTable + "_status", casesTable, "status");
+                createMariaIndex(statement, "idx_" + casesTable + "_actor_name", casesTable, "actor_name");
+                createMariaIndex(statement, "idx_" + casesTable + "_status_actor_name", casesTable, "status_actor_name");
+                createMariaIndex(statement, "idx_" + casesTable + "_server_profile", casesTable, "server_profile_id");
+                createMariaIndex(statement, "idx_" + casesTable + "_incident", casesTable, "incident_id");
+                createMariaIndex(statement, "idx_" + casesTable + "_appeal_status", casesTable, "appeal_status");
+                createMariaIndex(statement, "idx_" + profilesTable + "_name", profilesTable, "player_name");
+                createMariaIndex(statement, "idx_" + profilesTable + "_ip", profilesTable, "last_ip");
             }
         }
     }
