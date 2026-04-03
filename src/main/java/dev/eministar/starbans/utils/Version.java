@@ -4,7 +4,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public final class Version {
 
-    private static String version = "1.1.1";
+    private static String version = "2.0.1";
 
     private Version() {
     }

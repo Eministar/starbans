@@ -411,6 +411,10 @@ commands:
   # DE: Anzahl der Case-Einträge in der Konsolen-Ausgabe.
   console-history-limit: 10
 
+# ----------------------------------------------------------
+# EN: Player reporting and staff queue workflow.
+# DE: Spieler-Reports und Staff-Queue-Workflow.
+# ----------------------------------------------------------
 reports:
   default-label: player-report
   default-category: player-report
@@ -418,9 +422,17 @@ reports:
   queue:
     console-limit: 10
 
+# ----------------------------------------------------------
+# EN: Incident grouping for raid / alt-network / cheat-wave cases.
+# DE: Vorfall-Gruppierung für Raid- / Alt-Netzwerk- / Cheat-Wellen-Cases.
+# ----------------------------------------------------------
 incidents:
   default-category: incident
 
+# ----------------------------------------------------------
+# EN: Review cases plus automatic reminder generation.
+# DE: Review-Cases plus automatische Reminder-Erstellung.
+# ----------------------------------------------------------
 reviews:
   default-label: review
   default-category: review
@@ -433,6 +445,10 @@ reviews:
     high-risk-threshold: 35
     high-risk-profile-limit: 50
 
+# ----------------------------------------------------------
+# EN: Quarantine behaviour for suspicious players.
+# DE: Quarantäne-Verhalten für verdächtige Spieler.
+# ----------------------------------------------------------
 quarantine:
   default-label: quarantine
   default-category: security
@@ -442,9 +458,23 @@ quarantine:
     - msg
     - r
 
+# ----------------------------------------------------------
+# EN: Console search defaults for extended case filtering.
+# DE: Konsolen-Suchstandard für erweiterte Case-Filter.
+# ----------------------------------------------------------
 search:
   console-limit: 12
 
+# ----------------------------------------------------------
+# EN: Optional Discord bot integration.
+#     The main plugin jar does not bundle the bot libraries.
+#     When enabled, StarBans downloads the required runtime jars
+#     into plugins/StarBans/libs and loads them dynamically.
+# DE: Optionale Discord-Bot-Integration.
+#     Das Haupt-Plugin-Jar bündelt die Bot-Libraries nicht.
+#     Wenn aktiviert, lädt StarBans die benötigten Runtime-Jars
+#     nach plugins/StarBans/libs und lädt sie dynamisch.
+# ----------------------------------------------------------
 discord-bot:
   enabled: false
   token: ''
@@ -468,8 +498,6 @@ feedback:
   # EN: Remote text endpoint returning a Discord webhook URL.
   # DE: Remote-Text-Endpoint, der eine Discord-Webhook-URL zurückgibt.
   endpoint-url: https://hub.star-dev.xyz/starbans/feedbackwebhook.txt
-  # EN: HTTP timeout for feedback endpoint fetch and webhook delivery.
-  # DE: HTTP-Timeout für Feedback-Endpoint und Webhook-Zustellung.
   timeout-ms: 5000
 
 server-rules:
@@ -590,6 +618,8 @@ gui:
       lore:
         - '&8Total cases: &f{case_count}'
         - '&7Open the global case / staff activity log.'
+    # EN: Opens the active report / quarantine / review workflow queue.
+    # DE: Öffnet die aktive Report- / Quarantäne- / Review-Workflow-Queue.
     queue:
       material: HOPPER
       name: '&c&lReport Queue'
@@ -1051,6 +1081,8 @@ gui:
       lore:
         - '&7Close the GUI.'
 
+  # EN: Staff workflow queue for player reports.
+  # DE: Staff-Workflow-Queue für Spieler-Reports.
   report-queue:
     size: 54
     entry-slots: [10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33, 34]

@@ -1,505 +1,251 @@
 <div align="center">
 
-```
-╔════════════════════════════════════════════╗
-║          ✨ S T A R B A N S ✨           ║
-║   The Ultimate Moderation Experience 🚀    ║
-║        v1.0.0 • By Eministar 💎           ║
-╚════════════════════════════════════════════╝
-```
+![StarBans Banner](https://capsule-render.vercel.app/api?type=waving&height=220&color=0:7C3AED,50:2563EB,100:06B6D4&text=StarBans%202.0.1&fontColor=ffffff&fontAlignY=38&desc=Advanced%20Moderation%20%7C%20Case%20Management%20for%20Minecraft&descAlignY=58)
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Minecraft](https://img.shields.io/badge/Minecraft-1.21+-brightgreen.svg)](https://www.spigotmc.org/)
-[![Java](https://img.shields.io/badge/Java-21-orange.svg)](https://www.oracle.com/java/)
-[![Website](https://img.shields.io/badge/Website-star--dev.xyz-blue.svg)](https://hub.star-dev.xyz/starbans)
+# StarBans
 
-**A premium, design-focused moderation and punishment management plugin for Spigot/Paper servers.**
+### 🚀 Advanced moderation + case workflows for modern Minecraft servers
 
-<a href="https://nebuliton.io" target="_blank">
-  <img src="https://nebuliton.io/logo.png" alt="Nebuliton Hosting" width="220">
-</a>
-
-### Powered by Nebuliton Hosting
-
-**Need high-performance hosting for your Minecraft network?** Nebuliton Hosting provides modern infrastructure, fast deployments, and reliable performance for ambitious server projects.
-
-[Visit Nebuliton Hosting](https://nebuliton.io)
-
-[Features](#-features) • [Installation](#-installation) • [Commands](#-commands) • [Permissions](#-permissions) • [Configuration](#-configuration) • [Support](#-support)
+![Minecraft](https://img.shields.io/badge/Minecraft-1.21%2B-22C55E?style=for-the-badge)
+![Platform](https://img.shields.io/badge/Platform-Spigot%20%7C%20Paper-F59E0B?style=for-the-badge)
+![Java](https://img.shields.io/badge/Java-21%2B-EA580C?style=for-the-badge)
+![Storage](https://img.shields.io/badge/Storage-JSON%20%7C%20SQLite%20%7C%20MariaDB-2563EB?style=for-the-badge)
+![License](https://img.shields.io/badge/License-MIT-10B981?style=for-the-badge)
 
 </div>
 
----
+StarBans combines classic punishments with modern moderation workflows: reports, queue handling, appeals, evidence, incidents, reviews, quarantine, exports, audits, and optional Discord integrations.
 
-## ✨ Features
+## ✨ Feature Overview
 
-StarBans provides a complete moderation suite with an elegant interface and powerful features:
+### 🛡️ Core Moderation
 
-### 🎯 Core Moderation
-- ⚡ **Player Bans** - Permanent and temporary player bans
-- 🌐 **IP Bans** - IP-based banning with temporary options
-- 🔇 **Mute System** - Permanent and temporary mutes
-- ⚠️ **Warning System** - Point-based warns with configurable escalation
-- 👢 **Kick System** - Kick players with case logging
-- 📝 **Note System** - Internal or public staff notes on player profiles
-- 🏷️ **Case Tags** - Organize cases with tags and moderation metadata
-- 👀 **Watchlist** - Quietly flag players for join-time staff alerts
-- 🔗 **Alt Account Detection** - Mark related accounts and run join heuristics
-- 🚫 **IP Blacklist** - Maintain a blacklist of banned IP addresses
+- Permanent and temporary player bans
+- Permanent and temporary IP bans
+- Permanent and temporary mutes
+- Warnings with points and configurable escalation
+- Kicks with case logging
+- Internal and public notes
+- Watchlists
+- IP blacklist entries
+- Alt-account flags and join-time alt heuristics
 
-### 🎨 User Interface
-- 🖥️ **Interactive GUI** - Beautiful, easy-to-use admin interface
-- 📊 **Case History** - Complete moderation history per player
-- 👥 **Player Browser** - Browse and manage all known players
-- 📈 **Activity Log** - Global activity tracking
-- 🔍 **Profile View** - Detailed player profiles with all relevant data
+### 🔁 Workflow Systems
 
-### 🔧 Advanced Features
-- 🛡️ **VPN/Proxy Detection** - Optional integration with ProxyCheck plus staff security alerts
-- 📢 **Discord Webhooks** - External `discord-webhooks.yml` with rich embeds, fields and per-action endpoints
-- 🧩 **Punishment Templates** - Config-based presets for consistent moderation actions
-- 📘 **Audit Tools** - Moderator audit summaries, exports and case reopen/undo flow
-- 🧰 **Support Toolkit** - HTML support dump, webhook tests and command-driven setup
-- 💌 **Developer Feedback** - Send formatted feedback to the StarBans developer webhook relay
-- 📱 **PlaceholderAPI** - Full PlaceholderAPI support with 23+ placeholders
-- 🌍 **Network Support** - Proxy/BungeeCord/Velocity support for synchronized bans
-- 🧭 **Server Rule Profiles** - Per-server defaults and webhook routing profiles
-- 🎭 **Command Overrides** - Optional override of vanilla `/ban`, `/mute`, etc.
-- 🌐 **Multi-Language** - English and German language files included
+- Player report intake via `/report`
+- Staff report queue with claim and priority workflow
+- Appeal states with deadlines and internal notes
+- Evidence attachments for links, images, videos, and text references
+- Incident grouping and case linking
+- Review cases with automatic reminders
+- Quarantine mode for suspicious players
+- Extended case search and filtering
+- Import pipeline for StarBans JSON, LiteBans SQLite, and AdvancedBan SQLite
+- Risk scoring based on history, watchlists, quarantine, and alt links
 
-### 💾 Storage Options
-- 🗄️ **SQLite** - Built-in, zero-config database (recommended)
-- 🐬 **MariaDB/MySQL** - Remote database for network setups
-- 📄 **JSON** - File-based storage for small servers
+### 🧭 GUI and Staff UX
 
----
+- Main moderation GUI
+- Player browser
+- Profile/action menu
+- Case history screens
+- Report queue GUI
+- Single-case detail view with workflow metadata
+- Related-account browser
+- Recent activity log
+
+### 🌐 Network and Alerts
+
+- Per-server rule profiles
+- Optional command overrides
+- Staff join alerts
+- Review-due alerts
+- Optional VPN/proxy detection
+- Optional backend-to-proxy synchronization for network punishments
+
+### 🤖 Discord Integrations
+
+- Rich webhook logging via external `discord-webhooks.yml`
+- Optional Discord bot with slash commands for case lookup, reports, appeals, and unban requests
+- Bot runtime libraries are downloaded only when `discord-bot.enabled: true`
+- Downloaded bot libraries are stored in `plugins/StarBans/libs/`
+
+### 💾 Data and Operations
+
+- JSON, SQLite, and MariaDB storage
+- Player file export in `txt` and `json`
+- HTML support dumps
+- Moderator audit summaries
+- Developer feedback relay
+- PlaceholderAPI expansion
 
 ## 📦 Installation
 
 ### Requirements
-- **Minecraft**: 1.21 or higher
-- **Server Software**: Spigot or Paper (Paper recommended)
-- **Java**: 21 or higher
+
+- Minecraft `1.21+`
+- Spigot or Paper
+- Java `21+`
 
 ### Steps
 
-1. **Download** the latest `StarBans-1.0.0.jar` from releases
-2. **Place** the JAR file in your server's `plugins/` folder
-3. **Restart** your server
-4. **Configure** the plugin in `plugins/StarBans/config.yml`
-5. **(Optional)** Install [PlaceholderAPI](https://www.spigotmc.org/resources/placeholderapi.6245/) for placeholder support
+1. Build or download `StarBans-2.0.1.jar`.
+2. Place it in your server `plugins/` directory.
+3. Start the server once.
+4. Configure `plugins/StarBans/config.yml`.
+5. Optional: install PlaceholderAPI.
+6. Optional: configure `plugins/StarBans/discord-webhooks.yml`.
+7. Optional: enable the Discord bot in `config.yml`.
 
-### Network Setup (Optional)
+## ⚙️ Commands
 
-For BungeeCord/Velocity networks:
+## Main Command
 
-1. Install StarBans on all backend servers
-2. Configure a shared MariaDB database in `config.yml`
-3. Enable proxy support in network settings
-4. **(Optional)** Install the Velocity addon for enhanced integration
+- `/starbans help`
+- `/starbans reload`
+- `/starbans gui [player]`
+- `/starbans check <player>`
+- `/starbans cases <player>`
+- `/starbans case <id>`
+- `/starbans case tags <id> <add|remove|set|clear> [tag,tag2]`
+- `/starbans notes <player>`
+- `/starbans note <player> <label> [internal|public] <text>`
+- `/starbans ban <player> [reason]`
+- `/starbans tempban <player> <duration> [reason]`
+- `/starbans unban <player|ip> [reason]`
+- `/starbans ipban <player|ip> [reason]`
+- `/starbans tempipban <player|ip> <duration> [reason]`
+- `/starbans unipban <player|ip> [reason]`
+- `/starbans mute <player> [reason]`
+- `/starbans tempmute <player> <duration> [reason]`
+- `/starbans unmute <player> [reason]`
+- `/starbans kick <player> [reason]`
+- `/starbans warn <player> [points] [duration] [reason]`
+- `/starbans watchlist <add|remove|list> <player> [duration] [reason]`
+- `/starbans template <list|info|apply> ...`
+- `/starbans audit <staff> [page]`
+- `/starbans undo <caseId> [note]`
+- `/starbans reopen <caseId> [note]`
+- `/starbans export <player> <txt|json>`
+- `/starbans webhooktest <action>`
+- `/starbans dump`
+- `/starbans setup <webhooks|general> ...`
+- `/starbans feedback <message>`
+- `/starbans alt mark <label> <player1> <player2> [note]`
+- `/starbans alt list <player>`
+- `/starbans alt clear <caseId> [reason]`
+- `/starbans ipblacklist <add|remove> <ip> [reason]`
 
----
+## Workflow Commands
 
-## 🎮 Commands
+- `/report <player> [priority] <reason>`
+- `/starbans queue`
+- `/starbans queue list`
+- `/starbans queue claim <caseId>`
+- `/starbans queue priority <caseId> <low|normal|high|critical>`
+- `/starbans appeal <open|reviewing|accept|deny|note> <caseId> [duration] [note]`
+- `/starbans evidence <caseId> <link|image|video|text> <value> [note]`
+- `/starbans incident create <incidentId> [priority] <description>`
+- `/starbans incident link <caseId> <incidentId>`
+- `/starbans review list`
+- `/starbans review create <player> [duration] <reason>`
+- `/starbans review done <caseId> [next-duration] [note]`
+- `/starbans quarantine add <player> [duration] [reason]`
+- `/starbans quarantine remove <player> [reason]`
+- `/starbans search <type|*> <status|*> <actor|*> <tag|*> <server-profile|*> [days]`
+- `/starbans import <starbans_json|litebans_sqlite|advancedban_sqlite> <path>`
 
-### Main Commands
+## Safe Direct Commands
 
-| Command | Description | Permission |
-|---------|-------------|------------|
-| `/starbans help` | Show help menu | `starbans.command.base` |
-| `/starbans reload` | Reload configuration, language files and `discord-webhooks.yml` | `starbans.command.reload` |
-| `/starbans gui [player]` | Open admin GUI | `starbans.gui.open` |
-| `/starbans check <player>` | Check player status | `starbans.command.check` |
-| `/starbans cases <player>` | View case history | `starbans.command.cases` |
-| `/starbans case <id>` | View specific case | `starbans.command.cases` |
-| `/starbans case tags <id> <add\|remove\|set\|clear> [tags]` | Manage case tags | `starbans.command.tags` |
-
-### Ban Commands
-
-| Command | Description | Permission |
-|---------|-------------|------------|
-| `/starbans ban <player> [reason]` | Permanently ban a player | `starbans.command.ban` |
-| `/starbans tempban <player> <duration> [reason]` | Temporarily ban a player | `starbans.command.tempban` |
-| `/starbans unban <player\|ip> [reason]` | Unban a player or IP | `starbans.command.unban` |
-| `/starbans ipban <player\|ip> [reason]` | Ban an IP address | `starbans.command.ipban` |
-| `/starbans tempipban <player\|ip> <duration> [reason]` | Temporarily ban an IP | `starbans.command.ipban` |
-| `/starbans unipban <player\|ip> [reason]` | Unban an IP address | `starbans.command.unipban` |
-
-### Mute Commands
-
-| Command | Description | Permission |
-|---------|-------------|------------|
-| `/starbans mute <player> [reason]` | Permanently mute a player | `starbans.command.mute` |
-| `/starbans tempmute <player> <duration> [reason]` | Temporarily mute a player | `starbans.command.tempmute` |
-| `/starbans unmute <player> [reason]` | Unmute a player | `starbans.command.unmute` |
-
-### Other Moderation
-
-| Command | Description | Permission |
-|---------|-------------|------------|
-| `/starbans kick <player> [reason]` | Kick a player | `starbans.command.kick` |
-| `/starbans note <player> <label> [internal\|public] <text>` | Add a note to a player | `starbans.command.note` |
-| `/starbans notes <player>` | View player notes | `starbans.command.notes` |
-| `/starbans warn <player> [points] [duration] [reason]` | Create a warning with optional expiry | `starbans.command.warn` |
-| `/starbans watchlist <add\|remove\|list> <player> [duration] [reason]` | Manage the player watchlist | `starbans.command.watchlist` |
-| `/starbans template <list\|info\|apply> ...` | Browse and apply punishment templates | `starbans.command.template` |
-| `/starbans audit <staff> [page]` | View moderator audit summaries | `starbans.command.audit` |
-| `/starbans undo <caseId> [note]` | Revert an active case | `starbans.command.undo` |
-| `/starbans reopen <caseId> [note]` | Reopen a resolved or expired case | `starbans.command.reopen` |
-| `/starbans export <player> <txt\|json>` | Export a player's file | `starbans.command.export` |
-| `/starbans webhooktest <action>` | Send a test Discord webhook | `starbans.command.webhooktest` |
-| `/starbans dump` | Generate `plugins/StarBans/dumps/latest.html` | `starbans.command.dump` |
-| `/starbans setup <webhooks\|general> ...` | Update selected config values from commands | `starbans.command.setup` |
-| `/starbans feedback <message>` | Send feedback to the developer relay webhook | `starbans.command.feedback` |
-| `/starbans alt mark <label> <player1> <player2> [note]` | Mark alt accounts | `starbans.command.alt` |
-| `/starbans alt list <player>` | List alt accounts | `starbans.command.alt` |
-| `/starbans alt clear <caseId> [reason]` | Clear alt flag | `starbans.command.alt` |
-| `/starbans ipblacklist <add\|remove> <ip> [reason]` | Manage IP blacklist | `starbans.command.ipblacklist` |
-
-### Short Aliases
-
-All commands have convenient short aliases starting with `s`:
-
-- `/sban` → `/starbans ban`
-- `/stempban` → `/starbans tempban`
-- `/sunban` → `/starbans unban`
-- `/sipban` → `/starbans ipban`
-- `/stempipban` → `/starbans tempipban`
-- `/sunipban` → `/starbans unipban`
-- `/smute` → `/starbans mute`
-- `/stempmute` → `/starbans tempmute`
-- `/sunmute` → `/starbans unmute`
-- `/skick` → `/starbans kick`
-- `/snote` → `/starbans note`
-- `/snotes` → `/starbans notes`
-- `/scases` → `/starbans cases`
-- `/salt` → `/starbans alt`
-- `/sipblacklist` → `/starbans ipblacklist`
+- `/sban`
+- `/stempban`
+- `/sunban <player|ip> [reason]`
+- `/sipban`
+- `/stempipban`
+- `/sunipban <player|ip> [reason]`
+- `/smute`
+- `/stempmute`
+- `/sunmute`
+- `/skick`
+- `/snote`
+- `/snotes`
+- `/scases`
+- `/salt`
+- `/sipblacklist`
+- `/report`
 
 ### Duration Format
 
-Durations can be specified using the following formats:
+- `30m`
+- `1h`
+- `12h`
+- `1d`
+- `7d`
+- `30d`
+- Combined values like `1d12h`
+- `perm` / `permanent` where a permanent state is valid
 
-- `30m` - 30 minutes
-- `1h` - 1 hour
-- `12h` - 12 hours
-- `1d` - 1 day
-- `7d` - 7 days
-- `30d` - 30 days
-- `1d12h` - Combined (1 day and 12 hours)
-- `perm` or `permanent` - Permanent (where applicable)
+## 🧩 Permissions
 
----
+Core permissions:
 
-## 🔐 Permissions
+- `starbans.admin`
+- `starbans.notify`
+- `starbans.alerts.receive`
 
-### Core Permissions
+Most permissions default to `op`, while `starbans.command.report` defaults to `true`.
 
-| Permission | Description |
-|------------|-------------|
-| `starbans.admin` | Full access to all StarBans features (bypass) |
-| `starbans.notify` | Receive update notifications |
-| `starbans.alerts.receive` | Receive join-intelligence and VPN/security alerts |
+For full permission nodes, see: `src/main/resources/docs/permissions.md`
 
-### Command Permissions
+## 📚 Documentation Hub
 
-| Permission | Description |
-|------------|-------------|
-| `starbans.command.base` | Access `/starbans` and `/sb` |
-| `starbans.command.gui` | Access main GUI commands |
-| `starbans.command.reload` | Reload configuration, language files and `discord-webhooks.yml` |
-| `starbans.command.check` | Check player status |
-| `starbans.command.cases` | View case history |
-| `starbans.command.resolve` | Resolve active cases |
-| `starbans.command.note` | Create notes |
-| `starbans.command.notes` | View notes |
-| `starbans.command.ban` | Permanent bans |
-| `starbans.command.tempban` | Temporary bans |
-| `starbans.command.unban` | Remove bans |
-| `starbans.command.ipban` | IP bans |
-| `starbans.command.unipban` | Remove IP bans |
-| `starbans.command.mute` | Permanent mutes |
-| `starbans.command.tempmute` | Temporary mutes |
-| `starbans.command.unmute` | Remove mutes |
-| `starbans.command.kick` | Kick players |
-| `starbans.command.warn` | Warning system with points |
-| `starbans.command.watchlist` | Watchlist management |
-| `starbans.command.template` | Template browsing and application |
-| `starbans.command.webhooktest` | Webhook test dispatch |
-| `starbans.command.audit` | Moderator audit summaries |
-| `starbans.command.undo` | Revert active cases |
-| `starbans.command.reopen` | Reopen inactive cases |
-| `starbans.command.export` | Export player case history |
-| `starbans.command.dump` | Generate support dumps |
-| `starbans.command.setup` | Update selected config values via commands |
-| `starbans.command.feedback` | Send developer feedback via remote webhook |
-| `starbans.command.tags` | Edit case tags |
-| `starbans.command.alt` | Alt account management |
-| `starbans.command.ipblacklist` | IP blacklist management |
+Repository docs (recommended for setup and administration):
 
-### GUI Permissions
+- `src/main/resources/docs/commands.md`
+- `src/main/resources/docs/features.md`
+- `src/main/resources/docs/permissions.md`
+- `src/main/resources/docs/placeholders.md`
+- `src/main/resources/docs/database.md`
 
-| Permission | Description |
-|------------|-------------|
-| `starbans.gui.open` | Open main GUI |
-| `starbans.gui.browser` | Browse players |
-| `starbans.gui.profile` | Open player profiles |
-| `starbans.gui.activity` | View activity log |
-| `starbans.gui.history` | View case history |
-| `starbans.gui.case.view` | View case details |
-| `starbans.gui.case.resolve` | Resolve cases from GUI |
-| `starbans.gui.notes.view` | View notes in GUI |
-| `starbans.gui.notes.create` | Create notes via GUI |
-| `starbans.gui.related` | View related accounts |
-| `starbans.gui.alt.mark` | Mark alts from GUI |
-| `starbans.gui.punish.ban` | GUI ban button |
-| `starbans.gui.punish.tempban` | GUI tempban presets |
-| `starbans.gui.punish.unban` | GUI unban button |
-| `starbans.gui.punish.mute` | GUI mute button |
-| `starbans.gui.punish.tempmute` | GUI tempmute presets |
-| `starbans.gui.punish.unmute` | GUI unmute button |
+Runtime docs (generated inside your server):
 
-> **Note**: GUI punishment actions require both the GUI permission AND the related command permission.
+- `plugins/StarBans/docs/commands.md`
+- `plugins/StarBans/docs/features.md`
+- `plugins/StarBans/docs/permissions.md`
+- `plugins/StarBans/docs/placeholders.md`
+- `plugins/StarBans/docs/database.md`
 
----
+Important config files:
 
-## 📊 PlaceholderAPI
+- `plugins/StarBans/config.yml`
+- `plugins/StarBans/lang-en.yml`
+- `plugins/StarBans/lang-de.yml`
+- `plugins/StarBans/discord-webhooks.yml`
 
-StarBans provides 23+ placeholders for use with PlaceholderAPI:
+## 🧠 Placeholders
 
-### Player Placeholders
+Identifier: `%starbans_<placeholder>%`
 
-| Placeholder | Description |
-|-------------|-------------|
-| `%starbans_status%` | Player's current status |
-| `%starbans_is_banned%` | Whether player is banned (true/false) |
-| `%starbans_ban_reason%` | Current ban reason |
-| `%starbans_ban_remaining%` | Time remaining on ban |
-| `%starbans_is_muted%` | Whether player is muted (true/false) |
-| `%starbans_mute_reason%` | Current mute reason |
-| `%starbans_mute_remaining%` | Time remaining on mute |
-| `%starbans_is_watchlisted%` | Whether the player is currently watchlisted |
-| `%starbans_watchlist_reason%` | Active watchlist reason |
-| `%starbans_last_ip%` | Player's last known IP |
-| `%starbans_case_count%` | Total case count |
-| `%starbans_note_count%` | Total note count |
-| `%starbans_alt_count%` | Number of alt accounts |
-| `%starbans_warn_count%` | Total warning count |
-| `%starbans_warning_points%` | Active warning points |
-| `%starbans_last_case_type%` | Type of last case |
-| `%starbans_last_case_reason%` | Reason for last case |
+Includes player state, counters, latest-case values, and global moderation stats.
 
-### Global Placeholders
+Full list: `src/main/resources/docs/placeholders.md`
 
-| Placeholder | Description |
-|-------------|-------------|
-| `%starbans_active_bans%` | Total active bans |
-| `%starbans_active_ip_bans%` | Total active IP bans |
-| `%starbans_active_mutes%` | Total active mutes |
-| `%starbans_active_warns%` | Total active warnings |
-| `%starbans_active_watchlists%` | Total active watchlists |
-| `%starbans_total_cases%` | Total cases in system |
+## 🔌 Networking
 
----
+StarBans can run on backend Paper/Spigot servers in a proxied setup.
 
-## ⚙️ Configuration
+- `network.proxy-support` is informational for backend awareness
+- `network.velocity-bridge.enabled` expects MariaDB and a separate proxy-side component
+- Network-wide ban/IP sync is triggered from backend moderation actions
 
-### Basic Setup
+## 🛠️ Development
 
-```yaml
-# Database configuration
-database:
-  type: SQLITE  # SQLITE, MARIADB, or JSON
-  table-prefix: starbans
-  
-  # MariaDB settings (if using MARIADB)
-  mariadb:
-    host: localhost
-    port: 3306
-    database: minecraft
-    username: root
-    password: password
-    pool-size: 10
-
-# Network settings
-network:
-  proxy-support:
-    enabled: false  # Enable for BungeeCord/Velocity
-    mode: PROXY     # PROXY or BACKEND
-    
-# Staff alerts
-staff-alerts:
-  enabled: true
-  permission: starbans.alerts.receive
-  joins:
-    enabled: true
-    minimum-visible-cases: 1
-    notify-for-active-mutes: true
-    notify-for-flagged-related-accounts: true
-
-# Discord webhooks
-# Stored separately in plugins/StarBans/discord-webhooks.yml
-# so every action can use its own embed layout and target URLs.
-
-# VPN/Proxy detection
-vpn-detection:
-  enabled: false
-  provider: PROXYCHECK
-  api-key: "your-api-key"
-  
-# Language
-language: en  # en or de
-```
-
-### Command Overrides
-
-StarBans can optionally override vanilla commands like `/ban`, `/mute`, etc.:
-
-```yaml
-command-overrides:
-  enabled: true
-  commands:
-    - ban
-    - tempban
-    - unban
-    - mute
-    - kick
-```
-
----
-
-## 🗄️ Database
-
-### Supported Backends
-
-| Type | Use Case | Recommendation |
-|------|----------|----------------|
-| **SQLite** | Single server, local storage | ✅ Recommended for most setups |
-| **MariaDB/MySQL** | Network setup, shared database | ✅ For multi-server networks |
-| **JSON** | Very small servers | ⚠️ Not recommended for production |
-
-### Created Tables
-
-- `<prefix>_cases` - Stores all moderation cases
-- `<prefix>_profiles` - Stores player profiles and IP data
-
-### Stored Data
-
-- Player bans (permanent and temporary)
-- IP bans (permanent and temporary)
-- Mutes (permanent and temporary)
-- Kick records
-- Administrative notes
-- Alt account markers
-- IP blacklist entries
-- Player profile data with last known IP
-
----
-
-## 🌐 Network Setup
-
-StarBans supports BungeeCord and Velocity networks with synchronized punishments across servers.
-
-### Setup Steps
-
-1. **Install** StarBans on all backend servers
-2. **Configure** MariaDB database in `config.yml` on all servers (same credentials)
-3. **Enable** proxy support:
-   ```yaml
-   network:
-     proxy-support:
-       enabled: true
-       mode: BACKEND
-   ```
-4. **Configure** proxy mode on your proxy server (if using Velocity addon)
-5. **Restart** all servers
-
-### Velocity Addon
-
-For enhanced Velocity support, install the StarBans-VelocityAddon:
-
-1. Place `StarBans-VelocityAddon-1.0.0.jar` in your Velocity `plugins/` folder
-2. Configure the addon's `config.yml`
-3. Restart Velocity
-
----
-
-## 🎨 Features in Detail
-
-### Interactive GUI System
-
-The GUI provides a complete moderation interface:
-
-- **Player Browser**: Search and browse all known players
-- **Profile View**: See all player data, cases, and notes at a glance
-- **Quick Actions**: Ban, mute, kick directly from the GUI
-- **Case Management**: View, filter, and resolve cases
-- **Note System**: Add and view administrative notes
-- **Alt Detection**: View and manage related accounts
-
-### Discord Integration
-
-Send moderation actions to Discord channels:
-
-- Separate `discord-webhooks.yml` outside the main config
-- Multiple webhook URLs per action
-- Rich embeds with fields, footer blocks and timestamps
-- Moderator information
-- Join-alert, watchlist, escalation and VPN-alert webhook events
-- Testable via `/starbans webhooktest <action>`
-
-### VPN/Proxy Detection
-
-Block VPN and proxy connections:
-
-- Integration with ProxyCheck.io
-- Configurable action (note/block)
-- Optional staff alerts for flagged joins and proxy detections
-- Automatic note creation for detected logins
-
----
-
-## 🤝 Support
-
-- 🌐 **Website**: [star-dev.xyz](https://star-dev.xyz)
-- 📧 **Email**: Contact via website
-- 🐛 **Issues**: [GitHub Issues](https://github.com/eministar/StarBans/issues)
-
----
+- Version: `2.0.1`
+- Build tool: Maven
+- Java release target: `21`
+- Main class: `dev.eministar.starbans.StarBans`
 
 ## 📄 License
 
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
-
----
-
-## 🙏 Acknowledgments
-
-- **Paper/Spigot Team** - For the excellent server software
-- **PlaceholderAPI** - For the placeholder system
-- **HikariCP** - For database connection pooling
-- **Community** - For feedback and support
-
----
-
-## 🚀 Roadmap
-
-Future features planned:
-
-- [ ] Web panel for remote administration
-- [ ] Advanced analytics and reporting
-- [ ] Appeal system
-- [ ] Web-based setup assistant
-- [ ] More placeholder expansions
-- [ ] API for developers
-
----
-
-<div align="center">
-
-**Made with ❤️ by Eministar**
-
-⭐ **Star this repository if you find it helpful!** ⭐
-
-</div>
-
+This project is licensed under the MIT License.
+See `LICENSE` for full text.

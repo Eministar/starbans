@@ -1,6 +1,7 @@
 # StarBans Commands
 
-Main command:
+## Main Command
+
 - `/starbans help`
 - `/starbans reload`
 - `/starbans gui [player]`
@@ -36,7 +37,27 @@ Main command:
 - `/starbans alt clear <caseId> [reason]`
 - `/starbans ipblacklist <add|remove> <ip> [reason]`
 
-Safe direct commands:
+## Workflow Commands
+
+- `/report <player> [priority] <reason>`
+- `/starbans queue`
+- `/starbans queue list`
+- `/starbans queue claim <caseId>`
+- `/starbans queue priority <caseId> <low|normal|high|critical>`
+- `/starbans appeal <open|reviewing|accept|deny|note> <caseId> [duration] [note]`
+- `/starbans evidence <caseId> <link|image|video|text> <value> [note]`
+- `/starbans incident create <incidentId> [priority] <description>`
+- `/starbans incident link <caseId> <incidentId>`
+- `/starbans review list`
+- `/starbans review create <player> [duration] <reason>`
+- `/starbans review done <caseId> [next-duration] [note]`
+- `/starbans quarantine add <player> [duration] [reason]`
+- `/starbans quarantine remove <player> [reason]`
+- `/starbans search <type|*> <status|*> <actor|*> <tag|*> <server-profile|*> [days]`
+- `/starbans import <starbans_json|litebans_sqlite|advancedban_sqlite> <path>`
+
+## Safe Direct Commands
+
 - `/sban`
 - `/stempban`
 - `/sunban <player|ip> [reason]`
@@ -52,27 +73,22 @@ Safe direct commands:
 - `/scases`
 - `/salt`
 - `/sipblacklist`
+- `/report`
 
-Durations:
+## Duration Format
+
 - `30m`
 - `1h`
 - `12h`
 - `1d`
 - `7d`
 - `30d`
-- combined values like `1d12h` are supported
-- `perm` / `permanent` can be used where permanent values are accepted
+- combined values like `1d12h`
+- `perm` / `permanent` where a permanent state is valid
 
-Templates:
-- Templates are configured in `config.yml -> templates.entries`.
-- Supported template types: `BAN`, `MUTE`, `KICK`, `NOTE`, `WARN`, `WATCHLIST`, `IP_BAN`.
+## Notes
 
-Warns and watchlists:
-- Warnings support points and optional expiry.
-- Automatic escalation steps can be configured in `config.yml -> warnings.escalation`.
-- Watchlist entries are active cases and appear in join alerts / placeholders.
-
-Support tools:
-- `dump` generates `plugins/StarBans/dumps/latest.html` plus a timestamped HTML report.
-- `setup` can currently update webhook URLs / toggles and core values like language, timezone and server profile.
-- `feedback` fetches a developer webhook URL from `feedback.endpoint-url` and sends a Discord embed.
+- `queue` opens the report queue GUI for players and prints a console list for console senders.
+- `report` supports optional priorities: `low`, `normal`, `high`, `critical`.
+- `appeal`, `evidence`, `incident`, `review`, `quarantine`, `search` and `import` are staff workflow commands and are not exposed as short aliases.
+- If the optional Discord bot is enabled, StarBans also registers slash commands for case lookup, reports, appeals and unban requests.
